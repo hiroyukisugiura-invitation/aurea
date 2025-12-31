@@ -239,28 +239,26 @@
       left:24px;
       top:80px;
       display:flex;
-      align-items:flex-start;
-      gap:10px;
+      flex-direction:column;
+      align-items:center;
+      gap:14px;
       opacity:.95;
       user-select:none;
       pointer-events:none;
     }
-    .brand-rail .mark{
-      width:32px;height:32px;border-radius:50%;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(255,255,255,.04);
-      display:grid;place-items:center;
-    }
-    .brand-rail .mark svg{width:22px;height:22px;opacity:.9}
-    .brand-rail .mark .brand-cube{width:22px;height:22px;display:block;opacity:.95}
 
-    .brand-rail .vtxt{
-      writing-mode:vertical-rl;
-      text-orientation:mixed;
-      font-weight:600;
-      letter-spacing:.22em;
-      font-size:20px;
-      color:rgba(255,255,255,.92);
+    .brand-rail .brand-cube{
+      width:28px;
+      height:28px;
+      display:block;
+      opacity:.95;
+    }
+
+    .brand-rail .brand-logo{
+      height:160px;
+      width:auto;
+      display:block;
+      opacity:.95;
     }
 
     /* ASK AREA */
@@ -649,10 +647,8 @@
       </div>
 
       <div class="brand-rail" aria-hidden="true">
-        <div class="mark">
-          <img class="brand-cube" src="/assets/img/brand/aurea_cube_wh.png" alt="AUREA" />
-        </div>
-        <div class="vtxt">AUREA</div>
+        <img class="brand-cube" src="/assets/img/brand/aurea_cube_wh.png" alt="AUREA" />
+        <img class="brand-logo" src="/assets/img/brand/aurea_logo_wh.png" alt="AUREA" />
       </div>
 
       <div class="board" aria-label="会話エリア">
