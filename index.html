@@ -246,18 +246,20 @@
       pointer-events:none;
     }
     .brand-rail .mark{
-      width:26px;height:26px;border-radius:50%;
+      width:32px;height:32px;border-radius:50%;
       border:1px solid rgba(255,255,255,.12);
       background:rgba(255,255,255,.04);
       display:grid;place-items:center;
     }
-    .brand-rail .mark svg{width:16px;height:16px;opacity:.9}
+    .brand-rail .mark svg{width:22px;height:22px;opacity:.9}
+    .brand-rail .mark .brand-cube{width:22px;height:22px;display:block;opacity:.95}
+
     .brand-rail .vtxt{
       writing-mode:vertical-rl;
       text-orientation:mixed;
       font-weight:600;
       letter-spacing:.22em;
-      font-size:16px;
+      font-size:20px;
       color:rgba(255,255,255,.92);
     }
 
@@ -648,19 +650,9 @@
 
       <div class="brand-rail" aria-hidden="true">
         <div class="mark">
-          <img
-            src="/assets/img/brand/aurea_cube_wh.png"
-            alt="AUREA"
-            style="width:16px;height:16px;"
-          />
+          <img class="brand-cube" src="/assets/img/brand/aurea_cube_wh.png" alt="AUREA" />
         </div>
-        <div class="vtxt">
-          <img
-            src="/assets/img/brand/aurea_logo_wh.png"
-            alt="AUREA"
-            style="height:96px;"
-          />
-        </div>
+        <div class="vtxt">AUREA</div>
       </div>
 
       <div class="board" aria-label="会話エリア">
