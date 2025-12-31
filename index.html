@@ -237,7 +237,7 @@
     .brand-rail{
       position:absolute;
       left:24px;
-      top:80px;
+      top:32px;
       display:flex;
       flex-direction:column;
       align-items:center;
@@ -249,19 +249,18 @@
     }
 
     .brand-rail .brand-cube{
-      width:26px;
-      height:26px;
+      width:50px;
+      height:50px;
       display:block;
       opacity:.95;
     }
 
     .brand-rail .brand-logo-wrap{
       width:56px;
-      height:180px;
       display:flex;
       align-items:flex-start;
       justify-content:center;
-      overflow:hidden;
+      overflow:visible;
     }
 
     .brand-rail .brand-logo{
@@ -270,7 +269,7 @@
       display:block;
       opacity:.95;
       transform:rotate(90deg);
-      transform-origin:50% 50%;
+      transform-origin:50% 0%;
     }
 
     /* ASK AREA */
@@ -286,7 +285,7 @@
       pointer-events:none;
     }
     .ask{
-      width:min(760px, calc(100% - 64px));
+      width:min(860px, calc(100% - 64px));
       background:rgba(35,36,37,.92);
       border:1px solid rgba(255,255,255,.10);
       border-radius:22px;
@@ -323,13 +322,18 @@
     .ask .mini svg{width:18px;height:18px;opacity:.92}
 
     .ask-note{
-      width:min(760px, calc(100% - 64px));
+      width:min(860px, calc(100% - 64px));
       color:rgba(255,255,255,.70);
       font-size:12px;
       line-height:1.45;
       text-align:center;
       padding:0 8px;
       pointer-events:auto;
+      white-space:normal;
+    }
+
+    @media (min-width: 980px){
+      .ask-note{white-space:nowrap}
     }
 
     /* PLUS MENU */
@@ -427,21 +431,19 @@
       .brand-rail{left:18px}
     }
     @media (max-width: 860px){
-      .app{grid-template-columns: 1fr}
+      :root{--sbw:220px}
+      .app{grid-template-columns: var(--sbw) 1fr}
       .sidebar{
-        position:absolute;
-        left:0; top:0; bottom:0;
+        position:relative;
+        left:auto; top:auto; bottom:auto;
         width:var(--sbw);
-        z-index:var(--zOverlay);
-        transform:translateX(-102%);
-        transition:transform .2s ease;
+        z-index:auto;
+        transform:none;
+        transition:none;
       }
-      body.sb-open .sidebar{transform:translateX(0)}
-      .main{grid-column:1}
-      .topbar{justify-content:space-between}
-      .burger{
-        display:inline-grid;
-      }
+      .main{grid-column:auto}
+      .topbar{justify-content:flex-end}
+      .burger{display:none}
     }
     .burger{display:none}
 
@@ -520,11 +522,11 @@
     <!-- SIDEBAR -->
     <aside class="sidebar" aria-label="左カラム">
       <div class="sb-top">
-        <a class="sb-item" href="#" aria-label="チャットを検索">
+        <a class="sb-item" href="#" aria-label="チャット内を検索">
           <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.2-3.2"></path>
           </svg>
-          <span class="label">チャットを検索</span>
+          <span class="label">チャット内を検索</span>
         </a>
 
         <div class="sb-sep"></div>
