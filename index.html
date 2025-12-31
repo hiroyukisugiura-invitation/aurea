@@ -241,24 +241,36 @@
       display:flex;
       flex-direction:column;
       align-items:center;
-      gap:14px;
+      gap:12px;
       opacity:.95;
       user-select:none;
       pointer-events:none;
+      width:56px;
     }
 
     .brand-rail .brand-cube{
-      width:28px;
-      height:28px;
+      width:26px;
+      height:26px;
       display:block;
       opacity:.95;
     }
 
+    .brand-rail .brand-logo-wrap{
+      width:56px;
+      height:180px;
+      display:flex;
+      align-items:flex-start;
+      justify-content:center;
+      overflow:hidden;
+    }
+
     .brand-rail .brand-logo{
-      height:160px;
-      width:auto;
+      width:180px;
+      height:auto;
       display:block;
       opacity:.95;
+      transform:rotate(90deg);
+      transform-origin:50% 50%;
     }
 
     /* ASK AREA */
@@ -648,7 +660,9 @@
 
       <div class="brand-rail" aria-hidden="true">
         <img class="brand-cube" src="/assets/img/brand/aurea_cube_wh.png" alt="AUREA" />
-        <img class="brand-logo" src="/assets/img/brand/aurea_logo_wh.png" alt="AUREA" />
+        <div class="brand-logo-wrap">
+          <img class="brand-logo" src="/assets/img/brand/aurea_logo_wh.png" alt="AUREA" />
+        </div>
       </div>
 
       <div class="board" aria-label="会話エリア">
