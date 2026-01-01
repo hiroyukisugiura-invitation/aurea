@@ -333,10 +333,9 @@
     .muted{color:rgba(255,255,255,.58)}
 
     .reg-wrap{
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,.10);
-      background:linear-gradient(90deg, rgba(8,24,54,.92), rgba(6,18,44,.92));
-      padding:14px 16px 10px;
+      border:0;
+      background:transparent;
+      padding:0;
     }
     .reg-head{
       font-size:14px;
@@ -369,15 +368,7 @@
       color:rgba(255,255,255,.95);
     }
     .reg-tab[aria-selected="true"]::after{
-      content:"";
-      position:absolute;
-      left:0;
-      right:0;
-      bottom:-8px;
-      height:2px;
-      border-radius:999px;
-      background:rgba(255,255,255,.85);
-      opacity:.9;
+      content:none;
     }
 
     /* Apps */
