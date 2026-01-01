@@ -301,9 +301,13 @@
     }
 
     .btn.danger{
-      border-color:var(--dangerBd);
-      background:var(--dangerBg);
-      color:rgba(255,200,200,.95);
+      border-color:rgba(255,255,255,.14);
+      background:transparent;
+      color:rgba(255,255,255,.86);
+    }
+    .btn.danger:hover{
+      background:rgba(255,255,255,.06);
+      border-color:rgba(255,255,255,.18);
     }
 
     .select{
@@ -617,6 +621,17 @@
           </div>
         </div>
 
+        <div class="row">
+          <div class="l">
+            <div class="k">送信ショートカット</div>
+            <div class="v">メッセージ送信に使用するキーを選択します。</div>
+          </div>
+          <select class="select" aria-label="送信ショートカット">
+            <option selected>⌘ + Enterで送信（Enterは改行）</option>
+            <option>Enterで送信（Shift + Enterで改行）</option>
+          </select>
+        </div>
+
         <!-- ===== Apps ===== -->
         <div class="panel panel-apps">
           <header class="content-hd">
@@ -791,19 +806,72 @@
         </div>
 
         <!-- ===== Trainer ===== -->
-        <div class="panel panel-trainer">
-          <header class="content-hd">
-            <div style="min-width:0">
-              <div class="content-title">AUREA Data Trainer</div>
-              <div class="content-sub">（この項目は別で対応）</div>
-            </div>
-          </header>
+          <div class="panel panel-trainer">
+            <header class="content-hd">
+              <div style="min-width:0">
+                <div class="content-title">AI Earth Trainer　Enterprise</div>
+                <div class="content-sub">
+                  AI Earth を育てる（AET）
+                </div>
+              </div>
+            </header>
 
-          <div class="content-bd">
-            <div class="section">
-              <div class="sec-title">準備中</div>
-              <div class="sec-desc">このタブは次の会話で詰めます。</div>
+            <div class="content-bd">
+              <div class="section">
+                <div class="sec-title">AI Earth を育てる（AET）</div>
+                <div class="sec-desc">
+                  「こんな質問にはこれ」といったケースを企業内で登録し、<br>
+                  社内AIの回答精度を継続的に育てます。
+                </div>
+
+                <div class="row" style="margin-top:14px">
+                  <div class="l">
+                    <div class="k">対象プラン</div>
+                    <div class="v">Enterprise 専用機能</div>
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="l">
+                    <div class="k">ステータス</div>
+                    <div class="v">Coming Soon</div>
+                  </div>
+                </div>
+
+                <div class="row" style="margin-top:10px">
+                  <button class="btn secondary" type="button" disabled>
+                    ケースを追加
+                  </button>
+                </div>
+              </div>
             </div>
+          </div>
+
+        <div class="section" aria-label="Knowledge Base">
+          <div class="sec-title">Knowledge Base</div>
+          <div class="sec-desc">
+            Google Drive や OneDrive など、ユーザー・企業のストレージに保存された
+            ドキュメントを参照します。AUREA 自身はファイルを保存せず、
+            読み取りと検索のみを行います。
+          </div>
+
+          <div class="row" style="margin-top:10px">
+            <div class="l">
+              <div class="k">クラウドストレージ</div>
+              <div class="v">未接続</div>
+            </div>
+          </div>
+
+          <div class="row">
+            <button class="btn secondary" type="button">
+              クラウドストレージと接続する（Google Drive）
+            </button>
+          </div>
+
+          <div class="row">
+            <button class="btn secondary" type="button">
+              ドキュメントを一時アップロード（AUREAには保存されません）
+            </button>
           </div>
         </div>
 
