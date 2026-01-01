@@ -219,10 +219,19 @@
       padding:14px 14px;
       margin-bottom:14px;
     }
+
+    /* Security: titleと上枠の詰まりを解消（他タブへ影響させない） */
+    .panel-security .section{
+      padding:18px 16px;
+    }
+    .panel-security .sec-title{
+      margin:2px 0 14px 0;
+    }
     .sec-title{
       font-size:14px;
       color:rgba(255,255,255,.92);
       line-height:1.2;
+      margin:0 0 12px 0;
     }
     .sec-desc{
       font-size:12px;
@@ -323,6 +332,54 @@
 
     .muted{color:rgba(255,255,255,.58)}
 
+    .reg-wrap{
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.10);
+      background:linear-gradient(90deg, rgba(8,24,54,.92), rgba(6,18,44,.92));
+      padding:14px 16px 10px;
+    }
+    .reg-head{
+      font-size:14px;
+      font-weight:800;
+      color:rgba(255,255,255,.94);
+      margin-bottom:10px;
+      letter-spacing:.01em;
+    }
+
+    .reg-tabs{
+      display:flex;
+      align-items:center;
+      gap:22px;
+      padding:0;
+      border-bottom:0;
+    }
+    .reg-tab{
+      background:transparent;
+      border:0;
+      padding:10px 0;
+      color:rgba(255,255,255,.78);
+      font-size:13px;
+      font-weight:800;
+      cursor:pointer;
+      position:relative;
+      line-height:1;
+    }
+    .reg-tab:hover{color:rgba(255,255,255,.92)}
+    .reg-tab[aria-selected="true"]{
+      color:rgba(255,255,255,.95);
+    }
+    .reg-tab[aria-selected="true"]::after{
+      content:"";
+      position:absolute;
+      left:0;
+      right:0;
+      bottom:-8px;
+      height:2px;
+      border-radius:999px;
+      background:rgba(255,255,255,.85);
+      opacity:.9;
+    }
+
     /* Apps */
     .apps-header{
       display:flex;
@@ -396,25 +453,30 @@
 
     .status-btn{
       margin-top:12px;
-      height:40px;
+      height:34px;
+      padding:0 14px;
       border-radius:999px;
-      border:2px solid rgba(255,255,255,.12);
-      background:rgba(0,0,0,.18);
-      color:rgba(255,255,255,.92);
-      font-size:18px;
-      font-weight:800;
-      letter-spacing:.02em;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.04);
+      color:rgba(255,255,255,.86);
+      font-size:13px;
+      font-weight:700;
+      letter-spacing:.01em;
       cursor:pointer;
     }
-    .status-btn:hover{background:rgba(255,255,255,.08)}
+    .status-btn:hover{
+      background:rgba(255,255,255,.06);
+      border-color:rgba(255,255,255,.18);
+    }
     .status-btn.off{
+      background:rgba(255,255,255,.035);
       border-color:rgba(255,255,255,.14);
-      color:rgba(255,255,255,.92);
+      color:rgba(255,255,255,.82);
     }
     .status-btn.on{
-      border-color:rgba(120,220,140,.35);
-      background:rgba(120,220,140,.10);
-      color:rgba(220,255,230,.98);
+      border-color:rgba(120,220,140,.28);
+      background:rgba(120,220,140,.08);
+      color:rgba(210,255,220,.95);
     }
 
     @media (max-width: 1080px){
@@ -569,7 +631,7 @@
           <header class="content-hd">
             <div style="min-width:0">
               <div class="content-title">アプリ</div>
-              <div class="content-sub">SaaSへ接続して、AUREAとAPI連携します。</div>
+              <div class="content-sub">SaaSへ接続して、AUREAとAPIを連携します。</div>
             </div>
           </header>
 
@@ -578,7 +640,6 @@
               <div class="apps-header">
                 <div style="min-width:0">
                   <div class="apps-title">アプリとコネクター</div>
-                  <div class="apps-sub">接続状態が「未接続 / 接続」で明確に表示されます。</div>
                 </div>
                 <button class="btn" type="button">
                   <i class="fa-solid fa-plus"></i>
@@ -703,9 +764,7 @@
 
           <div class="content-bd">
             <div class="section" aria-label="保存設定">
-              <div class="sec-title">保存設定</div>
-
-              <div class="row">
+              <div class="row" style="border-top:0;padding-top:0">
                 <div class="l">
                   <div class="k">会話</div>
                   <div class="v">保存先：AUREA Cloud（プロジェクトDB / ストレージ）</div>
@@ -726,9 +785,7 @@
             </div>
 
             <div class="section" aria-label="削除">
-              <div class="sec-title">削除</div>
-
-              <div class="row">
+              <div class="row" style="border-top:0;padding-top:0">
                 <div class="l">
                   <div class="k">すべてのチャットを削除する</div>
                   <div class="v">全チャット履歴を完全に削除します。</div>
@@ -860,46 +917,17 @@
             </div>
 
             <div class="section" aria-label="規約・規定">
-              <div class="sec-title">規約・規定</div>
-              <div class="sec-desc">特定商取引法、利用規約、プライバシー。</div>
-
-              <div class="row">
-                <div class="l">
-                  <div class="k">特定商取引法</div>
-                  <div class="v">表記を確認します。</div>
+              <div class="reg-wrap" aria-label="規約・規定タブ">
+                <div class="reg-head">規約・規定</div>
+                <div class="reg-tabs" role="tablist" aria-label="規約・規定">
+                  <button class="reg-tab" type="button" role="tab" aria-selected="true">特定商取引法</button>
+                  <button class="reg-tab" type="button" role="tab" aria-selected="false">利用規約</button>
+                  <button class="reg-tab" type="button" role="tab" aria-selected="false">プライバシー</button>
                 </div>
-                <button class="btn secondary" type="button">
-                  <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                  開く
-                </button>
-              </div>
-
-              <div class="row">
-                <div class="l">
-                  <div class="k">利用規約</div>
-                  <div class="v">Terms of Service。</div>
-                </div>
-                <button class="btn secondary" type="button">
-                  <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                  開く
-                </button>
-              </div>
-
-              <div class="row">
-                <div class="l">
-                  <div class="k">プライバシー</div>
-                  <div class="v">Privacy Policy。</div>
-                </div>
-                <button class="btn secondary" type="button">
-                  <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                  開く
-                </button>
               </div>
             </div>
-
           </div>
         </div>
-
       </section>
     </div>
   </div>
