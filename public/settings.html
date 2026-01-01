@@ -29,7 +29,7 @@
       --okBg: rgba(120,220,140,.10);
       --okBd: rgba(120,220,140,.24);
 
-      --font: ui-sans-serif, system-ui, -apple-system, "SF Pro Display","SF Pro Text","Hiragino Sans","Noto Sans JP","Segoe UI",Roboto,Helvetica,Arial;
+      --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Hiragino Sans", "Noto Sans JP", sans-serif;
     }
 
     *{box-sizing:border-box}
@@ -148,6 +148,7 @@
       display:grid;place-items:center;
       opacity:.9;flex:0 0 auto;
     }
+
     .nav-ic i{font-size:14px}
 
     #tab-general:checked ~ .overlay .modal .nav label[for="tab-general"],
@@ -218,6 +219,15 @@
       border-radius:16px;
       padding:14px 14px;
       margin-bottom:14px;
+    }
+
+    /* Apps: 外側の大枠（sectionカード）を消す */
+    .panel-apps .section{
+      border:0;
+      background:transparent;
+      border-radius:0;
+      padding:0;
+      margin:0;
     }
 
     /* 枠をやめて「線」で見せる（アプリ以外の小詳細） */
@@ -502,10 +512,53 @@
       .apps-grid{grid-template-columns: repeat(3, minmax(0, 1fr));}
     }
     @media (max-width: 920px){
-      .modal{grid-template-columns: 1fr; height:min(820px, calc(100vh - 64px))}
-      .nav{border-right:0;border-bottom:1px solid var(--line)}
-      .nav-list{flex-direction:row;gap:6px;padding:10px 10px 12px;overflow:auto}
-      .nav-item{width:auto;padding:10px 12px;border-radius:999px;background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.08)}
+      .modal{
+        grid-template-columns: 1fr;
+        height:min(820px, calc(100vh - 64px));
+      }
+
+      /* nav を上部へ */
+      .nav{
+        border-right:0;
+        border-bottom:1px solid var(--line);
+      }
+
+      .nav-hd{
+        padding:14px 14px 10px;
+      }
+
+      /* アイコンだけ中央表示（横スクロールなし） */
+      .nav-list{
+        flex-direction:row;
+        justify-content:center;
+        align-items:center;
+        gap:10px;
+        padding:10px 12px 12px;
+        overflow:hidden;
+        min-height:74px; /* アイコン列の高さを固定 */
+      }
+
+      .nav-item{
+        width:52px;
+        height:52px;
+        padding:0;
+        border-radius:999px;
+        background:rgba(255,255,255,.04);
+        border-color:rgba(255,255,255,.08);
+        justify-content:center;
+        gap:0;
+
+        /* ラベル文字は消す */
+        font-size:0;
+      }
+
+      .nav-ic{
+        width:22px;height:22px;
+        opacity:.95;
+      }
+      .nav-ic i{font-size:18px}
+
+      /* 選択中 */
       #tab-general:checked ~ .overlay .modal .nav label[for="tab-general"],
       #tab-apps:checked ~ .overlay .modal .nav label[for="tab-apps"],
       #tab-data:checked ~ .overlay .modal .nav label[for="tab-data"],
@@ -513,9 +566,22 @@
       #tab-security:checked ~ .overlay .modal .nav label[for="tab-security"],
       #tab-account:checked ~ .overlay .modal .nav label[for="tab-account"]{
         background:rgba(255,255,255,.10);
-        border-color:rgba(255,255,255,.12);
+        border-color:rgba(255,255,255,.14);
       }
-      .apps-grid{grid-template-columns: repeat(2, minmax(0, 1fr));}
+
+      /* アプリ grid */
+      .apps-grid{
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      /* 詳細の頭位置を固定（アイコン列の下に揃える） */
+      .content-hd{
+        padding-top:16px;
+        min-height:72px;
+      }
+      .content-bd{
+        padding-top:14px;
+      }
     }
   </style>
 </head>
@@ -582,7 +648,7 @@
           <header class="content-hd">
             <div style="min-width:0">
               <div class="content-title">一般</div>
-              <div class="content-sub">表示言語を管理します。</div>
+              <div class="content-sub">表示言語を管理します</div>
             </div>
           </header>
 
@@ -591,7 +657,7 @@
               <div class="row">
                 <div class="l">
                   <div class="k">テーマ</div>
-                  <div class="v">システム／ライト／ダーク。</div>
+                  <div class="v">システム／ライト／ダーク</div>
                 </div>
                 <select class="select" aria-label="テーマ">
                   <option>システム</option>
@@ -603,7 +669,7 @@
               <div class="row">
                 <div class="l">
                   <div class="k">言語</div>
-                  <div class="v">UI／回答の既定言語。</div>
+                  <div class="v">UI／回答の既定言語</div>
                 </div>
                 <select class="select" aria-label="言語">
                   <option selected>日本語</option>
@@ -645,7 +711,7 @@
               <div class="row">
                 <div class="l">
                   <div class="k">送信ショートカット</div>
-                  <div class="v">メッセージ送信に使用するキーを選択します。</div>
+                  <div class="v">メッセージ送信に使用するキーを選択します</div>
                 </div>
                 <select class="select" aria-label="送信ショートカット">
                   <option selected>⌘ + Enterで送信（Enterは改行）</option>
@@ -661,7 +727,7 @@
           <header class="content-hd">
             <div style="min-width:0">
               <div class="content-title">アプリ</div>
-              <div class="content-sub">SaaSへ接続して、AUREAとAPIを連携します。</div>
+              <div class="content-sub">SaaSへ接続してAUREAとAPIを連携します</div>
             </div>
           </header>
 
@@ -788,7 +854,7 @@
           <header class="content-hd">
             <div style="min-width:0">
               <div class="content-title">データ</div>
-              <div class="content-sub">保存先と削除操作を管理します。</div>
+              <div class="content-sub">保存先と削除操作を管理します</div>
             </div>
           </header>
 
@@ -816,7 +882,7 @@
               <div class="row" style="border-top:0;padding-top:0">
                 <div class="l">
                   <div class="k">すべてのチャットを削除する</div>
-                  <div class="v">全チャット履歴を完全に削除します。</div>
+                  <div class="v">全チャット履歴を完全に削除します</div>
                 </div>
                 <button class="btn danger" type="button">
                   <i class="fa-solid fa-trash"></i>
@@ -871,7 +937,7 @@
               <div class="section">
                 <div class="sec-title">AI Earth を育てる（AET）</div>
                 <div class="sec-desc">
-                  「こんな質問にはこれ」といったケースを登録し、社内AIの回答精度を育てます。                  
+                  「こんな質問にはこれ」といったケースを登録し、社内AIの回答精度を育てます             
                 </div>
 
                 <div class="row" style="margin-top:14px">
@@ -902,7 +968,7 @@
           <header class="content-hd">
             <div style="min-width:0">
               <div class="content-title">セキュリティ</div>
-              <div class="content-sub">サインイン情報と、端末を管理します。</div>
+              <div class="content-sub">サインイン情報と、端末を管理します</div>
             </div>
           </header>
 
@@ -944,19 +1010,19 @@
           <header class="content-hd">
             <div style="min-width:0">
               <div class="content-title">アカウント</div>
-              <div class="content-sub">プロフィール、プラン、規約・規定。</div>
+              <div class="content-sub">プロフィール、プラン、規約・規定</div>
             </div>
           </header>
 
           <div class="content-bd">
             <div class="section" aria-label="プロフィール">
               <div class="sec-title">プロフィール</div>
-              <div class="sec-desc">設定画面で編集できる状態を確認します。</div>
+              <div class="sec-desc">設定画面で編集できる状態を確認します</div>
 
               <div class="row">
                 <div class="l">
                   <div class="k">表示名</div>
-                  <div class="v">プロフィールに表示されます。</div>
+                  <div class="v">プロフィールに表示されます</div>
                 </div>
                 <input class="input" type="text" value="Cocoro Sugiura" />
               </div>
@@ -964,7 +1030,7 @@
               <div class="row">
                 <div class="l">
                   <div class="k">ユーザー名</div>
-                  <div class="v">@handle（任意）。</div>
+                  <div class="v">@handle（任意）</div>
                 </div>
                 <input class="input" type="text" value="@cocoro" />
               </div>
@@ -972,7 +1038,7 @@
               <div class="row">
                 <div class="l">
                   <div class="k">保存</div>
-                  <div class="v">プロフィールを更新します。</div>
+                  <div class="v">プロフィールを更新します</div>
                 </div>
                 <button class="btn ok" type="button">
                   <i class="fa-solid fa-check"></i>
@@ -983,7 +1049,7 @@
 
             <div class="section" aria-label="プラン">
               <div class="sec-title">プラン</div>
-              <div class="sec-desc">AUREAのプランと請求情報を確認します。</div>
+              <div class="sec-desc">AUREAのプランと請求情報を確認します</div>
 
               <div class="row">
                 <div class="l">
