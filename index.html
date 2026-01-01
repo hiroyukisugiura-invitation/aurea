@@ -167,12 +167,34 @@
       border:1px solid transparent;
       font-size:14px;
       line-height:1;
+
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .12s ease;
     }
-    .sb-dots:hover{background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.06); color:rgba(255,255,255,.9)}
+
+    /* 行にホバーしたら表示 */
+    .sb-row:hover .sb-dots{
+      opacity:1;
+      pointer-events:auto;
+    }
+
+    /* 開いてる間も表示（ホバー外でも） */
+    .sb-more[open] .sb-dots{
+      opacity:1;
+      pointer-events:auto;
+    }
+
+    .sb-dots:hover{
+      background:rgba(255,255,255,.06);
+      border-color:rgba(255,255,255,.06);
+      color:rgba(255,255,255,.9);
+    }
 
     .sb-pop{
       position:absolute;
-      left:0;
+      right:0;
+      left:auto;
       top:34px;
       width:200px;
       background:rgba(20,21,22,.96);
@@ -728,17 +750,18 @@
             </svg>
           </summary>
           <div class="group-body" role="list">
-            <a class="sb-chat sb-create-project" href="#" role="listitem" aria-label="プロジェクトを新規作成">
+            <a class="sb-chat sb-create-project" href="#" role="listitem" aria-label="PJ 新規作成">
               <div class="t" style="display:flex;align-items:center;gap:10px">
                 <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;opacity:.9;flex:0 0 auto">
                   <path d="M12 5v14"></path>
                   <path d="M5 12h14"></path>
                 </svg>
-                <span>プロジェクトを新規作成</span>
+                <span>PJ 新規作成</span>
               </div>
             </a>
 
             <div class="sb-row" role="listitem">
+              <a class="sb-link" href="#" aria-label="AI Earth">AI Earth</a>
               <details class="sb-more">
                 <summary class="sb-dots" aria-label="メニュー">•••</summary>
                 <div class="sb-pop" role="menu" aria-label="メニュー">
@@ -746,7 +769,6 @@
                   <button type="button" class="sb-act danger" role="menuitem">削除する</button>
                 </div>
               </details>
-              <a class="sb-link" href="#" aria-label="AI Earth">AI Earth</a>
             </div>
 
             <div class="sb-row" role="listitem">
