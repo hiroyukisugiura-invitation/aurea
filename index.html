@@ -22,7 +22,7 @@
       --sbw:260px;
       --zFloat:30;
       --zOverlay:40;
-      --font: ui-sans-serif, system-ui, -apple-system, "SF Pro Display","SF Pro Text","Hiragino Sans","Noto Sans JP","Segoe UI",Roboto,Helvetica,Arial;
+      --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Hiragino Sans", "Noto Sans JP", sans-serif;
     }
 
     *{box-sizing:border-box}
@@ -128,6 +128,83 @@
     .sb-chat .t{font-size:13px;line-height:1.25}
     .sb-chat .s{font-size:12px;color:var(--muted);line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .sb-chat .d{font-size:11px;color:rgba(255,255,255,.42);margin-left:auto}
+
+        /* HISTORY ROW (GPT-like left dots + menu) */
+    .sb-row{
+      position:relative;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 6px;
+      border-radius:12px;
+    }
+    .sb-row:hover{background:var(--soft)}
+    .sb-link{
+      flex:1;
+      min-width:0;
+      padding:8px 8px;
+      border-radius:10px;
+      color:var(--text);
+      text-decoration:none;
+      font-size:13px;
+      line-height:1.2;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .sb-more{position:relative}
+    .sb-more > summary{list-style:none}
+    .sb-more > summary::-webkit-details-marker{display:none}
+
+    .sb-dots{
+      width:30px;height:30px;
+      border-radius:10px;
+      display:grid;place-items:center;
+      color:rgba(255,255,255,.75);
+      cursor:pointer;
+      user-select:none;
+      border:1px solid transparent;
+      font-size:14px;
+      line-height:1;
+    }
+    .sb-dots:hover{background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.06); color:rgba(255,255,255,.9)}
+
+    .sb-pop{
+      position:absolute;
+      left:0;
+      top:34px;
+      width:200px;
+      background:rgba(20,21,22,.96);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:14px;
+      box-shadow:var(--shadow);
+      padding:8px;
+      z-index:var(--zOverlay);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+    .sb-act{
+      width:100%;
+      text-align:left;
+      padding:10px 10px;
+      border-radius:12px;
+      background:transparent;
+      border:0;
+      color:var(--text);
+      font-size:13px;
+      cursor:pointer;
+    }
+    .sb-act:hover{background:var(--soft)}
+    .sb-act.danger{color:rgba(255,120,120,.95)}
+
+    /* Visual parity for the sidebar "create project" row */
+    .sb-create-project{
+      border:1px solid transparent;
+    }
+    .sb-create-project:hover{
+      background:var(--soft);
+    }
 
     /* USER AREA */
     .sb-bottom{
@@ -237,38 +314,37 @@
     .brand-rail{
       position:absolute;
       left:24px;
-      top:32px;
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      gap:12px;
+      top:80px;
+      width:56px;
       opacity:.95;
       user-select:none;
       pointer-events:none;
-      width:56px;
     }
 
-    .brand-rail .brand-cube{
-      width:50px;
-      height:50px;
-      display:block;
-      opacity:.95;
+    .brand-rail .brand-stack{
+      width:56px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:10px;
     }
 
     .brand-rail .brand-logo-wrap{
       width:56px;
-      display:flex;
-      align-items:flex-start;
-      justify-content:center;
+      height:220px;
+      position:relative;
       overflow:visible;
     }
 
     .brand-rail .brand-logo{
-      width:180px;
+      width:120px;
       height:auto;
       display:block;
       opacity:.95;
-      transform:rotate(90deg);
+      position:absolute;
+      top:0;
+      left:50%;
+      transform:translateX(-50%) rotate(90deg);
       transform-origin:50% 0%;
     }
 
@@ -423,8 +499,6 @@
     .act:hover{background:var(--soft)}
     .act svg{width:18px;height:18px;opacity:.9}
 
-    /* TOOLTIP via title attr (browser default) */
-
     /* RESPONSIVE */
     @media (max-width: 980px){
       :root{--sbw:240px}
@@ -447,7 +521,7 @@
     }
     .burger{display:none}
 
-    /* SETTINGS (responsive icon-only header row placeholder) */
+    /* SETTINGS (UI only) */
     .settings-modal{
       position:fixed;
       inset:0;
@@ -508,6 +582,104 @@
       .settings .tabs{justify-content:flex-start}
     }
 
+    /* CREATE PROJECT MODAL (UI only) */
+    .project-modal{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.35);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:61;
+      padding:18px;
+    }
+    body.project-open .project-modal{display:flex}
+
+    .project-card{
+      width:min(640px, calc(100% - 24px));
+      background:rgba(20,21,22,.96);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:18px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+    .project-card .phd{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:14px 16px;
+      border-bottom:1px solid var(--line);
+    }
+    .project-card .pttl{font-size:16px;color:rgba(255,255,255,.92)}
+    .project-card .pactions{display:flex;align-items:center;gap:8px}
+    .project-card .picon{
+      width:34px;height:34px;border-radius:10px;
+      border:1px solid transparent;background:transparent;color:var(--text);
+      cursor:pointer;display:grid;place-items:center;
+    }
+    .project-card .picon:hover{background:var(--soft);border-color:rgba(255,255,255,.06)}
+    .project-card .picon svg{width:18px;height:18px;opacity:.92}
+
+    .project-card .pbd{padding:14px 16px 18px}
+    .project-card .pname{
+      width:100%;
+      height:44px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.04);
+      color:var(--text);
+      outline:0;
+      padding:0 12px;
+      font-size:14px;
+    }
+
+    .project-card .ptags{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      padding:12px 0 6px;
+    }
+    .project-card .ptag{
+      height:34px;
+      padding:0 12px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.04);
+      color:rgba(255,255,255,.9);
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-size:13px;
+    }
+    .project-card .ptag:hover{background:var(--soft)}
+    .project-card .ptag .dot{font-size:14px;line-height:1}
+
+    .project-card .phint{
+      margin-top:8px;
+      padding:12px 12px;
+      border-radius:14px;
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.08);
+      color:rgba(255,255,255,.82);
+      font-size:13px;
+      line-height:1.6;
+    }
+
+    .project-card .pcreate{
+      margin-top:14px;
+      width:100%;
+      height:44px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.06);
+      color:rgba(255,255,255,.55);
+      font-size:14px;
+      cursor:not-allowed;
+    }
+
     /* Utility */
     .sr-only{
       position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;
@@ -515,7 +687,6 @@
   </style>
 </head>
 
-<!-- 会話開始後は body に class="has-chat" を付ける（UI状態切替用） -->
 <body class="">
   <div class="app">
 
@@ -557,20 +728,37 @@
             </svg>
           </summary>
           <div class="group-body" role="list">
-            <a class="sb-chat" href="#" role="listitem">
-              <div class="t">AI Earth</div>
-              <div style="display:flex;gap:8px;align-items:center">
-                <div class="s">通知設定保存同期実装…</div>
-                <div class="d">1月1日</div>
+            <a class="sb-chat sb-create-project" href="#" role="listitem" aria-label="プロジェクトを新規作成">
+              <div class="t" style="display:flex;align-items:center;gap:10px">
+                <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;opacity:.9;flex:0 0 auto">
+                  <path d="M12 5v14"></path>
+                  <path d="M5 12h14"></path>
+                </svg>
+                <span>プロジェクトを新規作成</span>
               </div>
             </a>
-            <a class="sb-chat" href="#" role="listitem">
-              <div class="t">Sound Factory</div>
-              <div style="display:flex;gap:8px;align-items:center">
-                <div class="s">設計メモ…</div>
-                <div class="d">12月31日</div>
-              </div>
-            </a>
+
+            <div class="sb-row" role="listitem">
+              <details class="sb-more">
+                <summary class="sb-dots" aria-label="メニュー">•••</summary>
+                <div class="sb-pop" role="menu" aria-label="メニュー">
+                  <button type="button" class="sb-act" role="menuitem">名前を変更する</button>
+                  <button type="button" class="sb-act danger" role="menuitem">削除する</button>
+                </div>
+              </details>
+              <a class="sb-link" href="#" aria-label="AI Earth">AI Earth</a>
+            </div>
+
+            <div class="sb-row" role="listitem">
+              <details class="sb-more">
+                <summary class="sb-dots" aria-label="メニュー">•••</summary>
+                <div class="sb-pop" role="menu" aria-label="メニュー">
+                  <button type="button" class="sb-act" role="menuitem">名前を変更する</button>
+                  <button type="button" class="sb-act danger" role="menuitem">削除する</button>
+                </div>
+              </details>
+              <a class="sb-link" href="#" aria-label="Sound Factory">Sound Factory</a>
+            </div>
           </div>
         </details>
 
@@ -582,20 +770,27 @@
             </svg>
           </summary>
           <div class="group-body" role="list">
-            <a class="sb-chat" href="#" role="listitem">
-              <div class="t">オーリアの由来</div>
-              <div style="display:flex;gap:8px;align-items:center">
-                <div class="s">発音はオーリアです…</div>
-                <div class="d">1月1日</div>
-              </div>
-            </a>
-            <a class="sb-chat" href="#" role="listitem">
-              <div class="t">GPT解析速度遅延の原因</div>
-              <div style="display:flex;gap:8px;align-items:center">
-                <div class="s">会話を引き継いで…</div>
-                <div class="d">12月29日</div>
-              </div>
-            </a>
+            <div class="sb-row" role="listitem">
+              <details class="sb-more">
+                <summary class="sb-dots" aria-label="メニュー">•••</summary>
+                <div class="sb-pop" role="menu" aria-label="メニュー">
+                  <button type="button" class="sb-act" role="menuitem">名前を変更する</button>
+                  <button type="button" class="sb-act danger" role="menuitem">削除する</button>
+                </div>
+              </details>
+              <a class="sb-link" href="#" aria-label="オーリアの由来">オーリアの由来</a>
+            </div>
+
+            <div class="sb-row" role="listitem">
+              <details class="sb-more">
+                <summary class="sb-dots" aria-label="メニュー">•••</summary>
+                <div class="sb-pop" role="menu" aria-label="メニュー">
+                  <button type="button" class="sb-act" role="menuitem">名前を変更する</button>
+                  <button type="button" class="sb-act danger" role="menuitem">削除する</button>
+                </div>
+              </details>
+              <a class="sb-link" href="#" aria-label="GPT解析速度遅延の原因">GPT解析速度遅延の原因</a>
+            </div>
           </div>
         </details>
       </div>
@@ -661,53 +856,16 @@
       </div>
 
       <div class="brand-rail" aria-hidden="true">
-        <img class="brand-cube" src="/assets/img/brand/aurea_cube_wh.png" alt="AUREA" />
-        <div class="brand-logo-wrap">
-          <img class="brand-logo" src="/assets/img/brand/aurea_logo_wh.png" alt="AUREA" />
+        <div class="brand-stack">
+          <div class="brand-logo-wrap">
+            <img class="brand-logo" src="/assets/img/brand/aurea_logo_l_wh.png" alt="AUREA" />
+          </div>
         </div>
       </div>
 
       <div class="board" aria-label="会話エリア">
         <div class="chat" aria-label="会話">
-          <!-- サンプル（会話開始後の見た目確認用） -->
-          <!-- body に class="has-chat" を付けると Askバーが下固定になる -->
-          <!--
-          <div class="msg user">
-            <div class="bubble">ありがとう、一旦休憩します。</div>
-          </div>
-          <div class="actions" aria-label="ユーザー操作">
-            <div class="act" title="コピー" aria-label="コピー">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="9" y="9" width="13" height="13" rx="2"></rect>
-                <rect x="2" y="2" width="13" height="13" rx="2"></rect>
-              </svg>
-            </div>
-            <div class="act" title="編集" aria-label="編集">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 20h9"></path>
-                <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
-              </svg>
-            </div>
-          </div>
-
-          <div class="msg">
-            <div class="bubble">記録しました。</div>
-          </div>
-          <div class="actions" aria-label="AUREA操作">
-            <div class="act" title="コピー" aria-label="コピー">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="9" y="9" width="13" height="13" rx="2"></rect>
-                <rect x="2" y="2" width="13" height="13" rx="2"></rect>
-              </svg>
-            </div>
-            <div class="act" title="もう一度試す" aria-label="もう一度試す">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 12a9 9 0 1 1-3-6.7"></path>
-                <path d="M21 3v6h-6"></path>
-              </svg>
-            </div>
-          </div>
-          -->
+          <!-- （UIのみ） -->
         </div>
       </div>
 
@@ -734,30 +892,6 @@
                       <path d="M12 2l3 7 7 3-7 3-3 7-3-7-7-3 7-3 3-7z"></path>
                     </svg>
                     画像を作成する
-                  </a>
-                  <a href="#" role="menuitem" aria-label="Deep Research">
-                    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M21 21l-4.3-4.3"></path><circle cx="11" cy="11" r="7"></circle><path d="M11 8v6"></path><path d="M8 11h6"></path>
-                    </svg>
-                    Deep Research
-                  </a>
-                  <a href="#" role="menuitem" aria-label="ショッピングアシスタント">
-                    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M6 6h15l-1.5 9h-13z"></path><path d="M6 6l-2 0"></path><path d="M9 6a3 3 0 0 1 6 0"></path>
-                    </svg>
-                    ショッピングアシスタント
-                  </a>
-                  <a href="#" role="menuitem" aria-label="エージェントモード">
-                    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M12 2l2.2 6.8H21l-5.5 4 2.1 6.7L12 15.7 6.4 19.5l2.1-6.7L3 8.8h6.8L12 2z"></path>
-                    </svg>
-                    エージェントモード
-                  </a>
-                  <a href="#" role="menuitem" aria-label="さらに表示">
-                    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M6 12h12"></path><path d="M12 6v12"></path>
-                    </svg>
-                    さらに表示
                   </a>
                 </div>
               </details>
@@ -794,7 +928,7 @@
         </div>
 
         <div class="ask-note" aria-label="注意書き">
-          AUREA の回答は様々な AI 検索情報をまとめ、要約していますが、必ずしも正確とは限りませんので、重要な情報は更に確認をしてください。
+          AUREA の回答は"複数のAI検索情報"を集約/解析/判断/要約をしていますが、必ずしも正確とは限りませんので、重要な情報は更に確認をしてください。
         </div>
       </div>
 
@@ -843,5 +977,70 @@
       </div>
     </div>
   </div>
+
+  <!-- CREATE PROJECT MODAL (UI only) -->
+  <div class="project-modal" aria-hidden="true">
+    <div class="project-card" role="dialog" aria-label="プロジェクトを作成する">
+      <div class="phd">
+        <div class="pttl">プロジェクトを作成する</div>
+        <div class="pactions">
+          <button class="picon" type="button" aria-label="設定">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"></path>
+              <path d="M19.4 15a7.9 7.9 0 0 0 .1-1 7.9 7.9 0 0 0-.1-1l2-1.5-2-3.4-2.4 1a8.4 8.4 0 0 0-1.7-1l-.3-2.6H9l-.3 2.6a8.4 8.4 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.5a7.9 7.9 0 0 0-.1 1 7.9 7.9 0 0 0 .1 1l-2 1.5 2 3.4 2.4-1a8.4 8.4 0 0 0 1.7 1l.3 2.6h6l.3-2.6a8.4 8.4 0 0 0 1.7-1l2.4 1 2-3.4-2-1.5z"></path>
+            </svg>
+          </button>
+          <button class="picon" type="button" aria-label="閉じる">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 6L6 18"></path><path d="M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="pbd">
+        <input class="pname" type="text" placeholder="プロジェクト名" aria-label="プロジェクト名" />
+
+        <div class="ptags" aria-label="テンプレート">
+          <button class="ptag" type="button"><span class="dot">💰</span>投資</button>
+          <button class="ptag" type="button"><span class="dot">📘</span>宿題</button>
+          <button class="ptag" type="button"><span class="dot">✍️</span>ライティング</button>
+          <button class="ptag" type="button"><span class="dot">❤️</span>健康</button>
+          <button class="ptag" type="button"><span class="dot">✈️</span>旅行</button>
+        </div>
+
+        <div class="phint">
+          プロジェクトを使用すると、チャット、ファイル、カスタム指示が 1 か所にまとまります。これは進行中の作業にも、単に物事を整理するためにも使用できます。
+        </div>
+
+        <button class="pcreate" type="button" disabled>プロジェクトを作成する</button>
+      </div>
+    </div>
+  </div>
+    <script>
+    // 外側クリックで <details> を閉じる（ユーザーメニュー / Askの＋メニュー）
+    document.addEventListener('pointerdown', (e) => {
+      const userDetails = document.querySelector('.user-menu details');
+      const plusDetails = document.querySelector('.plus-menu details');
+      const moreDetails = document.querySelectorAll('.sb-more');
+
+      // ユーザーメニュー外を押したら閉じる
+      if (userDetails && userDetails.hasAttribute('open')) {
+        if (!userDetails.contains(e.target)) userDetails.removeAttribute('open');
+      }
+
+      // ＋メニュー外を押したら閉じる
+      if (plusDetails && plusDetails.hasAttribute('open')) {
+        if (!plusDetails.contains(e.target)) plusDetails.removeAttribute('open');
+      }
+
+      // 履歴の「•••」外を押したら閉じる（開いてるものだけ）
+      moreDetails.forEach(d => {
+        if (d.hasAttribute('open') && !d.contains(e.target)) {
+          d.removeAttribute('open');
+        }
+      });
+    });
+  </script>
 </body>
 </html>
