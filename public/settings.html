@@ -563,7 +563,6 @@
           </header>
 
           <div class="content-bd">
-            <!-- 見出し（外観/言語）を消しても分かる→削除（行だけ残す） -->
             <div class="section" aria-label="一般設定">
               <div class="row">
                 <div class="l">
@@ -617,19 +616,20 @@
                   <option>中文（繁體）</option>
                 </select>
               </div>
+
+              <!-- 送信ショートカット：一般セクション内に配置 -->
+              <div class="row">
+                <div class="l">
+                  <div class="k">送信ショートカット</div>
+                  <div class="v">メッセージ送信に使用するキーを選択します。</div>
+                </div>
+                <select class="select" aria-label="送信ショートカット">
+                  <option selected>⌘ + Enterで送信（Enterは改行）</option>
+                  <option>Enterで送信（Shift + Enterで改行）</option>
+                </select>
+              </div>
             </div>
           </div>
-        </div>
-
-        <div class="row">
-          <div class="l">
-            <div class="k">送信ショートカット</div>
-            <div class="v">メッセージ送信に使用するキーを選択します。</div>
-          </div>
-          <select class="select" aria-label="送信ショートカット">
-            <option selected>⌘ + Enterで送信（Enterは改行）</option>
-            <option>Enterで送信（Shift + Enterで改行）</option>
-          </select>
         </div>
 
         <!-- ===== Apps ===== -->
@@ -790,6 +790,35 @@
               </div>
             </div>
 
+            <!-- Knowledge Base：データタブ内に配置 -->
+            <div class="section" aria-label="Knowledge Base">
+              <div class="sec-title">Knowledge Base</div>
+              <div class="sec-desc">
+                Google Drive や OneDrive など、ユーザー・企業のストレージに保存された
+                ドキュメントを参照します。AUREA 自身はファイルを保存せず、
+                読み取りと検索のみを行います。
+              </div>
+
+              <div class="row" style="margin-top:10px;border-top:0;padding-top:0">
+                <div class="l">
+                  <div class="k">クラウドストレージ</div>
+                  <div class="v">未接続</div>
+                </div>
+              </div>
+
+              <div class="row">
+                <button class="btn secondary" type="button">
+                  クラウドストレージと接続する（Google Drive）
+                </button>
+              </div>
+
+              <div class="row">
+                <button class="btn secondary" type="button">
+                  ドキュメントを一時アップロード（AUREAには保存されません）
+                </button>
+              </div>
+            </div>
+
             <div class="section" aria-label="削除">
               <div class="row" style="border-top:0;padding-top:0">
                 <div class="l">
@@ -846,34 +875,6 @@
               </div>
             </div>
           </div>
-
-        <div class="section" aria-label="Knowledge Base">
-          <div class="sec-title">Knowledge Base</div>
-          <div class="sec-desc">
-            Google Drive や OneDrive など、ユーザー・企業のストレージに保存された
-            ドキュメントを参照します。AUREA 自身はファイルを保存せず、
-            読み取りと検索のみを行います。
-          </div>
-
-          <div class="row" style="margin-top:10px">
-            <div class="l">
-              <div class="k">クラウドストレージ</div>
-              <div class="v">未接続</div>
-            </div>
-          </div>
-
-          <div class="row">
-            <button class="btn secondary" type="button">
-              クラウドストレージと接続する（Google Drive）
-            </button>
-          </div>
-
-          <div class="row">
-            <button class="btn secondary" type="button">
-              ドキュメントを一時アップロード（AUREAには保存されません）
-            </button>
-          </div>
-        </div>
 
         <!-- ===== Security ===== -->
         <div class="panel panel-security">
