@@ -4,6 +4,10 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>AUREA Settings</title>
+
+  <!-- Font Awesome（全アイコンはここから） -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
   <style>
     :root{
       --bg:#0e0f10;
@@ -17,7 +21,6 @@
       --modalBorder: rgba(255,255,255,.10);
 
       --card:rgba(255,255,255,.03);
-      --card2:rgba(255,255,255,.02);
       --cardBorder:rgba(255,255,255,.10);
 
       --dangerBg: rgba(255,80,80,.10);
@@ -40,7 +43,7 @@
       -moz-osx-font-smoothing:grayscale;
     }
 
-    /* ===== Overlay + Modal ===== */
+    /* Overlay + Modal */
     .overlay{
       position:fixed;
       inset:0;
@@ -80,20 +83,19 @@
       z-index:4;
     }
     .close:hover{background:var(--soft);border-color:rgba(255,255,255,.06)}
-    .close svg{width:18px;height:18px;opacity:.92}
+    .close i{font-size:16px;opacity:.92}
 
-    /* ===== Tabs (CSS-only) ===== */
+    /* Tabs (CSS-only) */
     .tab-input{
       position:fixed;
       left:-9999px;
-      top:auto;
       width:1px;height:1px;
       overflow:hidden;
       opacity:0;
       pointer-events:none;
     }
 
-    /* ===== Left nav ===== */
+    /* Left nav */
     .nav{
       border-right:1px solid var(--line);
       background:linear-gradient(180deg, rgba(255,255,255,.02), transparent 35%);
@@ -141,7 +143,12 @@
       user-select:none;
     }
     .nav-item:hover{background:var(--soft)}
-    .nav-ic{width:16px;height:16px;opacity:.9;flex:0 0 auto}
+    .nav-ic{
+      width:18px;height:18px;
+      display:grid;place-items:center;
+      opacity:.9;flex:0 0 auto;
+    }
+    .nav-ic i{font-size:14px}
 
     #tab-general:checked ~ .overlay .modal .nav label[for="tab-general"],
     #tab-apps:checked ~ .overlay .modal .nav label[for="tab-apps"],
@@ -153,7 +160,7 @@
       border-color:rgba(255,255,255,.10);
     }
 
-    /* ===== Right content ===== */
+    /* Right content */
     .content{
       min-width:0;
       display:flex;
@@ -212,13 +219,6 @@
       padding:14px 14px;
       margin-bottom:14px;
     }
-    .sec-hd{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:12px;
-      margin-bottom:10px;
-    }
     .sec-title{
       font-size:14px;
       color:rgba(255,255,255,.92);
@@ -276,7 +276,7 @@
       white-space:nowrap;
     }
     .btn:hover{background:rgba(255,255,255,.08)}
-    .btn svg{width:16px;height:16px;opacity:.9}
+    .btn i{font-size:14px;opacity:.92}
 
     .btn.secondary{
       background:transparent;
@@ -318,90 +318,107 @@
       padding:0 10px;
       font-size:13px;
       outline:0;
-      width:min(360px, 100%);
+      width:min(420px, 100%);
     }
 
     .muted{color:rgba(255,255,255,.58)}
 
-    /* ===== Apps (AI Earth-like grid) ===== */
-    .apps-wrap{
-      background:radial-gradient(900px 500px at 30% 10%, rgba(80,140,255,.20), transparent 55%),
-                 radial-gradient(900px 500px at 85% 70%, rgba(120,80,255,.16), transparent 60%),
-                 rgba(8,18,30,.85);
-      border:1px solid rgba(255,255,255,.08);
-      border-radius:16px;
-      padding:18px;
-    }
-    .apps-head{
+    /* Apps */
+    .apps-header{
       display:flex;
       align-items:flex-start;
       justify-content:space-between;
       gap:12px;
-      margin-bottom:12px;
+      margin-bottom:10px;
     }
     .apps-title{
-      font-size:18px;
+      font-size:16px;
       font-weight:700;
-      letter-spacing:.01em;
-      color:rgba(255,255,255,.95);
+      color:rgba(255,255,255,.94);
     }
     .apps-sub{
       margin-top:6px;
       font-size:12px;
-      color:rgba(255,255,255,.65);
+      color:rgba(255,255,255,.58);
       line-height:1.45;
     }
+
     .apps-grid{
       display:grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap:14px;
-      margin-top:14px;
+      margin-top:12px;
     }
+
     .saas{
       border-radius:16px;
       border:1px solid rgba(255,255,255,.10);
-      background:rgba(255,255,255,.06);
+      background:rgba(255,255,255,.04);
       padding:14px;
-      min-height:128px;
+      min-height:150px;
       display:flex;
       flex-direction:column;
       justify-content:space-between;
-      box-shadow: 0 12px 30px rgba(0,0,0,.18) inset;
     }
+
     .saas-top{
       display:flex;
       align-items:center;
       justify-content:space-between;
       gap:10px;
     }
-    .saas-ico{
-      width:34px;height:34px;border-radius:999px;
+
+    .brand{
+      width:38px;height:38px;border-radius:999px;
       display:grid;place-items:center;
-      font-size:14px;font-weight:700;
       border:1px solid rgba(255,255,255,.12);
-      background:rgba(0,0,0,.20);
-      color:rgba(255,255,255,.92);
+      background:rgba(0,0,0,.18);
     }
+    .brand i{font-size:16px;color:#fff}
+
+    .b-google{background:#4285F4}
+    .b-gmail{background:#EA4335}
+    .b-drive{background:#0F9D58}
+    .b-github{background:#111827}
+    .b-notion{background:#111111}
+    .b-slack{background:#4A154B}
+    .b-dropbox{background:#0061FF}
+    .b-jira{background:#0052CC}
+    .b-salesforce{background:#00A1E0}
+    .b-zoom{background:#2D8CFF}
+
     .saas-name{
       margin-top:10px;
       font-size:14px;
       font-weight:700;
       color:rgba(255,255,255,.95);
     }
-    .saas-btn{
+
+    .status-btn{
       margin-top:12px;
-      height:34px;
+      height:40px;
       border-radius:999px;
-      border:1px solid rgba(255,255,255,.16);
+      border:2px solid rgba(255,255,255,.12);
       background:rgba(0,0,0,.18);
       color:rgba(255,255,255,.92);
-      font-size:13px;
+      font-size:18px;
+      font-weight:800;
+      letter-spacing:.02em;
       cursor:pointer;
     }
-    .saas-btn:hover{background:rgba(255,255,255,.08)}
+    .status-btn:hover{background:rgba(255,255,255,.08)}
+    .status-btn.off{
+      border-color:rgba(255,255,255,.14);
+      color:rgba(255,255,255,.92);
+    }
+    .status-btn.on{
+      border-color:rgba(120,220,140,.35);
+      background:rgba(120,220,140,.10);
+      color:rgba(220,255,230,.98);
+    }
 
     @media (max-width: 1080px){
-      .apps-grid{grid-template-columns: repeat(4, minmax(0, 1fr));}
+      .apps-grid{grid-template-columns: repeat(3, minmax(0, 1fr));}
     }
     @media (max-width: 920px){
       .modal{grid-template-columns: 1fr; height:min(820px, calc(100vh - 64px))}
@@ -419,85 +436,6 @@
       }
       .apps-grid{grid-template-columns: repeat(2, minmax(0, 1fr));}
     }
-
-    /* ===== Trainer (Mac dictionary-ish UI mock) ===== */
-    .dict{
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(255,255,255,.02);
-      border-radius:14px;
-      overflow:hidden;
-    }
-    .dict-top{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      padding:12px 12px;
-      background:rgba(255,255,255,.02);
-      border-bottom:1px solid rgba(255,255,255,.08);
-    }
-    .dict-title{
-      font-size:13px;
-      color:rgba(255,255,255,.90);
-      font-weight:700;
-    }
-    .dict-actions{
-      display:flex;
-      align-items:center;
-      gap:8px;
-    }
-    .mini{
-      width:32px;height:32px;
-      border-radius:10px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(255,255,255,.05);
-      color:rgba(255,255,255,.92);
-      cursor:pointer;
-      display:grid;place-items:center;
-      font-size:16px;
-      line-height:1;
-    }
-    .mini:hover{background:rgba(255,255,255,.08)}
-    .dict-body{
-      display:grid;
-      grid-template-columns: 1fr 220px;
-      gap:0;
-      min-height:220px;
-    }
-    .dict-list{
-      border-right:1px solid rgba(255,255,255,.08);
-      padding:10px;
-      display:flex;
-      flex-direction:column;
-      gap:8px;
-      overflow:auto;
-      max-height:320px;
-    }
-    .dict-row{
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(255,255,255,.03);
-      border-radius:12px;
-      padding:10px;
-      display:flex;
-      flex-direction:column;
-      gap:4px;
-    }
-    .dict-row .t{font-size:12px;color:rgba(255,255,255,.90);font-weight:700}
-    .dict-row .d{font-size:11px;color:rgba(255,255,255,.60)}
-    .dict-form{
-      padding:10px 10px 12px;
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-    }
-    .dict-form .label{font-size:12px;color:rgba(255,255,255,.70)}
-    .dict-form .input{width:100%}
-    .dict-form .btn{justify-content:center}
-
-    @media (max-width: 920px){
-      .dict-body{grid-template-columns: 1fr}
-      .dict-list{border-right:0;border-bottom:1px solid rgba(255,255,255,.08);max-height:240px}
-    }
   </style>
 </head>
 
@@ -512,9 +450,7 @@
   <div class="overlay" aria-hidden="false">
     <div class="modal" role="dialog" aria-label="設定">
       <button class="close" type="button" aria-label="閉じる">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M18 6L6 18"></path><path d="M6 6l12 12"></path>
-        </svg>
+        <i class="fa-solid fa-xmark"></i>
       </button>
 
       <!-- Left nav -->
@@ -525,48 +461,33 @@
 
         <div class="nav-list" role="list">
           <label class="nav-item" for="tab-general" role="listitem">
-            <svg class="nav-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 2l3 7 7 3-7 3-3 7-3-7-7-3 7-3 3-7z"></path>
-            </svg>
+            <span class="nav-ic"><i class="fa-solid fa-sliders"></i></span>
             一般
           </label>
 
+          <!-- 左カラム：アプリのアイコンを未設定→確実に設定 -->
           <label class="nav-item" for="tab-apps" role="listitem">
-            <svg class="nav-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M7 3h4v4H7z"></path><path d="M13 3h4v4h-4z"></path>
-              <path d="M7 9h4v4H7z"></path><path d="M13 9h4v4h-4z"></path>
-              <path d="M7 15h4v4H7z"></path><path d="M13 15h4v4h-4z"></path>
-            </svg>
+            <span class="nav-ic"><i class="fa-solid fa-plug-circle-bolt"></i></span>
             アプリ
           </label>
 
           <label class="nav-item" for="tab-data" role="listitem">
-            <svg class="nav-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M4 6h16"></path><path d="M6 6v14"></path><path d="M18 6v14"></path><path d="M8 10h8"></path><path d="M8 14h8"></path>
-            </svg>
+            <span class="nav-ic"><i class="fa-solid fa-database"></i></span>
             データ
           </label>
 
           <label class="nav-item" for="tab-trainer" role="listitem">
-            <svg class="nav-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M4 19V7"></path><path d="M20 19V7"></path>
-              <path d="M7 7h10"></path><path d="M7 19h10"></path>
-              <path d="M9 11h6"></path><path d="M9 15h6"></path>
-            </svg>
+            <span class="nav-ic"><i class="fa-solid fa-layer-group"></i></span>
             AUREA Data Trainer
           </label>
 
           <label class="nav-item" for="tab-security" role="listitem">
-            <svg class="nav-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 21s8-4.5 8-11V5l-8-3-8 3v5c0 6.5 8 11 8 11z"></path>
-            </svg>
+            <span class="nav-ic"><i class="fa-solid fa-shield-halved"></i></span>
             セキュリティ
           </label>
 
           <label class="nav-item" for="tab-account" role="listitem">
-            <svg class="nav-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20 21a8 8 0 0 0-16 0"></path><circle cx="12" cy="7" r="4"></circle>
-            </svg>
+            <span class="nav-ic"><i class="fa-regular fa-circle-user"></i></span>
             アカウント
           </label>
         </div>
@@ -580,20 +501,13 @@
           <header class="content-hd">
             <div style="min-width:0">
               <div class="content-title">一般</div>
-              <div class="content-sub">テーマ、表示言語を管理します。</div>
+              <div class="content-sub">表示言語を管理します。</div>
             </div>
-            <!-- 右上の設定ボタン（チップ）削除済み -->
           </header>
 
           <div class="content-bd">
-            <div class="section" aria-label="外観">
-              <div class="sec-hd">
-                <div style="min-width:0">
-                  <div class="sec-title">外観</div>
-                  <div class="sec-desc">テーマを選択します。</div>
-                </div>
-              </div>
-
+            <!-- 見出し（外観/言語）を消しても分かる→削除（行だけ残す） -->
+            <div class="section" aria-label="一般設定">
               <div class="row">
                 <div class="l">
                   <div class="k">テーマ</div>
@@ -604,15 +518,6 @@
                   <option>ライト</option>
                   <option selected>ダーク</option>
                 </select>
-              </div>
-            </div>
-
-            <div class="section" aria-label="言語">
-              <div class="sec-hd">
-                <div style="min-width:0">
-                  <div class="sec-title">言語</div>
-                  <div class="sec-desc">表示・出力言語をここで管理します（国分の言語を用意）。</div>
-                </div>
               </div>
 
               <div class="row">
@@ -656,8 +561,6 @@
                 </select>
               </div>
             </div>
-
-            <!-- 指示により削除済み：チャット表示 / 通知 / デフォルト -->
           </div>
         </div>
 
@@ -666,129 +569,124 @@
           <header class="content-hd">
             <div style="min-width:0">
               <div class="content-title">アプリ</div>
-              <div class="content-sub">SaaS連携を一覧で管理します。</div>
+              <div class="content-sub">SaaSへ接続して、AUREAとAPI連携します。</div>
             </div>
           </header>
 
           <div class="content-bd">
-            <div class="apps-wrap" aria-label="アプリとコネクター">
-              <div class="apps-head">
-                <div>
+            <div class="section" aria-label="アプリとコネクター">
+              <div class="apps-header">
+                <div style="min-width:0">
                   <div class="apps-title">アプリとコネクター</div>
-                  <div class="apps-sub">利用するSaaSを接続して、AUREA内で操作を完結します。</div>
+                  <div class="apps-sub">接続状態が「未接続 / 接続」で明確に表示されます。</div>
                 </div>
                 <button class="btn" type="button">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 5v14"></path><path d="M5 12h14"></path>
-                  </svg>
-                  + SaaS 追加
+                  <i class="fa-solid fa-plus"></i>
+                  SaaS 追加
                 </button>
               </div>
 
               <div class="apps-grid" aria-label="SaaS一覧">
                 <div class="saas">
                   <div class="saas-top">
-                    <div class="saas-ico" aria-hidden="true">G</div>
+                    <div class="brand b-google" aria-hidden="true"><i class="fa-brands fa-google"></i></div>
                   </div>
                   <div>
                     <div class="saas-name">Google</div>
-                    <button class="saas-btn" type="button">接続</button>
+                    <button class="status-btn off" type="button">未接続</button>
                   </div>
                 </div>
 
                 <div class="saas">
                   <div class="saas-top">
-                    <div class="saas-ico" aria-hidden="true">G</div>
+                    <div class="brand b-gmail" aria-hidden="true"><i class="fa-solid fa-envelope"></i></div>
                   </div>
                   <div>
                     <div class="saas-name">Gmail</div>
-                    <button class="saas-btn" type="button">接続</button>
+                    <button class="status-btn off" type="button">未接続</button>
                   </div>
                 </div>
 
                 <div class="saas">
                   <div class="saas-top">
-                    <div class="saas-ico" aria-hidden="true">D</div>
+                    <div class="brand b-drive" aria-hidden="true"><i class="fa-brands fa-google-drive"></i></div>
                   </div>
                   <div>
                     <div class="saas-name">Google Drive</div>
-                    <button class="saas-btn" type="button">接続</button>
+                    <!-- 例として接続済みを1つ置く（見た目確認用） -->
+                    <button class="status-btn on" type="button">接続</button>
                   </div>
                 </div>
 
                 <div class="saas">
                   <div class="saas-top">
-                    <div class="saas-ico" aria-hidden="true">GH</div>
+                    <div class="brand b-github" aria-hidden="true"><i class="fa-brands fa-github"></i></div>
                   </div>
                   <div>
                     <div class="saas-name">GitHub</div>
-                    <button class="saas-btn" type="button">接続</button>
+                    <button class="status-btn off" type="button">未接続</button>
                   </div>
                 </div>
 
                 <div class="saas">
                   <div class="saas-top">
-                    <div class="saas-ico" aria-hidden="true">N</div>
+                    <div class="brand b-notion" aria-hidden="true"><i class="fa-brands fa-notion"></i></div>
                   </div>
                   <div>
                     <div class="saas-name">Notion</div>
-                    <button class="saas-btn" type="button">接続</button>
+                    <button class="status-btn off" type="button">未接続</button>
                   </div>
                 </div>
 
                 <div class="saas">
                   <div class="saas-top">
-                    <div class="saas-ico" aria-hidden="true">S</div>
+                    <div class="brand b-slack" aria-hidden="true"><i class="fa-brands fa-slack"></i></div>
                   </div>
                   <div>
                     <div class="saas-name">Slack</div>
-                    <button class="saas-btn" type="button">接続</button>
+                    <button class="status-btn off" type="button">未接続</button>
                   </div>
                 </div>
 
                 <div class="saas">
                   <div class="saas-top">
-                    <div class="saas-ico" aria-hidden="true">DB</div>
+                    <div class="brand b-dropbox" aria-hidden="true"><i class="fa-brands fa-dropbox"></i></div>
                   </div>
                   <div>
                     <div class="saas-name">Dropbox</div>
-                    <button class="saas-btn" type="button">接続</button>
+                    <button class="status-btn off" type="button">未接続</button>
                   </div>
                 </div>
 
                 <div class="saas">
                   <div class="saas-top">
-                    <div class="saas-ico" aria-hidden="true">J</div>
+                    <div class="brand b-jira" aria-hidden="true"><i class="fa-brands fa-jira"></i></div>
                   </div>
                   <div>
                     <div class="saas-name">Jira</div>
-                    <button class="saas-btn" type="button">接続</button>
+                    <button class="status-btn off" type="button">未接続</button>
                   </div>
                 </div>
 
                 <div class="saas">
                   <div class="saas-top">
-                    <div class="saas-ico" aria-hidden="true">SF</div>
+                    <div class="brand b-salesforce" aria-hidden="true"><i class="fa-brands fa-salesforce"></i></div>
                   </div>
                   <div>
                     <div class="saas-name">Salesforce</div>
-                    <button class="saas-btn" type="button">接続</button>
+                    <button class="status-btn off" type="button">未接続</button>
                   </div>
                 </div>
 
                 <div class="saas">
                   <div class="saas-top">
-                    <div class="saas-ico" aria-hidden="true">Z</div>
+                    <div class="brand b-zoom" aria-hidden="true"><i class="fa-brands fa-zoom"></i></div>
                   </div>
                   <div>
                     <div class="saas-name">Zoom</div>
-                    <button class="saas-btn" type="button">接続</button>
+                    <button class="status-btn off" type="button">未接続</button>
                   </div>
                 </div>
-              </div>
-
-              <div style="margin-top:12px;font-size:12px;color:rgba(255,255,255,.65)">
-                ※ Google連携はAI Earthで完結できていた前提で、他SaaSも同じ「接続」導線で展開（本番実装は別工程）。
               </div>
             </div>
           </div>
@@ -799,58 +697,46 @@
           <header class="content-hd">
             <div style="min-width:0">
               <div class="content-title">データ</div>
-              <div class="content-sub">保存設定の詳細を確認し、削除操作を実行できます。</div>
+              <div class="content-sub">保存先と削除操作を管理します。</div>
             </div>
           </header>
 
           <div class="content-bd">
             <div class="section" aria-label="保存設定">
-              <div class="sec-hd">
-                <div style="min-width:0">
-                  <div class="sec-title">保存設定</div>
-                  <div class="sec-desc">どのデータが保持されるかを確認します。</div>
-                </div>
-              </div>
+              <div class="sec-title">保存設定</div>
 
               <div class="row">
                 <div class="l">
                   <div class="k">会話</div>
-                  <div class="v">すべての会話は保存されます（固定仕様）。</div>
+                  <div class="v">保存先：AUREA Cloud（プロジェクトDB / ストレージ）</div>
                 </div>
-                <span class="muted">Always on</span>
-              </div>
-
-              <div class="row">
-                <div class="l">
-                  <div class="k">添付ファイル</div>
-                  <div class="v">画像・テキスト添付は会話に紐付いて保持されます。</div>
-                </div>
-                <span class="muted">Enabled</span>
+                <span class="muted">Encrypted</span>
               </div>
 
               <div class="row">
                 <div class="l">
                   <div class="k">保存場所</div>
-                  <div class="v">クラウドに暗号化して保存します。</div>
+                  <div class="v">クラウド／端末内を選択できます。</div>
                 </div>
-                <span class="muted">Cloud</span>
+                <select class="select" aria-label="保存場所">
+                  <option selected>クラウド</option>
+                  <option>端末内</option>
+                </select>
               </div>
             </div>
 
             <div class="section" aria-label="削除">
-              <div class="sec-hd">
-                <div style="min-width:0">
-                  <div class="sec-title">削除</div>
-                  <div class="sec-desc">この操作は取り消せません。</div>
-                </div>
-              </div>
+              <div class="sec-title">削除</div>
 
               <div class="row">
                 <div class="l">
                   <div class="k">すべてのチャットを削除する</div>
                   <div class="v">全チャット履歴を完全に削除します。</div>
                 </div>
-                <button class="btn danger" type="button">削除</button>
+                <button class="btn danger" type="button">
+                  <i class="fa-solid fa-trash"></i>
+                  削除
+                </button>
               </div>
             </div>
           </div>
@@ -861,101 +747,15 @@
           <header class="content-hd">
             <div style="min-width:0">
               <div class="content-title">AUREA Data Trainer</div>
-              <div class="content-sub">企業AI仕様につながるデータ整備・学習準備。</div>
+              <div class="content-sub">（この項目は別で対応）</div>
             </div>
           </header>
 
           <div class="content-bd">
-            <!-- データセット -->
-            <div class="section" aria-label="データセット">
-              <div class="sec-hd">
-                <div style="min-width:0">
-                  <div class="sec-title">データセット</div>
-                  <div class="sec-desc">登録済みデータセットを管理します。</div>
-                </div>
-                <button class="btn secondary" type="button">管理</button>
-              </div>
-
-              <div class="dict" aria-label="データセット管理UI">
-                <div class="dict-top">
-                  <div class="dict-title">データセット一覧</div>
-                  <div class="dict-actions">
-                    <button class="mini" type="button" aria-label="追加">+</button>
-                    <button class="mini" type="button" aria-label="削除">−</button>
-                  </div>
-                </div>
-                <div class="dict-body">
-                  <div class="dict-list" role="listbox" aria-label="データセット">
-                    <div class="dict-row" role="option" aria-selected="true">
-                      <div class="t">Company Knowledge Base</div>
-                      <div class="d">社内ドキュメント / FAQ / ポリシー</div>
-                    </div>
-                    <div class="dict-row" role="option">
-                      <div class="t">Support Tickets</div>
-                      <div class="d">問い合わせログ / 対応履歴</div>
-                    </div>
-                  </div>
-                  <div class="dict-form" aria-label="編集">
-                    <div class="label">名前</div>
-                    <input class="input" type="text" value="Company Knowledge Base" />
-                    <div class="label">説明</div>
-                    <input class="input" type="text" value="社内ドキュメント / FAQ / ポリシー" />
-                    <button class="btn ok" type="button">保存</button>
-                    <div class="muted" style="font-size:12px;line-height:1.5">
-                      ※ v1はUI確認用。実装では右「管理」から同UIをモーダル化してもOK。
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <div class="section">
+              <div class="sec-title">準備中</div>
+              <div class="sec-desc">このタブは次の会話で詰めます。</div>
             </div>
-
-            <!-- データを追加（データセットと同仕様） -->
-            <div class="section" aria-label="データを追加">
-              <div class="sec-hd">
-                <div style="min-width:0">
-                  <div class="sec-title">データを追加</div>
-                  <div class="sec-desc">学習対象データ（ファイル/URL/テキスト）を追加します。</div>
-                </div>
-                <button class="btn secondary" type="button">管理</button>
-              </div>
-
-              <div class="dict" aria-label="データ追加UI">
-                <div class="dict-top">
-                  <div class="dict-title">追加対象</div>
-                  <div class="dict-actions">
-                    <button class="mini" type="button" aria-label="追加">+</button>
-                    <button class="mini" type="button" aria-label="削除">−</button>
-                  </div>
-                </div>
-                <div class="dict-body">
-                  <div class="dict-list" role="listbox" aria-label="追加対象一覧">
-                    <div class="dict-row" role="option" aria-selected="true">
-                      <div class="t">https://example.com/policies</div>
-                      <div class="d">URL</div>
-                    </div>
-                    <div class="dict-row" role="option">
-                      <div class="t">Support Export 2026-01.csv</div>
-                      <div class="d">File</div>
-                    </div>
-                  </div>
-                  <div class="dict-form" aria-label="追加編集">
-                    <div class="label">種別</div>
-                    <select class="select" aria-label="種別">
-                      <option selected>URL</option>
-                      <option>File</option>
-                      <option>Text</option>
-                    </select>
-                    <div class="label">内容</div>
-                    <input class="input" type="text" value="https://example.com/policies" />
-                    <button class="btn ok" type="button">追加</button>
-                    <div class="muted" style="font-size:12px;line-height:1.5">
-                      ※ 「データセット」と「データを追加」は分離した方が運用しやすい前提で固定。
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
           </div>
         </div>
 
@@ -964,61 +764,38 @@
           <header class="content-hd">
             <div style="min-width:0">
               <div class="content-title">セキュリティ</div>
-              <div class="content-sub">サインイン情報と、デバイス・セッションを管理します。</div>
+              <div class="content-sub">サインイン情報と、端末を管理します。</div>
             </div>
           </header>
 
           <div class="content-bd">
             <div class="section" aria-label="サインイン">
-              <div class="sec-hd">
-                <div style="min-width:0">
-                  <div class="sec-title">サインイン</div>
-                  <div class="sec-desc">登録メールアドレスの設定／編集。</div>
-                </div>
-              </div>
+              <div class="sec-title">サインイン</div>
 
               <div class="row">
                 <div class="l">
                   <div class="k">登録メールアドレス</div>
-                  <div class="v">ログインに使用するメール。</div>
+                  <div class="v">hiroyuki.sugiura@invitation.co</div>
                 </div>
-                <input class="input" type="email" value="hiroyuki.sugiura@invitation.co" />
+                <button class="btn secondary" type="button">
+                  <i class="fa-solid fa-pen"></i>
+                  変更
+                </button>
               </div>
-
-              <div class="row">
-                <div class="l">
-                  <div class="k">パスワード</div>
-                  <div class="v">メール／パスワードでログイン（v1）。</div>
-                </div>
-                <button class="btn secondary" type="button">変更</button>
-              </div>
-
-              <!-- 指示により削除：2FA -->
             </div>
 
             <div class="section" aria-label="信頼できるデバイス">
-              <div class="sec-hd">
-                <div style="min-width:0">
-                  <div class="sec-title">信頼できるデバイス</div>
-                  <div class="sec-desc">初回接続した端末を表示します。</div>
-                </div>
-                <button class="btn secondary" type="button">管理</button>
-              </div>
+              <div class="sec-title">信頼できるデバイス</div>
 
               <div class="row">
                 <div class="l">
-                  <div class="k">MacBook Pro（このデバイス）</div>
-                  <div class="v">Japan ・ Chrome</div>
+                  <div class="k">端末</div>
+                  <div class="v">MacBook Pro ・ Japan ・ Chrome</div>
                 </div>
-                <span class="muted">Trusted</span>
-              </div>
-
-              <div class="row">
-                <div class="l">
-                  <div class="k">このデバイスをログアウトさせる</div>
-                  <div class="v">この端末のセッションを切断します。</div>
-                </div>
-                <button class="btn danger" type="button">ログアウト</button>
+                <button class="btn danger" type="button">
+                  <i class="fa-solid fa-link-slash"></i>
+                  この端末を解除
+                </button>
               </div>
             </div>
           </div>
@@ -1035,12 +812,8 @@
 
           <div class="content-bd">
             <div class="section" aria-label="プロフィール">
-              <div class="sec-hd">
-                <div style="min-width:0">
-                  <div class="sec-title">プロフィール</div>
-                  <div class="sec-desc">設定画面で編集できる状態にします（UI確認用）。</div>
-                </div>
-              </div>
+              <div class="sec-title">プロフィール</div>
+              <div class="sec-desc">設定画面で編集できる状態を確認します。</div>
 
               <div class="row">
                 <div class="l">
@@ -1063,49 +836,42 @@
                   <div class="k">保存</div>
                   <div class="v">プロフィールを更新します。</div>
                 </div>
-                <button class="btn ok" type="button">保存</button>
+                <button class="btn ok" type="button">
+                  <i class="fa-solid fa-check"></i>
+                  保存
+                </button>
               </div>
             </div>
 
             <div class="section" aria-label="プラン">
-              <div class="sec-hd">
-                <div style="min-width:0">
-                  <div class="sec-title">プラン</div>
-                  <div class="sec-desc">AUREAのプランと請求情報を確認します。</div>
-                </div>
-              </div>
+              <div class="sec-title">プラン</div>
+              <div class="sec-desc">AUREAのプランと請求情報を確認します。</div>
 
               <div class="row">
                 <div class="l">
                   <div class="k">現在のプラン</div>
                   <div class="v">Pro</div>
                 </div>
-                <button class="btn" type="button">請求情報</button>
-              </div>
-
-              <div class="row">
-                <div class="l">
-                  <div class="k">支払い方法</div>
-                  <div class="v">カード／領収書。</div>
-                </div>
-                <button class="btn secondary" type="button">管理</button>
+                <button class="btn" type="button">
+                  <i class="fa-regular fa-credit-card"></i>
+                  請求情報
+                </button>
               </div>
             </div>
 
             <div class="section" aria-label="規約・規定">
-              <div class="sec-hd">
-                <div style="min-width:0">
-                  <div class="sec-title">規約・規定</div>
-                  <div class="sec-desc">特定商取引法、利用規約、プライバシー。</div>
-                </div>
-              </div>
+              <div class="sec-title">規約・規定</div>
+              <div class="sec-desc">特定商取引法、利用規約、プライバシー。</div>
 
               <div class="row">
                 <div class="l">
                   <div class="k">特定商取引法</div>
                   <div class="v">表記を確認します。</div>
                 </div>
-                <button class="btn secondary" type="button">開く</button>
+                <button class="btn secondary" type="button">
+                  <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                  開く
+                </button>
               </div>
 
               <div class="row">
@@ -1113,7 +879,10 @@
                   <div class="k">利用規約</div>
                   <div class="v">Terms of Service。</div>
                 </div>
-                <button class="btn secondary" type="button">開く</button>
+                <button class="btn secondary" type="button">
+                  <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                  開く
+                </button>
               </div>
 
               <div class="row">
@@ -1121,7 +890,10 @@
                   <div class="k">プライバシー</div>
                   <div class="v">Privacy Policy。</div>
                 </div>
-                <button class="btn secondary" type="button">開く</button>
+                <button class="btn secondary" type="button">
+                  <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                  開く
+                </button>
               </div>
             </div>
 
