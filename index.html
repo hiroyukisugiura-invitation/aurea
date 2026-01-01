@@ -164,7 +164,10 @@
       color:rgba(255,255,255,.75);
       cursor:pointer;
       user-select:none;
-      border:1px solid transparent;
+
+      border:0;
+      background:transparent;
+
       font-size:14px;
       line-height:1;
 
@@ -186,9 +189,17 @@
     }
 
     .sb-dots:hover{
-      background:rgba(255,255,255,.06);
-      border-color:transparent;
+      background:transparent;
       color:rgba(255,255,255,.9);
+      outline:none;
+      box-shadow:none;
+    }
+
+        /* summaryのフォーカスリング/枠を完全に無効化 */
+    .sb-dots:focus,
+    .sb-dots:focus-visible{
+      outline:none;
+      box-shadow:none;
     }
 
     .sb-pop{
