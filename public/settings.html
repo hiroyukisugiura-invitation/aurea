@@ -1,0 +1,768 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AUREA Settings</title>
+  <style>
+    :root{
+      --bg:#0e0f10;
+      --panel:#141516;
+      --panel2:#101112;
+      --text:#e7e7e7;
+      --muted:#a9aaac;
+      --line:rgba(255,255,255,.08);
+      --soft:rgba(255,255,255,.06);
+      --hover:rgba(255,255,255,.10);
+      --shadow:0 10px 30px rgba(0,0,0,.45);
+      --radius:14px;
+      --radius2:18px;
+      --font: ui-sans-serif, system-ui, -apple-system, "SF Pro Display","SF Pro Text","Hiragino Sans","Noto Sans JP","Segoe UI",Roboto,Helvetica,Arial;
+
+      --modalBg: rgba(20,21,22,.96);
+      --modalBorder: rgba(255,255,255,.10);
+      --chip: rgba(255,255,255,.04);
+      --chipBorder: rgba(255,255,255,.10);
+      --danger: rgba(255,80,80,.92);
+      --dangerBg: rgba(255,80,80,.10);
+      --ok: rgba(120,220,140,.95);
+      --okBg: rgba(120,220,140,.10);
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background:radial-gradient(1200px 800px at 50% 30%, rgba(255,255,255,.05), transparent 60%), var(--bg);
+      color:var(--text);
+      font-family:var(--font);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    /* ===== Overlay + Modal ===== */
+    .overlay{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.35);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+    }
+
+    .modal{
+      width:min(1040px, calc(100% - 24px));
+      height:min(760px, calc(100vh - 64px));
+      background:var(--modalBg);
+      border:1px solid var(--modalBorder);
+      border-radius:18px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      display:grid;
+      grid-template-columns: 300px 1fr;
+      min-width:0;
+      position:relative;
+    }
+
+    .close{
+      position:absolute;
+      top:10px;
+      right:10px;
+      width:36px;height:36px;border-radius:10px;
+      border:1px solid transparent;
+      background:transparent;
+      color:var(--text);
+      cursor:pointer;
+      display:grid;place-items:center;
+      z-index:4;
+    }
+    .close:hover{background:var(--soft);border-color:rgba(255,255,255,.06)}
+    .close svg{width:18px;height:18px;opacity:.92}
+
+    /* ===== Tabs (CSS-only) ===== */
+    .tab-input{
+      position:fixed;
+      left:-9999px;
+      top:auto;
+      width:1px;height:1px;
+      overflow:hidden;
+      opacity:0;
+      pointer-events:none;
+    }
+
+    /* ===== Left nav ===== */
+    .nav{
+      border-right:1px solid var(--line);
+      background:linear-gradient(180deg, rgba(255,255,255,.02), transparent 35%);
+      display:flex;
+      flex-direction:column;
+      min-width:0;
+    }
+
+    .nav-hd{
+      padding:18px 16px 10px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .nav-title{
+      font-size:14px;
+      color:rgba(255,255,255,.92);
+      letter-spacing:.02em;
+    }
+
+    .nav-list{
+      padding:6px;
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+      overflow:auto;
+      min-height:0;
+    }
+
+    .nav-item{
+      width:100%;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:10px 10px;
+      border-radius:12px;
+      border:1px solid transparent;
+      background:transparent;
+      color:rgba(255,255,255,.88);
+      cursor:pointer;
+      text-align:left;
+      font-size:13px;
+      line-height:1;
+      user-select:none;
+    }
+    .nav-item:hover{background:var(--soft)}
+    .nav-ic{width:16px;height:16px;opacity:.9;flex:0 0 auto}
+
+    /* active states driven by radio (FIX: input is sibling of .modal) */
+    #tab-general:checked ~ .overlay .modal .nav label[for="tab-general"],
+    #tab-apps:checked ~ .overlay .modal .nav label[for="tab-apps"],
+    #tab-data:checked ~ .overlay .modal .nav label[for="tab-data"],
+    #tab-trainer:checked ~ .overlay .modal .nav label[for="tab-trainer"],
+    #tab-security:checked ~ .overlay .modal .nav label[for="tab-security"],
+    #tab-account:checked ~ .overlay .modal .nav label[for="tab-account"]{
+      background:rgba(255,255,255,.08);
+      border-color:rgba(255,255,255,.10);
+    }
+
+    /* ===== Right content ===== */
+    .content{
+      min-width:0;
+      display:flex;
+      flex-direction:column;
+      height:100%;
+    }
+
+    .panel{
+      display:none;
+      height:100%;
+      min-height:0;
+      flex-direction:column;
+    }
+
+    /* show panels (FIX: input is sibling of .overlay) */
+    #tab-general:checked ~ .overlay .modal .content .panel-general{display:flex}
+    #tab-apps:checked ~ .overlay .modal .content .panel-apps{display:flex}
+    #tab-data:checked ~ .overlay .modal .content .panel-data{display:flex}
+    #tab-trainer:checked ~ .overlay .modal .content .panel-trainer{display:flex}
+    #tab-security:checked ~ .overlay .modal .content .panel-security{display:flex}
+    #tab-account:checked ~ .overlay .modal .content .panel-account{display:flex}
+
+    .content-hd{
+      padding:18px 18px 14px;
+      border-bottom:1px solid var(--line);
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:14px;
+      min-width:0;
+      flex:0 0 auto;
+    }
+    .content-title{
+      font-size:16px;
+      color:rgba(255,255,255,.94);
+      letter-spacing:.01em;
+    }
+    .content-sub{
+      font-size:12px;
+      color:rgba(255,255,255,.58);
+      margin-top:6px;
+      line-height:1.5;
+    }
+
+    .content-bd{
+      padding:16px 18px 18px;
+      overflow:auto;
+      min-height:0;
+      flex:1 1 auto;
+    }
+
+    /* Sections */
+    .section{
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.03);
+      border-radius:16px;
+      padding:14px 14px;
+      margin-bottom:14px;
+    }
+    .sec-hd{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:10px;
+    }
+    .sec-title{
+      font-size:14px;
+      color:rgba(255,255,255,.92);
+      line-height:1.2;
+    }
+    .sec-desc{
+      font-size:12px;
+      color:rgba(255,255,255,.60);
+      line-height:1.55;
+      margin-top:6px;
+    }
+
+    .row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:10px 0;
+      border-top:1px solid rgba(255,255,255,.08);
+    }
+    .row:first-of-type{border-top:0;padding-top:0}
+    .row:last-of-type{padding-bottom:0}
+
+    .row .l{
+      min-width:0;
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+    }
+    .row .k{
+      font-size:13px;
+      color:rgba(255,255,255,.88);
+      line-height:1.2;
+    }
+    .row .v{
+      font-size:12px;
+      color:rgba(255,255,255,.55);
+      line-height:1.45;
+    }
+
+    /* Controls */
+    .btn{
+      height:34px;
+      padding:0 12px;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.05);
+      color:rgba(255,255,255,.85);
+      cursor:pointer;
+      user-select:none;
+      font-size:13px;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      white-space:nowrap;
+    }
+    .btn:hover{background:rgba(255,255,255,.08)}
+    .btn svg{width:16px;height:16px;opacity:.9}
+
+    .btn.secondary{
+      background:transparent;
+      border-color:rgba(255,255,255,.10);
+      color:rgba(255,255,255,.78);
+    }
+    .btn.secondary:hover{background:rgba(255,255,255,.06)}
+
+    .btn.ok{
+      border-color:rgba(120,220,140,.24);
+      background:var(--okBg);
+      color:rgba(210,255,220,.95);
+      cursor:pointer;
+    }
+
+    .btn.danger{
+      border-color:rgba(255,80,80,.28);
+      background:var(--dangerBg);
+      color:rgba(255,200,200,.95);
+      cursor:pointer;
+    }
+
+    .select{
+      height:34px;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.05);
+      color:rgba(255,255,255,.86);
+      padding:0 10px;
+      font-size:13px;
+      outline:0;
+      cursor:pointer;
+    }
+
+    .toggle{
+      width:46px;height:28px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.06);
+      position:relative;
+      flex:0 0 auto;
+      cursor:pointer;
+    }
+    .toggle::after{
+      content:"";
+      position:absolute;
+      top:50%;
+      left:3px;
+      width:22px;height:22px;border-radius:50%;
+      transform:translateY(-50%);
+      background:rgba(255,255,255,.18);
+      border:1px solid rgba(255,255,255,.14);
+    }
+    .toggle.on{
+      background:rgba(255,255,255,.10);
+      border-color:rgba(255,255,255,.18);
+    }
+    .toggle.on::after{left:21px;background:rgba(255,255,255,.26)}
+
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      height:28px;
+      padding:0 10px;
+      border-radius:999px;
+      background:var(--chip);
+      border:1px solid var(--chipBorder);
+      color:rgba(255,255,255,.78);
+      font-size:12px;
+      white-space:nowrap;
+    }
+    .dot{
+      width:8px;height:8px;border-radius:50%;
+      background:rgba(255,255,255,.35);
+    }
+    .dot.ok{background:rgba(120,220,140,.9)}
+    .dot.off{background:rgba(255,255,255,.25)}
+
+    .list{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      margin-top:8px;
+    }
+    .item{
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.02);
+      border-radius:14px;
+      padding:12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      min-width:0;
+    }
+    .item .meta{
+      min-width:0;
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+    }
+    .item .name{
+      font-size:13px;
+      color:rgba(255,255,255,.90);
+      line-height:1.2;
+    }
+    .item .desc{
+      font-size:12px;
+      color:rgba(255,255,255,.58);
+      line-height:1.45;
+    }
+    .item .actions{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex:0 0 auto;
+    }
+
+    @media (max-width: 920px){
+      .modal{grid-template-columns: 1fr; height:min(820px, calc(100vh - 64px))}
+      .nav{border-right:0;border-bottom:1px solid var(--line)}
+      .nav-list{flex-direction:row;gap:6px;padding:10px 10px 12px;overflow:auto}
+      .nav-item{width:auto;padding:10px 12px;border-radius:999px;background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.08)}
+      #tab-general:checked ~ .overlay .modal .nav label[for="tab-general"],
+      #tab-apps:checked ~ .overlay .modal .nav label[for="tab-apps"],
+      #tab-data:checked ~ .overlay .modal .nav label[for="tab-data"],
+      #tab-trainer:checked ~ .overlay .modal .nav label[for="tab-trainer"],
+      #tab-security:checked ~ .overlay .modal .nav label[for="tab-security"],
+      #tab-account:checked ~ .overlay .modal .nav label[for="tab-account"]{
+        background:rgba(255,255,255,.10);
+        border-color:rgba(255,255,255,.12);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- radio MUST be sibling of .overlay (so ~ works) -->
+  <input class="tab-input" type="radio" name="tab" id="tab-general" checked>
+  <input class="tab-input" type="radio" name="tab" id="tab-apps">
+  <input class="tab-input" type="radio" name="tab" id="tab-data">
+  <input class="tab-input" type="radio" name="tab" id="tab-trainer">
+  <input class="tab-input" type="radio" name="tab" id="tab-security">
+  <input class="tab-input" type="radio" name="tab" id="tab-account">
+
+  <div class="overlay" aria-hidden="false">
+    <div class="modal" role="dialog" aria-label="設定">
+      <button class="close" type="button" aria-label="閉じる">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 6L6 18"></path><path d="M6 6l12 12"></path>
+        </svg>
+      </button>
+
+      <!-- Left nav -->
+      <aside class="nav" aria-label="設定ナビ">
+        <div class="nav-hd">
+          <div class="nav-title">設定</div>
+        </div>
+
+        <div class="nav-list" role="list">
+          <label class="nav-item" for="tab-general" role="listitem">
+            <svg class="nav-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2l3 7 7 3-7 3-3 7-3-7-7-3 7-3 3-7z"></path>
+            </svg>
+            一般
+          </label>
+
+          <label class="nav-item" for="tab-apps" role="listitem">
+            <svg class="nav-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M7 3h4v4H7z"></path><path d="M13 3h4v4h-4z"></path>
+              <path d="M7 9h4v4H7z"></path><path d="M13 9h4v4h-4z"></path>
+              <path d="M7 15h4v4H7z"></path><path d="M13 15h4v4h-4z"></path>
+            </svg>
+            アプリ
+          </label>
+
+          <label class="nav-item" for="tab-data" role="listitem">
+            <svg class="nav-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 6h16"></path><path d="M6 6v14"></path><path d="M18 6v14"></path><path d="M8 10h8"></path><path d="M8 14h8"></path>
+            </svg>
+            データ
+          </label>
+
+          <label class="nav-item" for="tab-trainer" role="listitem">
+            <svg class="nav-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 19V7"></path><path d="M20 19V7"></path>
+              <path d="M7 7h10"></path><path d="M7 19h10"></path>
+              <path d="M9 11h6"></path><path d="M9 15h6"></path>
+            </svg>
+            AUREA Data Trainer
+          </label>
+
+          <!-- nav-sep removed (no extra line above security) -->
+
+          <label class="nav-item" for="tab-security" role="listitem">
+            <svg class="nav-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 21s8-4.5 8-11V5l-8-3-8 3v5c0 6.5 8 11 8 11z"></path>
+            </svg>
+            セキュリティ
+          </label>
+
+          <label class="nav-item" for="tab-account" role="listitem">
+            <svg class="nav-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21a8 8 0 0 0-16 0"></path><circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            アカウント
+          </label>
+        </div>
+
+        <!-- nav-foot removed (duplicate account) -->
+      </aside>
+
+      <!-- Right content -->
+      <section class="content" aria-label="設定内容">
+
+        <!-- ===== General ===== -->
+        <div class="panel panel-general">
+          <header class="content-hd">
+            <div style="min-width:0">
+              <div class="content-title">一般</div>
+              <div class="content-sub">テーマ、表示、既定の動作を管理します。</div>
+            </div>
+            <span class="chip"><span class="dot ok"></span>設定</span>
+          </header>
+
+          <div class="content-bd">
+            <div class="section" aria-label="外観">
+              <div class="sec-hd">
+                <div style="min-width:0">
+                  <div class="sec-title">外観</div>
+                  <div class="sec-desc">テーマや表示の基本設定。</div>
+                </div>
+                <span class="btn" aria-label="テーマ">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>
+                  </svg>
+                  ダーク
+                </span>
+              </div>
+
+              <div class="row">
+                <div class="l">
+                  <div class="k">言語</div>
+                  <div class="v">表示言語を選択します。</div>
+                </div>
+                <select class="select" aria-label="言語">
+                  <option>日本語</option>
+                  <option>English</option>
+                  <option>Español</option>
+                </select>
+              </div>
+
+              <div class="row">
+                <div class="l">
+                  <div class="k">チャット表示</div>
+                  <div class="v">フォント、余白、表示スタイルを調整します。</div>
+                </div>
+                <button class="btn" type="button" aria-label="表示設定">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 20h9"></path>
+                    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
+                  </svg>
+                  カスタマイズ
+                </button>
+              </div>
+            </div>
+
+            <div class="section" aria-label="通知">
+              <div class="sec-hd">
+                <div style="min-width:0">
+                  <div class="sec-title">通知</div>
+                  <div class="sec-desc">お知らせの受け取り方法を管理します。</div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="l">
+                  <div class="k">メール通知</div>
+                  <div class="v">重要なお知らせをメールで受け取ります。</div>
+                </div>
+                <div class="toggle" aria-label="メール通知"></div>
+              </div>
+
+              <div class="row">
+                <div class="l">
+                  <div class="k">プロダクト更新</div>
+                  <div class="v">新機能や改善の案内を受け取ります。</div>
+                </div>
+                <div class="toggle on" aria-label="プロダクト更新"></div>
+              </div>
+            </div>
+
+            <div class="section" aria-label="デフォルト">
+              <div class="sec-hd">
+                <div style="min-width:0">
+                  <div class="sec-title">デフォルト</div>
+                  <div class="sec-desc">新規チャットの既定設定。</div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="l">
+                  <div class="k">既定の応答スタイル</div>
+                  <div class="v">用途に応じて既定の回答モードを選びます。</div>
+                </div>
+                <select class="select" aria-label="既定の応答スタイル">
+                  <option>Standard</option>
+                  <option>Quick</option>
+                  <option>Deep Dive</option>
+                  <option>Action Plan</option>
+                </select>
+              </div>
+
+              <div class="row">
+                <div class="l">
+                  <div class="k">既定の出力言語</div>
+                  <div class="v">回答の出力言語を既定で固定します。</div>
+                </div>
+                <select class="select" aria-label="既定の出力言語">
+                  <option>Auto</option>
+                  <option>日本語</option>
+                  <option>English</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== Apps ===== -->
+        <div class="panel panel-apps">
+          <header class="content-hd">
+            <div style="min-width:0">
+              <div class="content-title">アプリ</div>
+              <div class="content-sub">外部サービス連携と、接続状態を管理します。</div>
+            </div>
+            <span class="chip"><span class="dot off"></span>未接続</span>
+          </header>
+
+          <div class="content-bd">
+            <div class="section" aria-label="接続済み">
+              <div class="sec-hd">
+                <div style="min-width:0">
+                  <div class="sec-title">接続済み</div>
+                  <div class="sec-desc">現在接続されているアプリ。</div>
+                </div>
+              </div>
+              <div class="list">
+                <div class="item">
+                  <div class="meta">
+                    <div class="name">Google Drive</div>
+                    <div class="desc">ファイル参照・保存。</div>
+                  </div>
+                  <div class="item-actions">
+                    <span class="chip"><span class="dot ok"></span>Connected</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== Data ===== -->
+        <div class="panel panel-data">
+          <header class="content-hd">
+            <div style="min-width:0">
+              <div class="content-title">データ</div>
+              <div class="content-sub">データのエクスポート、削除、保存方針を管理します。</div>
+            </div>
+            <span class="chip"><span class="dot ok"></span>管理</span>
+          </header>
+
+          <div class="content-bd">
+            <div class="section" aria-label="保存設定">
+              <div class="sec-hd">
+                <div style="min-width:0">
+                  <div class="sec-title">保存設定</div>
+                  <div class="sec-desc">会話データや添付の扱いを設定します。</div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="l">
+                  <div class="k">会話履歴の保存</div>
+                  <div class="v">会話を履歴として保存し、後で参照できます。</div>
+                </div>
+                <div class="toggle on" aria-label="会話履歴の保存"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== Trainer ===== -->
+        <div class="panel panel-trainer">
+          <header class="content-hd">
+            <div style="min-width:0">
+              <div class="content-title">AUREA Data Trainer</div>
+              <div class="content-sub">企業AI仕様につながるデータ整備・学習準備を管理します。</div>
+            </div>
+            <span class="chip"><span class="dot off"></span>準備</span>
+          </header>
+
+          <div class="content-bd">
+            <div class="section" aria-label="データセット">
+              <div class="sec-hd">
+                <div style="min-width:0">
+                  <div class="sec-title">データセット</div>
+                  <div class="sec-desc">学習用データの登録と管理。</div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="l">
+                  <div class="k">データを追加</div>
+                  <div class="v">ドキュメント、FAQ、ログなどを登録します。</div>
+                </div>
+                <button class="btn" type="button">追加</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== Security ===== -->
+        <div class="panel panel-security">
+          <header class="content-hd">
+            <div style="min-width:0">
+              <div class="content-title">セキュリティ</div>
+              <div class="content-sub">サインイン、2段階認証、端末、セッションを管理します。</div>
+            </div>
+            <span class="chip"><span class="dot ok"></span>保護</span>
+          </header>
+
+          <div class="content-bd">
+            <div class="section" aria-label="サインイン">
+              <div class="sec-hd">
+                <div style="min-width:0">
+                  <div class="sec-title">サインイン</div>
+                  <div class="sec-desc">アカウント保護の基本設定。</div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="l">
+                  <div class="k">2段階認証（2FA）</div>
+                  <div class="v">ログイン時に追加の確認を要求します。</div>
+                </div>
+                <div class="toggle on" aria-label="2段階認証"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== Account ===== -->
+        <div class="panel panel-account">
+          <header class="content-hd">
+            <div style="min-width:0">
+              <div class="content-title">アカウント</div>
+              <div class="content-sub">プロフィール、プラン、支払い、ログアウトを管理します。</div>
+            </div>
+            <span class="chip"><span class="dot ok"></span>Pro</span>
+          </header>
+
+          <div class="content-bd">
+            <div class="section" aria-label="プロフィール">
+              <div class="sec-hd">
+                <div style="min-width:0">
+                  <div class="sec-title">プロフィール</div>
+                  <div class="sec-desc">基本情報を編集します。</div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="l">
+                  <div class="k">表示名</div>
+                  <div class="v">Cocoro Sugiura</div>
+                </div>
+                <span class="chip">CS</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+    </div>
+  </div>
+</body>
+</html>
