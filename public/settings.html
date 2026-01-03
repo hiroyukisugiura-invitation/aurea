@@ -8,6 +8,7 @@
   <!-- Font Awesome（全アイコンはここから） -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
+  
   <style>
     :root{
       --bg:#0e0f10;
@@ -155,7 +156,6 @@
     #tab-apps:checked ~ .overlay .modal .nav label[for="tab-apps"],
     #tab-data:checked ~ .overlay .modal .nav label[for="tab-data"],
     #tab-trainer:checked ~ .overlay .modal .nav label[for="tab-trainer"],
-    #tab-security:checked ~ .overlay .modal .nav label[for="tab-security"],
     #tab-account:checked ~ .overlay .modal .nav label[for="tab-account"]{
       background:rgba(255,255,255,.08);
       border-color:rgba(255,255,255,.10);
@@ -175,13 +175,31 @@
       min-height:0;
       flex-direction:column;
     }
-
     #tab-general:checked ~ .overlay .modal .content .panel-general{display:flex}
     #tab-apps:checked ~ .overlay .modal .content .panel-apps{display:flex}
     #tab-data:checked ~ .overlay .modal .content .panel-data{display:flex}
     #tab-trainer:checked ~ .overlay .modal .content .panel-trainer{display:flex}
-    #tab-security:checked ~ .overlay .modal .content .panel-security{display:flex}
     #tab-account:checked ~ .overlay .modal .content .panel-account{display:flex}
+
+    /* ===== 規約・規定：フォント統一 ===== */
+    .panel-account .reg-wrap,
+    .panel-account .reg-wrap *{
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 400;
+      letter-spacing: 0;
+    }
+
+    /* タイトルだけは他見出しに合わせて少し強め（必要なら消してOK） */
+    .panel-account .reg-head{
+      font-size:14px;
+      font-weight:700;
+    }
+
+    /* タブ文字（特定商取引法/利用規約/プライバシー） */
+    .panel-account .reg-tab{
+      font-family: var(--font);
+    }
 
     .content-hd{
       padding:18px 18px 14px;
@@ -234,12 +252,11 @@
     .panel-general .section,
     .panel-data .section,
     .panel-trainer .section,
-    .panel-security .section,
     .panel-account .section{
       border:0;
       background:transparent;
       border-radius:0;
-      padding:0;
+      padding:0;     /* ✅ 余白を消して「一覧」へ */
       margin:0;
     }
 
@@ -247,7 +264,6 @@
     .panel-general .section + .section,
     .panel-data .section + .section,
     .panel-trainer .section + .section,
-    .panel-security .section + .section,
     .panel-account .section + .section{
       margin-top:18px;
       padding-top:18px;
@@ -255,12 +271,7 @@
     }
 
     /* Security: titleと上枠の詰まりを解消（他タブへ影響させない） */
-    .panel-security .section{
-      padding:18px 16px;
-    }
-    .panel-security .sec-title{
-      margin:2px 0 14px 0;
-    }
+    /* ✅ 全タブ共通の section padding に統一したため削除 */
     .sec-title{
       font-size:14px;
       color:rgba(255,255,255,.92);
@@ -438,55 +449,34 @@
 
     .saas{
       border-radius:16px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(255,255,255,.04);
+      border:1px solid var(--cardBorder);
+      background:var(--card);
       padding:14px;
       min-height:150px;
       display:flex;
       flex-direction:column;
       justify-content:space-between;
     }
-
-    .saas-top{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
+    .saas:hover{
+      background:rgba(255,255,255,.035);
+      border-color:rgba(255,255,255,.12);
     }
 
     .brand{
       width:38px;height:38px;border-radius:999px;
       display:grid;place-items:center;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.14);
     }
     .brand i{font-size:16px;color:#fff}
-
-    .b-google{background:#4285F4}
-    .b-gmail{background:#EA4335}
-    .b-drive{background:#0F9D58}
-    .b-github{background:#111827}
-    .b-notion{background:#111111}
-    .b-slack{background:#4A154B}
-    .b-dropbox{background:#0061FF}
-    .b-jira{background:#0052CC}
-    .b-salesforce{background:#00A1E0}
-    .b-zoom{background:#2D8CFF}
-
-    .saas-name{
-      margin-top:10px;
-      font-size:14px;
-      font-weight:700;
-      color:rgba(255,255,255,.95);
-    }
 
     .status-btn{
       margin-top:12px;
       height:34px;
       padding:0 14px;
       border-radius:999px;
-      border:1px solid rgba(255,255,255,.14);
-      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.035);
       color:rgba(255,255,255,.86);
       font-size:13px;
       font-weight:700;
@@ -511,144 +501,273 @@
     @media (max-width: 1080px){
       .apps-grid{grid-template-columns: repeat(3, minmax(0, 1fr));}
     }
-    @media (max-width: 920px){
-      .modal{
-        grid-template-columns: 1fr;
-        height:min(820px, calc(100vh - 64px));
-      }
+@media (max-width: 920px){
 
-      /* nav を上部へ */
-      .nav{
-        border-right:0;
-        border-bottom:1px solid var(--line);
-      }
+  /* ✅ 縮小時は「中央配置」をやめて、上起点に固定 */
+  .overlay{
+    align-items:flex-start;         /* ← 上寄せ */
+    justify-content:center;
+    padding:12px;                   /* 余白は最小に */
+  }
 
-      .nav-hd{
-        padding:14px 14px 10px;
-      }
+  /* ✅ 画面高に追従させて、中身は内部スクロールへ */
+  .modal{
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;   /* ← nav = auto / content = 残り全部 */
+    height:calc(100vh - 24px);
+    max-height:none;
+  }
 
-      /* アイコンだけ中央表示（横スクロールなし） */
-      .nav-list{
-        flex-direction:row;
-        justify-content:center;
-        align-items:center;
-        gap:10px;
-        padding:10px 12px 12px;
-        overflow:hidden;
-        min-height:74px; /* アイコン列の高さを固定 */
-      }
+  /* nav を上部へ */
+  .nav{
+    border-right:0;
+    border-bottom:1px solid var(--line);
+  }
 
-      .nav-item{
-        width:52px;
-        height:52px;
-        padding:0;
-        border-radius:999px;
-        background:rgba(255,255,255,.04);
-        border-color:rgba(255,255,255,.08);
-        justify-content:center;
-        gap:0;
+  .nav-hd{
+    padding:14px 14px 10px;
+  }
 
-        /* ラベル文字は消す */
-        font-size:0;
-      }
+  /* アイコンだけ中央表示（横スクロールなし） */
+  .nav-list{
+    flex-direction:row;
+    justify-content:center;
+    align-items:center;
+    gap:10px;
+    padding:10px 12px 12px;
+    overflow:hidden;
+    min-height:74px; /* アイコン列の高さを固定 */
+  }
 
-      .nav-ic{
-        width:22px;height:22px;
-        opacity:.95;
-      }
-      .nav-ic i{font-size:18px}
+  .nav-item{
+    width:44px;
+    height:44px;
+    padding:0;
+    border-radius:0;
+    background:transparent;
+    border:1px solid transparent;
+    justify-content:center;
+    gap:0;
 
-      /* 選択中 */
-      #tab-general:checked ~ .overlay .modal .nav label[for="tab-general"],
-      #tab-apps:checked ~ .overlay .modal .nav label[for="tab-apps"],
-      #tab-data:checked ~ .overlay .modal .nav label[for="tab-data"],
-      #tab-trainer:checked ~ .overlay .modal .nav label[for="tab-trainer"],
-      #tab-security:checked ~ .overlay .modal .nav label[for="tab-security"],
-      #tab-account:checked ~ .overlay .modal .nav label[for="tab-account"]{
-        background:rgba(255,255,255,.10);
-        border-color:rgba(255,255,255,.14);
-      }
+    /* ラベル文字は消す */
+    font-size:0;
+  }
 
-      /* アプリ grid */
-      .apps-grid{
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
+  .nav-item:hover{
+    background:transparent;
+    border-color:transparent;
+  }
 
-      /* 詳細の頭位置を固定（アイコン列の下に揃える） */
-      .content-hd{
-        padding-top:16px;
-        min-height:72px;
-      }
-      .content-bd{
-        padding-top:14px;
-      }
-    }
+  .nav-ic{
+    width:22px;height:22px;
+    opacity:.68; /* ← 非選択は薄め */
+  }
+  .nav-ic i{font-size:18px}
+
+  /* 選択中：枠や背景は出さず、アイコンだけ強調 */
+  #tab-general:checked ~ .overlay .modal .nav label[for="tab-general"],
+  #tab-apps:checked ~ .overlay .modal .nav label[for="tab-apps"],
+  #tab-data:checked ~ .overlay .modal .nav label[for="tab-data"],
+  #tab-trainer:checked ~ .overlay .modal .nav label[for="tab-trainer"],
+  #tab-account:checked ~ .overlay .modal .nav label[for="tab-account"]{
+    background:transparent;
+    border-color:transparent;
+  }
+
+  #tab-general:checked ~ .overlay .modal .nav label[for="tab-general"] .nav-ic,
+  #tab-apps:checked ~ .overlay .modal .nav label[for="tab-apps"] .nav-ic,
+  #tab-data:checked ~ .overlay .modal .nav label[for="tab-data"] .nav-ic,
+  #tab-trainer:checked ~ .overlay .modal .nav label[for="tab-trainer"] .nav-ic,
+  #tab-account:checked ~ .overlay .modal .nav label[for="tab-account"] .nav-ic{
+    opacity:.98;
+  }
+
+  /* アプリ grid */
+  .apps-grid{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* ✅ 一覧表（content-bd）は常にスクロール領域として機能 */
+  .content-bd{
+    padding-top:14px;
+    overflow:auto;
+    -webkit-overflow-scrolling:touch;
+
+    display:flex;              /* ← 上詰め固定 */
+    flex-direction:column;
+    justify-content:flex-start;
+    align-items:stretch;
+  }
+
+  .content-bd > *{
+    flex:0 0 auto;             /* ← 下に落ちない */
+  }
+}
+
+/* ===============================
+   AI Stack Popup (UI unified)
+=============================== */
+
+#aiStackOverlay{
+  align-items:center;
+  justify-content:center;
+}
+
+#aiStackOverlay .modal{
+  width:min(520px, calc(100% - 32px));
+  height:auto;
+  background:var(--modalBg);
+  border:1px solid var(--modalBorder);
+  border-radius:18px;
+  box-shadow:var(--shadow);
+  font-family:var(--font);
+}
+
+/* Header */
+#aiStackOverlay .content-hd{
+  padding:16px 18px;
+  border-bottom:1px solid var(--line);
+}
+
+#aiStackOverlay .content-title{
+  font-size:15px;
+  font-weight:600;
+  color:rgba(255,255,255,.92);
+}
+
+/* Close button */
+#aiStackOverlay .close{
+  top:12px;
+  right:12px;
+}
+
+/* Body */
+#aiStackOverlay .content-bd{
+  padding:14px 18px 18px;
+}
+
+/* Table layout */
+#aiStackOverlay .table{
+  width:100%;
+}
+
+#aiStackOverlay .table__row{
+  display:grid;
+  grid-template-columns: 1fr 120px;
+  gap:12px;
+  padding:8px 0;
+}
+
+#aiStackOverlay .table__row--head{
+  padding-top:0;
+  padding-bottom:6px;
+}
+
+#aiStackOverlay .table__cell{
+  font-size:13px;
+  line-height:1.4;
+  color:rgba(255,255,255,.86);
+  font-family:var(--font);
+}
+
+#aiStackOverlay .table__row--head .table__cell{
+  font-size:12px;
+  font-weight:600;
+  color:rgba(255,255,255,.55);
+}
+
+/* Row separator */
+#aiStackOverlay .table__body .table__row{
+  border-top:1px solid rgba(255,255,255,.08);
+}
+
+/* AI name emphasis */
+#aiStackOverlay .table__body .table__row .table__cell:first-child{
+  font-weight:500;
+  color:rgba(255,255,255,.92);
+}
+
+/* Version column */
+#aiStackOverlay .table__body .table__row .table__cell:last-child{
+  text-align:right;
+  color:rgba(255,255,255,.70);
+  font-variant-numeric: tabular-nums;
+}
+
   </style>
 </head>
 
 <body>
-  <input class="tab-input" type="radio" name="tab" id="tab-general" checked>
-  <input class="tab-input" type="radio" name="tab" id="tab-apps">
-  <input class="tab-input" type="radio" name="tab" id="tab-data">
-  <input class="tab-input" type="radio" name="tab" id="tab-trainer">
-  <input class="tab-input" type="radio" name="tab" id="tab-security">
-  <input class="tab-input" type="radio" name="tab" id="tab-account">
 
-  <div class="overlay" aria-hidden="false">
-    <div class="modal" role="dialog" aria-label="設定">
-      <button class="close" type="button" aria-label="閉じる">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
+  <!-- ===== settings popup root (required by setting.js) ===== -->
+  <div class="settings-modal" aria-hidden="true">
+    <div class="settings settings--gpt" role="dialog" aria-label="設定">
 
-      <!-- Left nav -->
-      <aside class="nav" aria-label="設定ナビ">
-        <div class="nav-hd">
-          <div class="nav-title">設定</div>
-        </div>
+      <!-- ===== tab states ===== -->
+      <input class="tab-input" type="radio" name="tab" id="tab-general" checked>
+      <input class="tab-input" type="radio" name="tab" id="tab-apps">
+      <input class="tab-input" type="radio" name="tab" id="tab-data">
+      <input class="tab-input" type="radio" name="tab" id="tab-trainer">
+      <input class="tab-input" type="radio" name="tab" id="tab-account">
 
-        <div class="nav-list" role="list">
-          <label class="nav-item" for="tab-general" role="listitem">
-            <span class="nav-ic"><i class="fa-solid fa-sliders"></i></span>
-            一般
-          </label>
+      <!-- ===== overlay ===== -->
+      <div class="overlay" aria-hidden="true">
+        <div class="modal" role="dialog" aria-label="設定">
 
-          <!-- 左カラム：アプリのアイコンを未設定→確実に設定 -->
-          <label class="nav-item" for="tab-apps" role="listitem">
-            <span class="nav-ic"><i class="fa-solid fa-plug-circle-bolt"></i></span>
-            アプリ
-          </label>
+          <!-- close -->
+          <button class="close" type="button" aria-label="閉じる" data-settings-close>
+            <i class="fa-solid fa-xmark"></i>
+          </button>
 
-          <label class="nav-item" for="tab-data" role="listitem">
-            <span class="nav-ic"><i class="fa-solid fa-database"></i></span>
-            データ
-          </label>
+          <!-- ======================
+               Left nav
+          ======================= -->
+          <aside class="nav" aria-label="設定ナビ">
+            <div class="nav-hd">
+              <div class="nav-title">設定</div>
+            </div>
 
-          <label class="nav-item" for="tab-trainer" role="listitem">
-            <span class="nav-ic"><i class="fa-solid fa-layer-group"></i></span>
-            AUREA Data Trainer
-          </label>
+            <div class="nav-list" role="list">
+              <label class="nav-item" for="tab-general" role="listitem">
+                <span class="nav-ic"><i class="fa-solid fa-sliders"></i></span>
+                一般
+              </label>
 
-          <label class="nav-item" for="tab-security" role="listitem">
-            <span class="nav-ic"><i class="fa-solid fa-shield-halved"></i></span>
-            セキュリティ
-          </label>
+              <label class="nav-item" for="tab-apps" role="listitem">
+                <span class="nav-ic"><i class="fa-solid fa-plug-circle-bolt"></i></span>
+                アプリ
+              </label>
 
-          <label class="nav-item" for="tab-account" role="listitem">
-            <span class="nav-ic"><i class="fa-regular fa-circle-user"></i></span>
-            アカウント
-          </label>
-        </div>
-      </aside>
+              <label class="nav-item" for="tab-data" role="listitem">
+                <span class="nav-ic"><i class="fa-solid fa-database"></i></span>
+                データ
+              </label>
 
-      <!-- Right content -->
-      <section class="content" aria-label="設定内容">
+              <label class="nav-item" for="tab-trainer" role="listitem">
+                <span class="nav-ic"><i class="fa-solid fa-layer-group"></i></span>
+                AUREA Data Trainer
+              </label>
+
+              <label class="nav-item" for="tab-account" role="listitem">
+                <span class="nav-ic"><i class="fa-regular fa-circle-user"></i></span>
+                アカウント・セキュリティ
+              </label>
+            </div>
+          </aside>
+
+          <!-- ======================
+               Right content
+          ======================= -->
+          <section class="content" aria-label="設定内容">
 
         <!-- ===== General ===== -->
         <div class="panel panel-general">
           <header class="content-hd">
             <div style="min-width:0">
               <div class="content-title">一般</div>
-              <div class="content-sub">表示言語を管理します</div>
+                <div class="sec-desc">
+                  端末の基本的な設定             
+                </div>
             </div>
           </header>
 
@@ -657,7 +776,6 @@
               <div class="row">
                 <div class="l">
                   <div class="k">テーマ</div>
-                  <div class="v">システム／ライト／ダーク</div>
                 </div>
                 <select class="select" aria-label="テーマ">
                   <option>システム</option>
@@ -669,7 +787,6 @@
               <div class="row">
                 <div class="l">
                   <div class="k">言語</div>
-                  <div class="v">UI／回答の既定言語</div>
                 </div>
                 <select class="select" aria-label="言語">
                   <option selected>日本語</option>
@@ -707,13 +824,12 @@
                 </select>
               </div>
 
-              <!-- 送信ショートカット：一般セクション内に配置 -->
+              <!-- Askへの送信方法：一般セクション内に配置 -->
               <div class="row">
                 <div class="l">
-                  <div class="k">送信ショートカット</div>
-                  <div class="v">メッセージ送信に使用するキーを選択します</div>
+                  <div class="k">AUREAへの送信方法</div>
                 </div>
-                <select class="select" aria-label="送信ショートカット">
+                <select class="select" aria-label="AUREAへの送信方法">
                   <option selected>⌘ + Enterで送信（Enterは改行）</option>
                   <option>Enterで送信（Shift + Enterで改行）</option>
                 </select>
@@ -727,15 +843,16 @@
           <header class="content-hd">
             <div style="min-width:0">
               <div class="content-title">アプリ</div>
-              <div class="content-sub">SaaSへ接続してAUREAとAPIを連携します</div>
+                 <div class="sec-desc">
+                  各種SaaSと連携、任意でAPI接続が設定可能             
+                </div>
             </div>
           </header>
 
           <div class="content-bd">
-            <div class="section" aria-label="アプリとコネクター">
+            <div class="section" aria-label="">
               <div class="apps-header">
                 <div style="min-width:0">
-                  <div class="apps-title">アプリとコネクター</div>
                 </div>
                 <button class="btn" type="button">
                   <i class="fa-solid fa-plus"></i>
@@ -854,18 +971,14 @@
           <header class="content-hd">
             <div style="min-width:0">
               <div class="content-title">データ</div>
-              <div class="content-sub">保存先と削除操作を管理します</div>
+                <div class="sec-desc">
+                  データ管理や保存先について             
+                </div>
             </div>
           </header>
 
           <div class="content-bd">
             <div class="section" aria-label="保存設定">
-              <div class="row" style="border-top:0;padding-top:0">
-                <div class="l">
-                  <div class="k">会話</div>
-                </div>
-              </div>
-
               <div class="row">
                 <div class="l">
                   <div class="k">会話とデータの保存先</div>
@@ -882,7 +995,6 @@
               <div class="row" style="border-top:0;padding-top:0">
                 <div class="l">
                   <div class="k">すべてのチャットを削除する</div>
-                  <div class="v">全チャット履歴を完全に削除します</div>
                 </div>
                 <button class="btn danger" type="button">
                   <i class="fa-solid fa-trash"></i>
@@ -892,12 +1004,11 @@
             </div>
 
             <!-- Knowledge Base：データタブ内に配置 -->
-            <div class="section" aria-label="Knowledge Base">
-              <div class="sec-title">Knowledge Base</div>
+            <div class="section" aria-label="ナレッジベース">
+              <div class="sec-title">ナレッジベース</div>
               <div class="sec-desc">
-                Google Drive や OneDrive など、ユーザー・企業のストレージに保存された
-                ドキュメントを参照します。AUREA 自身はファイルを保存せず、
-                読み取りと検索のみを行います。
+                Google Drive など、ユーザー・企業のストレージの保存先設定
+                を参照します<br>AUREA によるファイル保存は一切せず、読み取りと検索のみを行っています
               </div>
 
               <div class="row" style="margin-top:10px;border-top:0;padding-top:0">
@@ -909,13 +1020,13 @@
 
               <div class="row" style="border-top:0;padding-top:0">
                 <button class="btn secondary" type="button">
-                  クラウドストレージと接続する（Google Drive）
+                  クラウドストレージと接続する（ Google Drive ）
                 </button>
               </div>
 
               <div class="row" style="border-top:0;padding-top:0">
                 <button class="btn secondary" type="button">
-                  ドキュメントを一時アップロード（AUREAには保存されません）
+                  ドキュメントを一時アップロード（ AUREAには保存されません ）
                 </button>
               </div>
             </div>
@@ -926,16 +1037,16 @@
           <div class="panel panel-trainer">
             <header class="content-hd">
               <div style="min-width:0">
-                <div class="content-title">AI Earth Trainer　Enterprise</div>
-                <div class="content-sub">
-                  AI Earth を育てる（AET）
+                <div class="content-title">AUREA Data Trainer , for Enterprise</div>
+                <div class="sec-desc">
+                  独自に社内AIを育てて業務効率化へ             
                 </div>
               </div>
             </header>
 
             <div class="content-bd">
               <div class="section">
-                <div class="sec-title">AI Earth を育てる（AET）</div>
+                <div class="sec-title">AUREAを育てる（AET）</div>
                 <div class="sec-desc">
                   「こんな質問にはこれ」といったケースを登録し、社内AIの回答精度を育てます             
                 </div>
@@ -963,68 +1074,26 @@
             </div>
           </div>
 
-        <!-- ===== Security ===== -->
-        <div class="panel panel-security">
-          <header class="content-hd">
-            <div style="min-width:0">
-              <div class="content-title">セキュリティ</div>
-              <div class="content-sub">サインイン情報と、端末を管理します</div>
-            </div>
-          </header>
-
-          <div class="content-bd">
-            <div class="section" aria-label="サインイン">
-              <div class="sec-title">サインイン</div>
-
-              <div class="row">
-                <div class="l">
-                  <div class="k">登録メールアドレス</div>
-                  <div class="v">hiroyuki.sugiura@invitation.co</div>
-                </div>
-                <button class="btn secondary" type="button">
-                  <i class="fa-solid fa-pen"></i>
-                  変更
-                </button>
-              </div>
-            </div>
-
-            <div class="section" aria-label="信頼できるデバイス">
-              <div class="sec-title">信頼できるデバイス</div>
-
-              <div class="row">
-                <div class="l">
-                  <div class="k">端末</div>
-                  <div class="v">MacBook Pro ・ Japan ・ Chrome</div>
-                </div>
-                <button class="btn danger" type="button">
-                  <i class="fa-solid fa-link-slash"></i>
-                  この端末を解除
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
 
         <!-- ===== Account ===== -->
         <div class="panel panel-account">
           <header class="content-hd">
             <div style="min-width:0">
-              <div class="content-title">アカウント</div>
-              <div class="content-sub">プロフィール、プラン、規約・規定</div>
+              <div class="content-title">アカウント・セキュリティ</div>
+                <div class="sec-desc">
+                  利用ユーザー情報とセキュリティ詳細             
+                </div>
             </div>
           </header>
 
           <div class="content-bd">
-            <div class="section" aria-label="プロフィール">
-              <div class="sec-title">プロフィール</div>
-              <div class="sec-desc">設定画面で編集できる状態を確認します</div>
-
+            <!-- 1) 表示名 / ユーザー名 -->
+            <div class="section" aria-label="">
               <div class="row">
                 <div class="l">
                   <div class="k">表示名</div>
-                  <div class="v">プロフィールに表示されます</div>
                 </div>
-                <input class="input" type="text" value="Cocoro Sugiura" />
+                <input id="displayName" class="input" type="text" value="Cocoro Sugiura" />
               </div>
 
               <div class="row">
@@ -1032,25 +1101,12 @@
                   <div class="k">ユーザー名</div>
                   <div class="v">@handle（任意）</div>
                 </div>
-                <input class="input" type="text" value="@cocoro" />
-              </div>
-
-              <div class="row">
-                <div class="l">
-                  <div class="k">保存</div>
-                  <div class="v">プロフィールを更新します</div>
-                </div>
-                <button class="btn ok" type="button">
-                  <i class="fa-solid fa-check"></i>
-                  保存
-                </button>
+                <input id="userName" class="input" type="text" value="@cocoro" />
               </div>
             </div>
 
+            <!-- 2) 現在のプラン -->
             <div class="section" aria-label="プラン">
-              <div class="sec-title">プラン</div>
-              <div class="sec-desc">AUREAのプランと請求情報を確認します</div>
-
               <div class="row">
                 <div class="l">
                   <div class="k">現在のプラン</div>
@@ -1063,6 +1119,35 @@
               </div>
             </div>
 
+            <!-- 3) 登録メールアドレス（セキュリティ） -->
+            <div class="section" aria-label="サインイン">
+              <div class="row" style="border-top:0;padding-top:0">
+                <div class="l">
+                  <div class="k">登録メールアドレス</div>
+                  <div class="v">hiroyuki.sugiura@invitation.co</div>
+                </div>
+                <button class="btn secondary" type="button">
+                  <i class="fa-solid fa-pen"></i>
+                  変更
+                </button>
+              </div>
+            </div>
+
+            <!-- 4) 信頼できるデバイス（セキュリティ） -->
+            <div class="section" aria-label="信頼できるデバイス">
+              <div class="row" style="border-top:0;padding-top:0">
+                <div class="l">
+                  <div class="k">信頼できるデバイス</div>
+                  <div class="v">MacBook Pro ・ Japan ・ Chrome</div>
+                </div>
+                <button class="btn danger" type="button">
+                  <i class="fa-solid fa-link-slash"></i>
+                  この端末を解除
+                </button>
+              </div>
+            </div>
+
+            <!-- 5) 規約・規定 -->
             <div class="section" aria-label="規約・規定">
               <div class="reg-wrap" aria-label="規約・規定タブ">
                 <div class="reg-head">規約・規定</div>
@@ -1073,10 +1158,154 @@
                 </div>
               </div>
             </div>
+
+            <!-- 6) AI Stack -->
+            <div class="section" aria-label="AI Stack">
+              <div class="row" style="border-top:0;padding-top:0">
+                <div class="l">
+                  <div class="k">AI Stack</div>
+                  <div class="v">展開中のAIと最新Ver,</div>
+                </div>
+                <button class="btn secondary" type="button" id="btnOpenAiStackPopup">
+                  一覧表
+                </button>
+              </div>
+            </div>
+
+            <!-- AI Stack Popup -->
+            <div class="overlay" id="aiStackOverlay" style="display:none">
+              <div class="modal" style="width:min(520px, calc(100% - 24px));height:auto">
+                <button class="close" type="button" aria-label="閉じる" id="btnCloseAiStackPopup">
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
+
+                <div class="content" style="height:auto">
+                  <header class="content-hd">
+                    <div class="content-title">AI Stack</div>
+                  </header>
+
+                  <div class="content-bd">
+                    <div class="table">
+                      <div class="table__head">
+                        <div class="table__row table__row--head">
+                          <div class="table__cell">AI</div>
+                          <div class="table__cell">Ver.</div>
+                        </div>
+                      </div>
+                      <div class="table__body" id="aiStackPopupBody"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
     </div>
   </div>
+<script>
+/* ===============================
+   Profile autosave
+=============================== */
+(function(){
+  const KEY_NAME = 'aurea_profile_displayName';
+  const KEY_USER = 'aurea_profile_userName';
+
+  const nameEl = document.getElementById('displayName');
+  const userEl = document.getElementById('userName');
+  if(!nameEl || !userEl) return;
+
+  const savedName = localStorage.getItem(KEY_NAME);
+  const savedUser = localStorage.getItem(KEY_USER);
+  if(savedName !== null) nameEl.value = savedName;
+  if(savedUser !== null) userEl.value = savedUser;
+
+  let t = null;
+  const save = () => {
+    localStorage.setItem(KEY_NAME, nameEl.value);
+    localStorage.setItem(KEY_USER, userEl.value);
+  };
+  const queueSave = () => {
+    clearTimeout(t);
+    t = setTimeout(save, 300);
+  };
+
+  nameEl.addEventListener('input', queueSave);
+  userEl.addEventListener('input', queueSave);
+  nameEl.addEventListener('change', save);
+  userEl.addEventListener('change', save);
+})();
+
+/* ===============================
+   AI Stack (Latest Ver display)
+=============================== */
+let AI_STACK = [
+  { name: "GPT",        ver: "" },
+  { name: "Claude",     ver: "" },
+  { name: "Gemini",     ver: "" },
+  { name: "Perplexity", ver: "" },
+  { name: "Mistral",    ver: "" },
+  { name: "Sora",       ver: "" }
+];
+
+async function refreshAiStackLatest(){
+  try{
+    // API接続時に差替え
+  }catch(e){}
+}
+
+function escapeHtml(s){
+  return String(s ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;");
+}
+
+function renderAiStackPopup(){
+  const body = document.getElementById("aiStackPopupBody");
+  if(!body) return;
+
+  body.innerHTML = "";
+  for(const a of AI_STACK){
+    const row = document.createElement("div");
+    row.className = "table__row";
+    row.innerHTML = `
+      <div class="table__cell">${escapeHtml(a.name)}</div>
+      <div class="table__cell">${escapeHtml(a.ver)}</div>
+    `;
+    body.appendChild(row);
+  }
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+  const openBtn = document.getElementById("btnOpenAiStackPopup");
+  const closeBtn = document.getElementById("btnCloseAiStackPopup");
+  const overlay = document.getElementById("aiStackOverlay");
+
+  await refreshAiStackLatest();
+  renderAiStackPopup();
+
+  openBtn?.addEventListener("click", () => {
+    if (!overlay) return;
+    overlay.style.display = "flex";
+  });
+
+  closeBtn?.addEventListener("click", () => {
+    if (!overlay) return;
+    overlay.style.display = "none";
+  });
+
+  overlay?.addEventListener("click", (e) => {
+    if(e.target === overlay) overlay.style.display = "none";
+  });
+});
+</script>
+
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
