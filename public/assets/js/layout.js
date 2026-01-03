@@ -5,7 +5,7 @@
   - [画像] は会話とは別の集約ボックス（全会話の作成画像を集約）
   - [プロジェクト][チャット] はプルダウン + 履歴保存（localStorage）
   - プロジェクトとチャットは別扱い（scope 分離）
-  - ユーザーボタン→設定 はメイン画面内ポップアップ（settings-modal）
+  - ユーザーボタン→設定 はメイン画面内ポップアップ（settings-modal / embedded）
   - リロード時に勝手に画像モード開始しない（初期は chat）
 */
 
@@ -51,11 +51,12 @@
     // view: "chat" | "images" | "search"
     view: "chat",
 
-    // project selection is independent from chat
+    // selected project (for showing PJ area)
     activeProjectId: null,
 
-    // scope is kept for future, but chat list is always global in v1
-    scope: { type: "global" },
+    // current opened conversation context (what the main board shows)
+    // { type:"global" } or { type:"project", projectId:"..." }
+    context: { type: "global" },
 
     // active thread ids
     activeThreadIdByScope: { global: null, projects: {} },
@@ -73,7 +74,7 @@
     ],
 
     // images library (aggregated, independent)
-    images: [], // [{id, createdAt, src, prompt, from:{scopeType, projectId, threadId}}]
+    images: [],
 
     // plan
     plan: "Free"
@@ -90,10 +91,9 @@
   const sidebar = $(".sidebar");
   const sbTop = $(".sb-top", sidebar);
 
-  const userDetails = $(".user-menu details");
+  const userMenuDetails = $(".user-menu details");
   const plusDetails = $(".plus-menu details");
 
-  const settingsModal = $(".settings-modal");
   const projectModal = $(".project-modal");
 
   const projectNameInput = $(".project-modal .pname");
@@ -115,8 +115,32 @@
   const btnImages = $(".sb-item[aria-label='画像']");
   const btnShare = $(".topbar .icon-btn[aria-label='シェア']");
 
-  const linkSettings = $(".user-pop a[aria-label='設定']");
-  const linkLogout = $(".user-pop a[aria-label='ログアウト']");
+  const linkSettings =
+    document.getElementById("btnOpenSettings")
+    || $(".user-pop a[data-action='open-settings']")
+    || $(".user-pop a[aria-label='設定']");
+
+  const linkLogout =
+    document.getElementById("btnLogout")
+    || $(".user-pop a[data-action='logout']")
+    || $(".user-pop a[aria-label='ログアウト']");
+
+  /* ================= settings (embedded modal) ================= */
+  const settingsOverlay = document.getElementById("settingsOverlay");
+  const settingsModal = document.getElementById("settingsModal");
+  const settingsClose = document.getElementById("settingsClose");
+
+  const openSettings = () => {
+    settingsOverlay?.removeAttribute("hidden");
+    settingsModal?.removeAttribute("hidden");
+    body.style.overflow = "hidden";
+  };
+
+  const closeSettings = () => {
+    settingsOverlay?.setAttribute("hidden", "");
+    settingsModal?.setAttribute("hidden", "");
+    body.style.overflow = "";
+  };
 
   // groups
   const projectGroup = $$(".sb-group").find(d => d.querySelector("summary[aria-label='プロジェクト']"));
@@ -128,77 +152,77 @@
   let sbSearchInput = null;
 
   const mountSidebarSearch = () => {
+    if (!sidebar) return;
+
+    const sbTop = sidebar.querySelector(".sb-top");
     if (!sbTop) return;
-    if ($(".sb-search", sbTop)) {
-      sbSearchInput = $("#aureaSearchInput", sbTop);
-      return;
-    }
+
+    // 既に存在する場合は何もしない（再生成しない）
+    if (sbTop.querySelector("#aureaSearchInput")) return;
 
     const wrap = document.createElement("div");
     wrap.className = "sb-search";
-    wrap.innerHTML = `
-      <div class="lbl">検索</div>
-      <input id="aureaSearchInput" type="search" placeholder="会話を検索" aria-label="検索" />
-    `;
+
+    const input = document.createElement("input");
+    input.id = "aureaSearchInput";
+
+    // ★ legacy search / ESC操作でも参照できるように保持
+    sbSearchInput = input;
+
+    input.type = "search";
+    input.placeholder = "検索";
+    input.setAttribute("aria-label", "検索");
+
+    wrap.appendChild(input);
     sbTop.insertBefore(wrap, sbTop.firstChild);
 
-    sbSearchInput = $("#aureaSearchInput", wrap);
-
-    // input -> open Search View and render results
-    sbSearchInput.addEventListener("input", () => {
-      const q = (sbSearchInput.value || "").trim();
-      if (!q) {
-        // if already on search view, keep empty state
-        if (state.view === "search") renderView();
-        return;
-      }
-      state.view = "search";
-      save(state);
-      renderView();
-    });
-
-    sbSearchInput.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") {
-        sbSearchInput.value = "";
-        if (state.view === "search") {
-          state.view = "chat";
-          save(state);
-          renderView();
-        }
-      }
+    // GPT準拠：横断検索（global + project）
+    input.addEventListener("input", () => {
+      const q = input.value.trim().toLowerCase();
+      renderSearchView(q);
     });
   };
 
   /* ================= scope helpers ================= */
-  // scope: global / project を分離（リンクしない）
-  const getThreadsForScope = () => {
-    if (state.scope.type === "global") return state.threads.global;
-    const pid = state.scope.projectId;
-    if (!state.threads.projects[pid]) state.threads.projects[pid] = [];
-    return state.threads.projects[pid];
+  const getThreadsForContext = () => {
+    if (state.context?.type === "project") {
+      const pid = state.context.projectId;
+      if (!state.threads.projects[pid]) state.threads.projects[pid] = [];
+      return state.threads.projects[pid];
+    }
+    return state.threads.global;
   };
 
   const getActiveThreadId = () => {
-    if (state.scope.type === "global") return state.activeThreadIdByScope.global;
-    return state.activeThreadIdByScope.projects[state.scope.projectId] || null;
+    if (state.context?.type === "project") {
+      return state.activeThreadIdByScope.projects[state.context.projectId] || null;
+    }
+    return state.activeThreadIdByScope.global;
   };
 
   const setActiveThreadId = (tid) => {
-    if (state.scope.type === "global") state.activeThreadIdByScope.global = tid;
-    else state.activeThreadIdByScope.projects[state.scope.projectId] = tid;
+    if (state.context?.type === "project") {
+      state.activeThreadIdByScope.projects[state.context.projectId] = tid;
+    } else {
+      state.activeThreadIdByScope.global = tid;
+    }
     save(state);
   };
 
-  const getThreadByIdInScope = (tid) => {
-    const threads = getThreadsForScope();
+  const getThreadByIdInContext = (tid) => {
+    const threads = getThreadsForContext();
     return threads.find(t => t.id === tid) || null;
   };
 
+  // 互換用：旧コードが呼んでも落ちないように「今のcontext内」で探す
+  const getThreadByIdInScope = (tid) => {
+    return getThreadByIdInContext(tid);
+  };
+
   const ensureActiveThread = () => {
-    const threads = getThreadsForScope();
+    const threads = getThreadsForContext();
     const tid = getActiveThreadId();
     if (!tid || !threads.some(t => t.id === tid)) {
-      // do not auto-select old thread on load; only when user selects.
       setActiveThreadId(null);
     }
   };
@@ -220,16 +244,6 @@
     sendBtn.style.display = hasText ? "" : "none";
     if (micBtn) micBtn.style.display = hasText ? "none" : "";
     if (voiceBtn) voiceBtn.style.display = hasText ? "none" : "";
-  };
-
-  /* ================= settings modal ================= */
-  const openSettingsModal = () => {
-    body.classList.add("settings-open");
-    settingsModal?.setAttribute("aria-hidden", "false");
-  };
-  const closeSettingsModal = () => {
-    body.classList.remove("settings-open");
-    settingsModal?.setAttribute("aria-hidden", "true");
   };
 
   /* ================= project modal ================= */
@@ -360,31 +374,31 @@
 
   /* ================= threads ================= */
   const createThread = () => {
-    const threads = getThreadsForScope();
+    const threads = getThreadsForContext();
     const t = { id: uid(), title: "新しいチャット", updatedAt: nowISO(), messages: [] };
     threads.unshift(t);
     setActiveThreadId(t.id);
-    save(state);
-
     state.view = "chat";
     save(state);
 
     renderSidebar();
     renderView();
 
-    // new chat => centered
     setHasChat(false);
     askInput?.focus();
   };
 
   const renameThread = (threadId) => {
-    const threads = getThreadsForScope();
+    // globalチャット欄の操作は global に固定
+    const threads = state.threads.global || [];
     const t = threads.find(x => x.id === threadId);
     if (!t) return;
+
     const next = window.prompt("新しい名前", t.title || "新しいチャット");
     if (next === null) return;
     const v = next.trim();
     if (!v) return;
+
     t.title = v;
     t.updatedAt = nowISO();
     save(state);
@@ -395,14 +409,14 @@
     const ok1 = await confirmModal("削除しますか？");
     if (!ok1) return;
 
-    const threads = getThreadsForScope();
+    const threads = state.threads.global || [];
     const idx = threads.findIndex(x => x.id === threadId);
     if (idx < 0) return;
 
     threads.splice(idx, 1);
 
-    if (getActiveThreadId() === threadId) {
-      setActiveThreadId(null);
+    if (state.context?.type === "global" && state.activeThreadIdByScope.global === threadId) {
+      state.activeThreadIdByScope.global = null;
     }
 
     save(state);
@@ -411,12 +425,11 @@
   };
 
   const appendMessage = (role, content) => {
-    const threads = getThreadsForScope();
-    let t = getThreadByIdInScope(getActiveThreadId());
+    let t = getThreadByIdInContext(getActiveThreadId());
 
     if (!t) {
       createThread();
-      t = getThreadByIdInScope(getActiveThreadId());
+      t = getThreadByIdInContext(getActiveThreadId());
       if (!t) return null;
     }
 
@@ -436,7 +449,7 @@
   };
 
   const updateMessage = (mid, content) => {
-    const t = getThreadByIdInScope(getActiveThreadId());
+    const t = getThreadByIdInContext(getActiveThreadId());
     if (!t) return;
     const m = t.messages.find(x => x.id === mid);
     if (!m) return;
@@ -574,10 +587,11 @@
     if (!hit) return;
 
     if (hit.scopeType === "global") {
-      state.scope = { type: "global" };
+      state.context = { type: "global" };
       setActiveThreadId(hit.threadId);
     } else {
-      state.scope = { type: "project", projectId: hit.projectId };
+      state.activeProjectId = hit.projectId;
+      state.context = { type: "project", projectId: hit.projectId };
       state.activeThreadIdByScope.projects[hit.projectId] = hit.threadId;
       save(state);
     }
@@ -601,7 +615,7 @@
 
     chatRoot.innerHTML = "";
 
-    const t = getThreadByIdInScope(getActiveThreadId());
+    const t = getThreadByIdInContext(getActiveThreadId());
     const msgs = t?.messages || [];
 
     if (!t || msgs.length === 0) {
@@ -705,11 +719,11 @@
     bodyEl.appendChild(grid);
   };
 
-  const renderSearchView = () => {
+  const renderSearchView = (q) => {
     clearBoardViewNodes();
 
-    const q = (sbSearchInput?.value || "").trim();
-    const hits = searchAll(q);
+    const query = (q ?? "").trim();
+    const hits = searchAll(query);
 
     const wrap = document.createElement("div");
     wrap.id = "aureaView";
@@ -788,7 +802,7 @@
 
     if (state.view === "search") {
       if (chatRoot) chatRoot.style.display = "none";
-      renderSearchView();
+      renderSearchView(sbSearchInput?.value || "");
       setHasChat(false);
       return;
     }
@@ -801,17 +815,6 @@
 
   /* ================= sidebar render ================= */
   const clearNode = (el) => { if (el) el.innerHTML = ""; };
-
-  const fmtDate = (iso) => {
-    try{
-      const d = new Date(iso);
-      const mm = String(d.getMonth()+1).padStart(2,"0");
-      const dd = String(d.getDate()).padStart(2,"0");
-      return `${mm}/${dd}`;
-    }catch{
-      return "";
-    }
-  };
 
   const renderProjects = () => {
     if (!projectList) return;
@@ -876,28 +879,15 @@
         row.appendChild(more);
         projectList.appendChild(row);
 
-        // Active PJ の時だけ、PJ内のUI（+ 新しいチャット / 履歴）を出す
+        // Active PJ の時だけ、PJ内のUI（履歴）を出す
         if (isActive) {
           const inner = document.createElement("div");
           inner.className = "pj-inner";
           inner.dataset.projectId = p.id;
 
-          // + PJ名：新しいチャット
-          const newChat = document.createElement("a");
-          newChat.href = "#";
-          newChat.className = "pj-newchat";
-          newChat.dataset.action = "pj-newchat";
-          newChat.dataset.projectId = p.id;
-          newChat.innerHTML = `
-            <span style="opacity:.9">＋</span>
-            <span style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(p.name)}：新しいチャット</span>
-          `;
-          inner.appendChild(newChat);
-
           // subhead
           const sub = document.createElement("div");
           sub.className = "pj-subhead";
-          sub.textContent = "PJ内で会話した履歴";
           inner.appendChild(sub);
 
           // PJ threads
@@ -912,10 +902,7 @@
             a.dataset.projectId = p.id;
             a.dataset.threadId = t.id;
 
-            a.innerHTML = `
-              <div class="t">${escHtml(t.title || "新しいチャット")}</div>
-              <div class="d">${escHtml(fmtDate(t.updatedAt || t.createdAt || ""))}</div>
-            `;
+            a.innerHTML = `<div class="t">${escHtml(t.title || "新しいチャット")}</div>`;
             inner.appendChild(a);
           });
 
@@ -935,8 +922,9 @@
   const renderChatList = () => {
     if (!chatList) return;
 
-    const threads = getThreadsForScope().slice();
-    threads.sort((a,b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
+    // GPTと同じ意味：この「チャット」欄は常に global
+    const threads = (state.threads.global || []).slice()
+      .sort((a,b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
 
     clearNode(chatList);
 
@@ -953,7 +941,8 @@
       link.setAttribute("aria-label", t.title || "新しいチャット");
       link.textContent = t.title || "新しいチャット";
 
-      if (getActiveThreadId() === t.id) {
+      // active only when current context is global
+      if (state.context?.type === "global" && state.activeThreadIdByScope.global === t.id) {
         link.setAttribute("data-active","1");
       }
 
@@ -1004,24 +993,13 @@
   const selectProjectScope = (projectId) => {
     state.activeProjectId = projectId;
 
-    // PJを選択したら scope を project に切り替える（PJ内チャットはPJ内）
-    state.scope = { type: "project", projectId };
+    // GPT基準：PJを選択したら「メインの会話コンテキスト」もPJに切替
+    state.context = { type: "project", projectId };
 
-    ensureActiveThread(); // 自動で選ばない（既存の方針維持）
-    state.view = "chat";
-
-    save(state);
-    renderSidebar();
-    renderView();
-    askInput?.focus();
-  };
-
-  const selectGlobalScope = () => {
-    state.scope = { type: "global" };
     ensureActiveThread();
     state.view = "chat";
-    save(state);
 
+    save(state);
     renderSidebar();
     renderView();
     askInput?.focus();
@@ -1084,17 +1062,7 @@
   };
 
   const fakeReply = async (userText) => {
-    const t = getThreadByIdInScope(getActiveThreadId());
-    const from = {
-      scopeType: state.scope.type,
-      projectId: state.scope.type === "project" ? state.scope.projectId : null,
-      threadId: t?.id || null
-    };
-
-    const isImageContext = false; // v1: images are collected via explicit "画像を作成する" action below (placeholder)
-    const reply = isImageContext
-      ? `（画像生成）\n${userText}\n\n※ここは後で画像生成APIに接続します。`
-      : `（AUREA）\n${userText}\n\n※ここは後で /api/chat に接続します。`;
+    const reply = `（AUREA）\n${userText}\n\n※ここは後で /api/chat に接続します。`;
 
     const m = appendMessage("assistant", "");
     if (!m) return;
@@ -1113,8 +1081,6 @@
         streamTimer = null;
         setStreaming(false);
         renderSidebar();
-
-        // If future: detect image replies. In v1 we only store when user uses "画像を作成する" action.
       }
     }, 18);
   };
@@ -1137,21 +1103,11 @@
 
   /* ================= special: create image (store to library) ================= */
   const createImageFromPrompt = async (prompt) => {
-    // store immediately as placeholder (API will replace later)
-    const t = getThreadByIdInScope(getActiveThreadId());
-    const from = {
-      scopeType: state.scope.type,
-      projectId: state.scope.type === "project" ? state.scope.projectId : null,
-      threadId: t?.id || null
-    };
-
     addImageToLibrary({
       prompt,
-      src: makePlaceholderImageDataUrl(prompt),
-      from
+      src: makePlaceholderImageDataUrl(prompt)
     });
 
-    // also write a short assistant message in current chat (optional)
     appendMessage("assistant", `（画像を保存しました）\n「画像」→保存ボックスに追加済み。\n\nPrompt:\n${prompt}`);
   };
 
@@ -1195,7 +1151,6 @@
 
   btnImages?.addEventListener("click", (e) => {
     e.preventDefault();
-    // open images view (aggregated)
     state.view = "images";
     save(state);
     renderView();
@@ -1213,9 +1168,31 @@
     await copyText(url);
   });
 
+  // settings open
   linkSettings?.addEventListener("click", (e) => {
     e.preventDefault();
-    window.location.href = "/settings.html";
+    closeDetails(userMenuDetails);
+    openSettings();
+  });
+
+  // settings close
+  settingsClose?.addEventListener("click", (e) => {
+    e.preventDefault();
+    closeSettings();
+  });
+  settingsOverlay?.addEventListener("click", (e) => {
+    e.preventDefault();
+    closeSettings();
+  });
+
+  // settings内の close（button.close）でも閉じる
+  document.addEventListener("click", (e) => {
+    const t = e.target;
+    if (!t) return;
+    if (settingsModal && settingsModal.contains(t) && t.closest("button.close")) {
+      e.preventDefault();
+      closeSettings();
+    }
   });
 
   linkLogout?.addEventListener("click", async (e) => {
@@ -1223,13 +1200,6 @@
     const ok1 = await confirmModal("ログアウトしますか？");
     if (!ok1) return;
     window.location.href = "/login.html";
-  });
-
-  // settings modal close button
-  const settingsClose = $(".settings-modal .hd button[aria-label='閉じる']");
-  settingsClose?.addEventListener("click", (e) => {
-    e.preventDefault();
-    closeSettingsModal();
   });
 
   // project modal close buttons
@@ -1272,12 +1242,9 @@
       }
 
       if (label === "画像を作成する") {
-        // v1: create placeholder image and store to library
         const prompt = (askInput?.value || "").trim() || "（未入力）";
-        // ensure thread exists
         if (!getActiveThreadId()) createThread();
         await createImageFromPrompt(prompt);
-        // open images view after creation
         state.view = "images";
         save(state);
         renderSidebar();
@@ -1295,10 +1262,22 @@
     });
 
     askInput.addEventListener("keydown", (e) => {
-      // Enter = send, Shift+Enter = newline
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        send();
+      const mode = localStorage.getItem("aurea_send_mode") || "cmdEnter";
+      const isEnter = (e.key === "Enter");
+
+      if (mode === "cmdEnter") {
+        if (isEnter && (e.metaKey || e.ctrlKey)) {
+          e.preventDefault();
+          send();
+        }
+        return;
+      }
+
+      if (mode === "enter") {
+        if (isEnter && !e.shiftKey) {
+          e.preventDefault();
+          send();
+        }
       }
     });
   }
@@ -1306,7 +1285,6 @@
   sendBtn?.addEventListener("click", (e) => { e.preventDefault(); send(); });
   stopBtn?.addEventListener("click", (e) => { e.preventDefault(); stopStreaming(); });
 
-  // mic/voice placeholders
   micBtn?.addEventListener("click", (e) => { e.preventDefault(); });
   voiceBtn?.addEventListener("click", (e) => { e.preventDefault(); });
 
@@ -1314,15 +1292,9 @@
   document.addEventListener("pointerdown", (e) => {
     const t = e.target;
 
-    if (userDetails?.hasAttribute("open") && !isInside(userDetails, t)) closeDetails(userDetails);
+    if (userMenuDetails?.hasAttribute("open") && !isInside(userMenuDetails, t)) closeDetails(userMenuDetails);
     if (plusDetails?.hasAttribute("open") && !isInside(plusDetails, t)) closeDetails(plusDetails);
     $$(".sb-more[open]").forEach(d => { if (!isInside(d, t)) closeDetails(d); });
-
-    // settings backdrop close
-    if (body.classList.contains("settings-open") && settingsModal) {
-      const card = $(".settings-modal .settings");
-      if (isInside(settingsModal, t) && !isInside(card, t)) closeSettingsModal();
-    }
 
     // project backdrop close
     if (body.classList.contains("project-open") && projectModal) {
@@ -1341,8 +1313,10 @@
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
 
+    // settings first
+    if (settingsModal && !settingsModal.hasAttribute("hidden")) { closeSettings(); return; }
+
     if (body.classList.contains("project-open")) { closeProjectModal(); return; }
-    if (body.classList.contains("settings-open")) { closeSettingsModal(); return; }
     if (streamTimer) { stopStreaming(); return; }
 
     // exit search view quickly
@@ -1360,36 +1334,6 @@
   /* ================= delegate clicks ================= */
   document.addEventListener("click", async (e) => {
     const t = e.target;
-
-    // PJ内: + PJ名：新しいチャット
-    const pjNew = t.closest(".pj-newchat[data-action='pj-newchat']");
-    if (pjNew) {
-      e.preventDefault();
-      const pid = pjNew.dataset.projectId;
-      if (!pid) return;
-
-      state.activeProjectId = pid;
-      state.scope = { type: "project", projectId: pid };
-
-      createThread(); // scope が project の状態で作る => PJ内スレッドに入る
-      return;
-    }
-
-    // PJ内: 履歴クリック
-    const pjOpen = t.closest(".pj-thread[data-action='pj-open-thread']");
-    if (pjOpen) {
-      e.preventDefault();
-      const pid = pjOpen.dataset.projectId;
-      const tid = pjOpen.dataset.threadId;
-      if (!pid || !tid) return;
-
-      state.activeProjectId = pid;
-      state.scope = { type: "project", projectId: pid };
-      save(state);
-
-      selectThread(tid);
-      return;
-    }
 
     // project row click / menu
     const pRow = t.closest(".sb-row[data-kind='project']");
@@ -1410,7 +1354,6 @@
         return;
       }
 
-      // ignore dots click
       if (t.closest(".sb-more") || t.classList.contains("sb-dots")) return;
 
       e.preventDefault();
@@ -1418,7 +1361,7 @@
       return;
     }
 
-    // thread row click / menu（チャットグループ側は global 用として使う想定）
+    // thread row click / menu（チャット欄は global）
     const thRow = t.closest(".sb-row[data-kind='thread']");
     if (thRow && chatList && chatList.contains(thRow)) {
       const id = thRow.dataset.id;
@@ -1439,11 +1382,15 @@
 
       if (t.closest(".sb-more") || t.classList.contains("sb-dots")) return;
 
-      // chatグループは global 扱いに戻す（PJとはリンクしない）
       e.preventDefault();
-      state.scope = { type: "global" };
+      state.context = { type: "global" };
+      setActiveThreadId(id);
+      state.view = "chat";
       save(state);
-      selectThread(id);
+
+      renderSidebar();
+      renderView();
+      askInput?.focus();
       return;
     }
 
@@ -1503,15 +1450,12 @@
   });
 
   /* ================= boot ================= */
-  // normalize plan
   if (!state.plan) state.plan = "Free";
 
-  // normalize scope
-  if (!state.scope || (state.scope.type !== "global" && state.scope.type !== "project")) {
-    state.scope = { type: "global" };
+  if (!state.context || (state.context.type !== "global" && state.context.type !== "project")) {
+    state.context = { type: "global" };
   }
 
-  // ensure threads containers
   if (!state.threads) state.threads = { global: [], projects: {} };
   if (!state.threads.global) state.threads.global = [];
   if (!state.threads.projects) state.threads.projects = {};
@@ -1520,7 +1464,7 @@
 
   ensureActiveThread();
 
-  // mount search input (top)
+  // sidebar search (必ず初期化)
   mountSidebarSearch();
 
   // render
@@ -1533,6 +1477,4 @@
   // ask init
   autosizeTextarea();
   updateSendButtonVisibility();
-
-  // (optional) if user clicks brand rail etc, do nothing
 })();
