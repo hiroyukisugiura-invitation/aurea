@@ -295,19 +295,57 @@
   };
 
   const applyI18n = () => {
-    const lang = state.settings.language || "ja";
+    const lang = state.settings?.language || "ja";
 
-    const map = [
-      [".sb-item[aria-label='新しいチャット'] .label", t("newChat")],
-      [".sb-item[aria-label='画像'] .label", t("images")],
-      [".user-pop a[aria-label='設定']", t("settings")],
-      [".user-pop a[aria-label='ログアウト']", t("logout")]
-    ];
-
-    map.forEach(([sel, text]) => {
+    const setText = (sel, text) => {
       const el = document.querySelector(sel);
-      if (el) el.textContent = text;
-    });
+      if (el && text != null) el.textContent = text;
+    };
+
+    // ===== Sidebar =====
+    setText(".sb-item[aria-label='新しいチャット'] .label", t("newChat"));
+    setText(".sb-item[aria-label='ライブラリ'] .label", t("library"));
+
+    // Group headers
+    setText(".sb-group summary[aria-label='プロジェクト'] > span", t("projects"));
+    setText(".sb-group summary[aria-label='チャット'] > span", t("chats"));
+
+    // Sidebar search placeholder (mounted)
+    const sbSearch = document.getElementById("aureaSearchInput");
+    if (sbSearch) {
+      sbSearch.placeholder = t("search");
+      sbSearch.setAttribute("aria-label", t("search"));
+    }
+
+    // User menu
+    setText(".user-pop a[aria-label='設定']", t("settings"));
+    setText(".user-pop a[aria-label='ログアウト']", t("logout"));
+
+    // ===== Settings modal (embedded) =====
+    setText(".settings-modal .nav-title", t("settings"));
+
+    setText(".settings-modal label[for='tab-general'] .nav-txt", t("general"));
+    setText(".settings-modal label[for='tab-apps'] .nav-txt", t("apps"));
+    setText(".settings-modal label[for='tab-data'] .nav-txt", t("data"));
+    setText(".settings-modal label[for='tab-trainer'] .nav-txt", t("trainer"));
+    setText(".settings-modal label[for='tab-account'] .nav-txt", t("accountSecurity"));
+
+    setText(".settings-modal .panel-general .content-title", t("general"));
+    setText(".settings-modal .panel-apps .content-title", t("apps"));
+    setText(".settings-modal .panel-data .content-title", t("data"));
+    setText(".settings-modal .panel-account .content-title", t("accountSecurity"));
+
+    // Apps: "+ SaaS 追加" button label
+    const addBtn = document.querySelector(".settings-modal .panel-apps .apps-header .btn");
+    if (addBtn) {
+      addBtn.innerHTML = `<i class="fa-solid fa-plus"></i> ${t("addSaas")}`;
+    }
+
+    // Settings: language select placeholder-like consistency (表示のみ)
+    const selLang = document.querySelector(".settings-modal select[aria-label='言語']");
+    if (selLang) {
+      selLang.setAttribute("aria-label", t("language"));
+    }
   };
 
   const openSettings = () => {
@@ -481,8 +519,8 @@
     sbSearchInput = input;
 
     input.type = "search";
-    input.placeholder = "検索";
-    input.setAttribute("aria-label", "検索");
+    input.placeholder = (state.settings?.language === "en") ? "Search" : "検索";
+    input.setAttribute("aria-label", (state.settings?.language === "en") ? "Search" : "検索");
 
     wrap.appendChild(input);
     sbTop.insertBefore(wrap, sbTop.firstChild);
@@ -1146,6 +1184,7 @@
     clearBoardViewNodes();
     if (chatRoot) chatRoot.style.display = "";
     renderChat();
+    applyI18n();
   };
 
   /* ================= sidebar render ================= */
@@ -1343,6 +1382,7 @@
   const renderSidebar = () => {
     renderProjects();
     renderChatList();
+    applyI18n();
   };
 
   /* ================= selection ================= */
@@ -1908,9 +1948,22 @@ btnNewChat?.addEventListener("click", (e) => {
   const I18N = {
     ja: {
       newChat: "新しいチャット",
-      images: "画像",
+      library: "ライブラリ",
+      projects: "プロジェクト",
+      chats: "チャット",
+      search: "検索",
+
       settings: "設定",
       logout: "ログアウト",
+
+      general: "一般",
+      apps: "アプリ",
+      data: "データ",
+      trainer: "AUREA Data Trainer",
+      accountSecurity: "アカウント・セキュリティ",
+
+      addSaas: "+ SaaS 追加",
+
       theme: "テーマ",
       language: "言語",
       sendMode: "AUREAへの送信方法",
@@ -1918,9 +1971,22 @@ btnNewChat?.addEventListener("click", (e) => {
     },
     en: {
       newChat: "New chat",
-      images: "Images",
+      library: "Library",
+      projects: "Projects",
+      chats: "Chats",
+      search: "Search",
+
       settings: "Settings",
       logout: "Log out",
+
+      general: "General",
+      apps: "Apps",
+      data: "Data",
+      trainer: "AUREA Data Trainer",
+      accountSecurity: "Account & Security",
+
+      addSaas: "+ Add SaaS",
+
       theme: "Theme",
       language: "Language",
       sendMode: "Send behavior",
@@ -2346,13 +2412,37 @@ btnNewChat?.addEventListener("click", (e) => {
     });
 
     const kbBtns = Array.from(document.querySelectorAll(".panel-data .section[aria-label='ナレッジベース'] .btn.secondary"));
+
+    const pickFirstOkUrl = async (paths) => {
+      for (const p of paths) {
+        try {
+          const r = await fetch(p, { method: "HEAD" });
+          if (r && r.ok) return p;
+        } catch {}
+      }
+      return paths[0] || "";
+    };
+
+    const startGoogleDriveConnect = async () => {
+      // 既存AI Earth側の実装に寄せてパス候補を用意（存在する方へ）
+      const url = await pickFirstOkUrl([
+        "/ai/drive/connect",
+        "/api/drive/connect"
+      ]);
+
+      if (!url) return;
+
+      // 別タブでOAuth開始
+      window.open(url, "_blank", "noopener,noreferrer");
+    };
+
     kbBtns.forEach((b) => {
       b.addEventListener("click", async (e) => {
         e.preventDefault();
         const txt = (b.textContent || "").trim();
 
         if (txt.startsWith("クラウドストレージと接続する")) {
-          await confirmModal("クラウドストレージ接続を開始しますか？");
+          await startGoogleDriveConnect();
           return;
         }
 
