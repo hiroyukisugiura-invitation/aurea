@@ -169,6 +169,14 @@
     // v1: system は dark 扱い（CSS拡張は後工程で可）
     if (th === "light") body.classList.add("theme-light");
     else body.classList.add("theme-dark");
+
+    // Light時ロゴ差し替え
+    const logo = document.querySelector(".brand-logo");
+    if (logo) {
+      const darkSrc = "/assets/img/brand/aurea_logo_l_wh.png";
+      const lightSrc = "/assets/img/brand/aurea_logo_l_bk.png";
+      logo.src = (th === "light") ? lightSrc : darkSrc;
+    }
   };
 
   const syncSettingsUi = () => {
@@ -178,7 +186,14 @@
       const v = state.settings.theme;
       const map = { system: "システム", light: "ライト", dark: "ダーク" };
       const label = map[v] || "ダーク";
-      Array.from(selTheme.options).forEach(o => { o.selected = (o.textContent === label); });
+      Array.from(selTheme.options).forEach(o => { o.selected = (o.textContent === label || o.value === label); });
+    }
+
+    // Language
+    const selLang = document.querySelector(".settings-modal select[aria-label='言語']");
+    if (selLang && state.settings?.language) {
+      const label = (state.settings.language === "en") ? "English (US)" : "日本語";
+      Array.from(selLang.options).forEach(o => { o.selected = (o.textContent === label); });
     }
 
     // Send mode
@@ -210,7 +225,11 @@
       const name = (nameEl?.textContent || "").trim();
       if (!btn || !name) return;
 
-      const on = !!state.apps?.[name];
+      const isCustom = (Array.isArray(state.customApps) && state.customApps.some(a => a.name === name));
+      const on = isCustom
+        ? !!(state.customApps.find(a => a.name === name)?.connected)
+        : !!state.apps?.[name];
+
       btn.classList.toggle("on", on);
       btn.classList.toggle("off", !on);
       btn.textContent = on ? "接続" : "未接続";
@@ -258,12 +277,29 @@
     }
   };
 
+  const applyI18n = () => {
+    const lang = state.settings.language || "ja";
+
+    const map = [
+      [".sb-item[aria-label='新しいチャット'] .label", t("newChat")],
+      [".sb-item[aria-label='画像'] .label", t("images")],
+      [".user-pop a[aria-label='設定']", t("settings")],
+      [".user-pop a[aria-label='ログアウト']", t("logout")]
+    ];
+
+    map.forEach(([sel, text]) => {
+      const el = document.querySelector(sel);
+      if (el) el.textContent = text;
+    });
+  };
+
   const openSettings = () => {
     settingsOverlay?.removeAttribute("hidden");
     settingsModal?.removeAttribute("hidden");
     body.style.overflow = "hidden";
     syncAccountUi();
     syncSettingsUi();
+    applyI18n();
   };
 
   const closeSettings = () => {
@@ -626,7 +662,7 @@
     askInput?.focus();
   };
 
-  /* ================= threads ================= */
+/* ================= threads ================= */
   const createThread = () => {
     const threads = getThreadsForContext();
     const t = { id: uid(), title: "新しいチャット", updatedAt: nowISO(), messages: [] };
@@ -635,6 +671,30 @@
     state.view = "chat";
     save(state);
 
+    renderSidebar();
+    renderView();
+
+    setHasChat(false);
+    askInput?.focus();
+  };
+
+  const createProjectThread = (projectId) => {
+    const pid = projectId;
+    if (!pid) return;
+
+    if (!state.threads.projects[pid]) state.threads.projects[pid] = [];
+    if (!state.activeThreadIdByScope.projects) state.activeThreadIdByScope.projects = {};
+
+    const threads = state.threads.projects[pid];
+    const t = { id: uid(), title: "新しいチャット", updatedAt: nowISO(), messages: [] };
+    threads.unshift(t);
+
+    state.activeProjectId = pid;
+    state.context = { type: "project", projectId: pid };
+    state.activeThreadIdByScope.projects[pid] = t.id;
+    state.view = "chat";
+
+    save(state);
     renderSidebar();
     renderView();
 
@@ -1095,8 +1155,14 @@
         link.setAttribute("aria-label", p.name);
         link.textContent = p.name;
 
-        const isActive = (state.activeProjectId === p.id);
+        // isExpanded: PJの展開状態（入れ物）
+        const isExpanded = (state.activeProjectId === p.id);
+
+        // isActive: いま表示している会話コンテキスト（実体）
+        const isActive = (state.context?.type === "project" && state.context?.projectId === p.id);
+
         if (isActive) link.setAttribute("data-active","1");
+        else link.removeAttribute("data-active");
 
         const more = document.createElement("details");
         more.className = "sb-more";
@@ -1133,18 +1199,22 @@
         row.appendChild(more);
         projectList.appendChild(row);
 
-        // Active PJ の時だけ、PJ内のUI（履歴）を出す
-        if (isActive) {
+        // 展開中のPJだけ、PJ内のUI（履歴）を出す
+        if (isExpanded) {
           const inner = document.createElement("div");
           inner.className = "pj-inner";
           inner.dataset.projectId = p.id;
 
-          // subhead
-          const sub = document.createElement("div");
-          sub.className = "pj-subhead";
-          inner.appendChild(sub);
+          // PJ内：新しいチャット（作成）
+          const newA = document.createElement("a");
+          newA.href = "#";
+          newA.className = "pj-thread pj-new-thread";
+          newA.dataset.action = "pj-new-thread";
+          newA.dataset.projectId = p.id;
+          newA.innerHTML = `<div class="t">新しいチャット</div>`;
+          inner.appendChild(newA);
 
-          // PJ threads
+          // PJ threads（PJ内チャットのみ表示）
           const list = (state.threads.projects[p.id] || []).slice()
             .sort((a,b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
 
@@ -1155,6 +1225,17 @@
             a.dataset.action = "pj-open-thread";
             a.dataset.projectId = p.id;
             a.dataset.threadId = t.id;
+
+            // active: 「表示中の会話」がこのPJ内スレッドのときだけ
+            if (
+              state.context?.type === "project"
+              && state.context?.projectId === p.id
+              && (state.activeThreadIdByScope?.projects?.[p.id] === t.id)
+            ) {
+              a.setAttribute("data-active", "1");
+            } else {
+              a.removeAttribute("data-active");
+            }
 
             a.innerHTML = `<div class="t">${escHtml(t.title || "新しいチャット")}</div>`;
             inner.appendChild(a);
@@ -1245,28 +1326,11 @@
 
   /* ================= selection ================= */
   const selectProjectScope = (projectId) => {
+    // PJは「入れ物」：選択＝展開のみ（会話コンテキストは切り替えない）
     state.activeProjectId = projectId;
 
-    // GPT基準：PJを選択したら「メインの会話コンテキスト」もPJに切替
-    state.context = { type: "project", projectId };
-
-    ensureActiveThread();
-    state.view = "chat";
-
     save(state);
     renderSidebar();
-    renderView();
-    askInput?.focus();
-  };
-
-  const selectThread = (threadId) => {
-    setActiveThreadId(threadId);
-    state.view = "chat";
-    save(state);
-
-    renderSidebar();
-    renderView();
-    askInput?.focus();
   };
 
   /* ================= rename/delete project ================= */
@@ -1287,10 +1351,22 @@
     const ok1 = await confirmModal("プロジェクトを削除しますか？");
     if (!ok1) return;
 
+    // PJ本体削除
     state.projects = state.projects.filter(x => x.id !== projectId);
 
+    // PJ配下データ削除（混線防止）
+    if (state.threads?.projects) delete state.threads.projects[projectId];
+    if (state.activeThreadIdByScope?.projects) delete state.activeThreadIdByScope.projects[projectId];
+
+    // 展開中PJ解除
     if (state.activeProjectId === projectId) {
       state.activeProjectId = null;
+    }
+
+    // 表示中コンテキストが削除PJなら global に戻す
+    if (state.context?.type === "project" && state.context?.projectId === projectId) {
+      state.context = { type: "global" };
+      state.view = "chat";
     }
 
     save(state);
@@ -1398,8 +1474,13 @@
     }
   });
 
-  btnNewChat?.addEventListener("click", (e) => {
+btnNewChat?.addEventListener("click", (e) => {
     e.preventDefault();
+
+    // 左カラムの「新しいチャット」は常に global（PJと混線させない）
+    // PJの展開状態（activeProjectId）は変更しない
+    state.context = { type: "global" };
+
     createThread();
   });
 
@@ -1546,6 +1627,15 @@
   document.addEventListener("pointerdown", (e) => {
     const t = e.target;
 
+    // settings: モーダル外クリックで閉じる（他領域タップで閉じない問題の解消）
+    if (settingsModal && !settingsModal.hasAttribute("hidden")) {
+      const modalCard = $(".settings-modal > .overlay > .modal");
+      if (modalCard && !isInside(modalCard, t)) {
+        closeSettings();
+        return;
+      }
+    }
+
     if (userMenuDetails?.hasAttribute("open") && !isInside(userMenuDetails, t)) closeDetails(userMenuDetails);
     if (plusDetails?.hasAttribute("open") && !isInside(plusDetails, t)) closeDetails(plusDetails);
     $$(".sb-more[open]").forEach(d => { if (!isInside(d, t)) closeDetails(d); });
@@ -1592,6 +1682,37 @@
   document.addEventListener("click", async (e) => {
     const t = e.target;
 
+    // PJ内：新しいチャット
+    const pjNew = t.closest(".pj-thread[data-action='pj-new-thread']");
+    if (pjNew) {
+      e.preventDefault();
+      const pid = pjNew.dataset.projectId;
+      createProjectThread(pid);
+      return;
+    }
+
+    // PJ内スレッド（pj-thread）クリック：ここでのみ project context に切替
+    const pjThread = t.closest(".pj-thread[data-action='pj-open-thread']");
+    if (pjThread) {
+      e.preventDefault();
+
+      const pid = pjThread.dataset.projectId;
+      const tid = pjThread.dataset.threadId;
+
+      if (!pid || !tid) return;
+
+      state.activeProjectId = pid;
+      state.context = { type: "project", projectId: pid };
+      state.activeThreadIdByScope.projects[pid] = tid;
+      state.view = "chat";
+
+      save(state);
+      renderSidebar();
+      renderView();
+      askInput?.focus();
+      return;
+    }
+
     // project row click / menu
     const pRow = t.closest(".sb-row[data-kind='project']");
     if (pRow && projectList && projectList.contains(pRow)) {
@@ -1613,8 +1734,11 @@
 
       if (t.closest(".sb-more") || t.classList.contains("sb-dots")) return;
 
+      // PJ選択＝展開のみ（会話は切り替えない）
       e.preventDefault();
-      selectProjectScope(id);
+      state.activeProjectId = id;
+      save(state);
+      renderSidebar();
       return;
     }
 
@@ -1730,13 +1854,13 @@
   if (!state.projects) state.projects = [];
   if (!state.images) state.images = [];
 
-  // settings/apps が古いstateに無い場合の補完
+  // 旧state互換（settings/apps/customApps が無い場合の補完）
   if (!state.settings) {
     state.settings = {
       theme: "dark",        // "system" | "light" | "dark"
       sendMode: "cmdEnter", // "cmdEnter" | "enter"
       dataStorage: "cloud", // "cloud" | "local"
-      language: "ja"
+      language: "ja"        // "ja" | "en"
     };
   }
   if (!state.apps) {
@@ -1755,76 +1879,40 @@
   }
   if (!Array.isArray(state.customApps)) state.customApps = [];
 
-  // Settings bindings (General / Apps / Data / Account)
-  const bindSettings = () => {
-    /* ===== General ===== */
-    const selTheme = document.querySelector(".settings-modal select[aria-label='テーマ']");
-    const selSend = document.querySelector(".settings-modal select[aria-label='AUREAへの送信方法']");
-    const selData = document.querySelector(".settings-modal select[aria-label='会話とデータの保存先']");
-
-    const saveSettings = () => {
-      save(state);
-      syncSettingsUi();
-      syncAccountUi();
-    };
-
-    if (selTheme) {
-      selTheme.addEventListener("change", () => {
-        const t = (selTheme.value || selTheme.options[selTheme.selectedIndex]?.textContent || "").trim();
-        if (t === "ライト") state.settings.theme = "light";
-        else if (t === "システム") state.settings.theme = "system";
-        else state.settings.theme = "dark";
-        saveSettings();
-      });
+  /* ===== i18n (v1) ===== */
+  const I18N = {
+    ja: {
+      newChat: "新しいチャット",
+      images: "画像",
+      settings: "設定",
+      logout: "ログアウト",
+      theme: "テーマ",
+      language: "言語",
+      sendMode: "AUREAへの送信方法",
+      dataStorage: "会話とデータの保存先"
+    },
+    en: {
+      newChat: "New chat",
+      images: "Images",
+      settings: "Settings",
+      logout: "Log out",
+      theme: "Theme",
+      language: "Language",
+      sendMode: "Send behavior",
+      dataStorage: "Data storage"
     }
+  };
 
-    if (selSend) {
-      selSend.addEventListener("change", () => {
-        const t = (selSend.value || selSend.options[selSend.selectedIndex]?.textContent || "").trim();
-        const mode = (t.startsWith("Enterで送信")) ? "enter" : "cmdEnter";
-        state.settings.sendMode = mode;
-        try { localStorage.setItem("aurea_send_mode", mode); } catch {}
-        saveSettings();
-      });
-    }
+  const t = (key) => {
+    const lang = state.settings?.language || "ja";
+    return I18N[lang]?.[key] || I18N.ja[key] || key;
+  };
 
-    if (selData) {
-      selData.addEventListener("change", () => {
-        const t = (selData.value || selData.options[selData.selectedIndex]?.textContent || "").trim();
-        state.settings.dataStorage = (t === "端末内") ? "local" : "cloud";
-        saveSettings();
-      });
-    }
-
-    /* ===== Apps ===== */
-    const btnAddSaas = document.querySelector(".panel-apps .apps-header .btn");
-    btnAddSaas?.addEventListener("click", async (e) => {
-      e.preventDefault();
-      const name = (window.prompt("SaaS名", "") || "").trim();
-      if (!name) return;
-      state.customApps = Array.isArray(state.customApps) ? state.customApps : [];
-      state.customApps.unshift({ name, connected: false, createdAt: nowISO() });
-      save(state);
-
-      // UIにカード追加（最小：FontAwesomeの汎用アイコン）
-      const grid = document.querySelector(".panel-apps .apps-grid");
-      if (grid) {
-        const card = document.createElement("div");
-        card.className = "saas";
-        card.innerHTML = `
-          <div class="saas-top">
-            <div class="brand" aria-hidden="true"><i class="fa-solid fa-plug"></i></div>
-          </div>
-          <div>
-            <div class="saas-name">${escHtml(name)}</div>
-            <button class="status-btn off" type="button" aria-pressed="false">未接続</button>
-          </div>
-        `;
-        grid.insertBefore(card, grid.firstChild);
-      }
-
-      syncSettingsUi();
-    });
+  // Apps connectors click (bind once)
+  let appsClickBound = false;
+  const bindAppsConnectorsOnce = () => {
+    if (appsClickBound) return;
+    appsClickBound = true;
 
     document.addEventListener("click", async (e) => {
       const t = e.target;
@@ -1874,6 +1962,93 @@
         syncSettingsUi();
       }
     });
+  };
+
+  // Settings bindings (General / Apps / Data / Account)
+  const bindSettings = () => {
+
+    /* ===== General ===== */
+    const selTheme = document.querySelector(".settings-modal select[aria-label='テーマ']");
+    const selLang  = document.querySelector(".settings-modal select[aria-label='言語']");
+    const selSend  = document.querySelector(".settings-modal select[aria-label='AUREAへの送信方法']");
+    const selData  = document.querySelector(".settings-modal select[aria-label='会話とデータの保存先']");
+
+    const saveSettings = () => {
+      save(state);
+      syncSettingsUi();
+      syncAccountUi();
+    };
+
+    if (selTheme) {
+      selTheme.addEventListener("change", () => {
+        const tval = (selTheme.value || selTheme.options[selTheme.selectedIndex]?.textContent || "").trim();
+        if (tval === "ライト" || tval === "Light") state.settings.theme = "light";
+        else if (tval === "システム" || tval === "System") state.settings.theme = "system";
+        else state.settings.theme = "dark";
+        saveSettings();
+      });
+    }
+
+    if (selLang) {
+      selLang.addEventListener("change", () => {
+        const tval = (selLang.value || selLang.options[selLang.selectedIndex]?.textContent || "").trim();
+        state.settings.language = (tval.startsWith("English")) ? "en" : "ja";
+        saveSettings();
+        applyI18n();
+        renderSidebar();
+      });
+    }
+
+    if (selSend) {
+      selSend.addEventListener("change", () => {
+        const tval = (selSend.value || selSend.options[selSend.selectedIndex]?.textContent || "").trim();
+        const mode = (tval.startsWith("Enterで送信") || tval.startsWith("Enter to send")) ? "enter" : "cmdEnter";
+        state.settings.sendMode = mode;
+        try { localStorage.setItem("aurea_send_mode", mode); } catch {}
+        saveSettings();
+      });
+    }
+
+  if (selData) {
+    selData.addEventListener("change", () => {
+      const tval = (selData.value || selData.options[selData.selectedIndex]?.textContent || "").trim();
+      state.settings.dataStorage =
+        (tval === "端末内" || tval === "Local") ? "local" : "cloud";
+      saveSettings();
+    });
+  }
+
+    /* ===== Apps ===== */
+    const btnAddSaas = document.querySelector(".panel-apps .apps-header .btn");
+    btnAddSaas?.addEventListener("click", async (e) => {
+      e.preventDefault();
+      const name = (window.prompt("SaaS名", "") || "").trim();
+      if (!name) return;
+      state.customApps = Array.isArray(state.customApps) ? state.customApps : [];
+      state.customApps.unshift({ name, connected: false, createdAt: nowISO() });
+      save(state);
+
+      // UIにカード追加（最小：FontAwesomeの汎用アイコン）
+      const grid = document.querySelector(".panel-apps .apps-grid");
+      if (grid) {
+        const card = document.createElement("div");
+        card.className = "saas";
+        card.innerHTML = `
+          <div class="saas-top">
+            <div class="brand" aria-hidden="true"><i class="fa-solid fa-plug"></i></div>
+          </div>
+          <div>
+            <div class="saas-name">${escHtml(name)}</div>
+            <button class="status-btn off" type="button" aria-pressed="false">未接続</button>
+          </div>
+        `;
+        grid.insertBefore(card, grid.firstChild);
+      }
+
+      syncSettingsUi();
+    });
+
+    bindAppsConnectorsOnce();
 
     /* ===== Data ===== */
     const btnDeleteAll = document.querySelector(".panel-data .section[aria-label='削除'] .btn.danger");

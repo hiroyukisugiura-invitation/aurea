@@ -30,6 +30,26 @@ body{
   -moz-osx-font-smoothing:grayscale;
 }
 
+/* Theme (v1) */
+body.theme-dark{
+  /* default vars are already dark */
+}
+
+body.theme-light{
+  /* 目に優しいホワイト（白飛び抑制） */
+  --bg:#f2f3f5;
+  --panel:#ffffff;
+  --panel2:#f6f7f8;
+  --text:#141516;
+  --muted:#4b4f55;
+  --line:rgba(0,0,0,.08);
+  --soft:rgba(0,0,0,.04);
+  --hover:rgba(0,0,0,.06);
+  --pill:#ffffff;
+  --shadow:0 10px 26px rgba(0,0,0,.10);
+  background:radial-gradient(1200px 800px at 50% 30%, rgba(0,0,0,.03), transparent 60%), var(--bg);
+}
+
 /* ================= LAYOUT ================= */
 .app{
   display:grid;
@@ -154,23 +174,22 @@ details > summary::-webkit-details-marker{ display:none; }
   align-items:center;
   justify-content:space-between;
   gap:10px;
-  padding:8px 10px;              /* 少し詰める（GPT寄せ） */
+  padding:8px 10px;
   border-radius:12px;
   color:rgba(255,255,255,.92);
   text-decoration:none;
 }
 .pj-thread:hover{ background:rgba(255,255,255,.05); }
+.pj-thread[data-active="1"]{ background:rgba(255,255,255,.06); }
 .pj-thread .t{
   min-width:0;
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
-  font-size:11.5px;              /* 履歴だけ一段小さく */
+  font-size:11.5px;
   color:rgba(255,255,255,.90);
 }
-/* .d はJS側で出さない（仕様：日付非表示） */
 .pj-thread .d{ display:none; }
-
 
 .sb-chat{
   padding:10px 10px;
@@ -547,8 +566,7 @@ body:not(.has-chat) .ask-wrap{
 }
 body:not(.has-chat) .board{ padding-bottom:0; }
 
-/* ================= Modals (settings / project) ================= */
-.settings-modal,
+/* ================= Modals (project only) ================= */
 .project-modal{
   position:fixed;
   inset:0;
@@ -559,17 +577,10 @@ body:not(.has-chat) .board{ padding-bottom:0; }
   z-index:9999;
   padding:18px;
 }
-body.settings-open .settings-modal{ display:flex; }
 body.project-open .project-modal{ display:flex; }
 
-/* index.html に残っている AI Stack modal は v1 では使わないので常に非表示 */
-#aiStackModal{
-  display:none !important;
-}
-
-.settings,
 .project-card{
-  width:min(760px, calc(100% - 24px));
+  width:min(640px, calc(100% - 24px));
   background:rgba(20,21,22,.96);
   border:1px solid rgba(255,255,255,.10);
   border-radius:18px;
@@ -578,9 +589,7 @@ body.project-open .project-modal{ display:flex; }
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
 }
-.project-card{ width:min(640px, calc(100% - 24px)); }
 
-.settings .hd,
 .project-card .phd{
   display:flex;
   align-items:center;
@@ -588,93 +597,15 @@ body.project-open .project-modal{ display:flex; }
   padding:14px 16px;
   border-bottom:1px solid var(--line);
 }
-.settings .hd .ttl{ font-size:14px; color:rgba(255,255,255,.9); }
 .project-card .pttl{ font-size:16px; color:rgba(255,255,255,.92); }
 
-.settings .hd button,
 .project-card .picon{
   width:34px;height:34px;border-radius:10px;
   border:1px solid transparent;background:transparent;color:var(--text);
   cursor:pointer;display:grid;place-items:center;
 }
-.settings .hd button:hover,
 .project-card .picon:hover{ background:var(--soft); border-color:rgba(255,255,255,.06); }
 .project-card .picon svg{ width:18px;height:18px;opacity:.92; }
-
-.settings .tabs{
-  padding:12px 16px;
-  border-bottom:1px solid var(--line);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:14px;
-}
-.settings .tab{
-  width:34px;height:34px;border-radius:10px;
-  display:grid;place-items:center;
-  border:1px solid rgba(255,255,255,.10);
-  background:rgba(255,255,255,.04);
-}
-.settings .tab svg{ width:18px;height:18px;opacity:.9; }
-.settings .bd{
-  padding:14px 16px 18px;
-  color:rgba(255,255,255,.85);
-  font-size:13px;
-  line-height:1.6;
-}
-
-/* ===== Settings content (existing HTML support) ===== */
-.setting-row{
-  padding:12px 12px;
-  border-radius:14px;
-  border:1px solid rgba(255,255,255,.10);
-  background:rgba(255,255,255,.04);
-  cursor:pointer;
-}
-.setting-row + .setting-row{ margin-top:10px; }
-.setting-row__title{ font-size:13px; color:rgba(255,255,255,.92); }
-.setting-row__desc{ margin-top:4px; font-size:12px; color:rgba(255,255,255,.70); }
-
-.ai-stack-inline{
-  margin-top:12px;
-  padding:12px 12px;
-  border-radius:14px;
-  border:1px solid rgba(255,255,255,.10);
-  background:rgba(255,255,255,.04);
-}
-.ai-stack-inline__header .title{
-  font-size:13px;
-  font-weight:700;
-  color:rgba(255,255,255,.92);
-}
-.ai-stack-inline__header .desc{
-  margin-top:4px;
-  font-size:12px;
-  color:rgba(255,255,255,.70);
-}
-.ai-stack-inline .table{ margin-top:10px; }
-.ai-stack-inline .table__row{
-  display:grid;
-  grid-template-columns: 1.2fr 2fr 1.3fr;
-  gap:10px;
-  padding:10px 8px;
-}
-.ai-stack-inline .table__row--head{
-  font-weight:700;
-  opacity:.85;
-  padding-top:0;
-}
-.ai-stack-inline .table__body .table__row{
-  border-top:1px solid rgba(255,255,255,.08);
-}
-.ai-stack-inline .table__cell{
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-}
-@media (min-width: 740px){
-  .settings .tabs{ justify-content:flex-start; }
-}
 
 /* Project modal body */
 .project-card .pbd{ padding:14px 16px 18px; }
@@ -768,7 +699,6 @@ body.project-open .project-modal{ display:flex; }
   line-height:1.55;
   color:rgba(255,255,255,.82);
   display:-webkit-box;
-  -webkit-line-clamp:3;
   -webkit-box-orient:vertical;
   overflow:hidden;
 }
@@ -881,28 +811,220 @@ body.project-open .project-modal{ display:flex; }
   .sidebar{ position:relative; width:var(--sbw); }
 }
 
-/* ================= Settings (GPT-like popup) ================= */
-.settings.settings--gpt{
-  width:min(980px, calc(100% - 24px));
+/* ===== Settings iframe modal ===== */
+.settings-overlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 9998;
 }
 
-.settings.settings--gpt .hd{
-  padding:14px 16px;
+.settings-frame{
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
 }
 
-.settings.settings--gpt .settings-shell{
+.settings-frame[hidden],
+.settings-overlay[hidden]{
+  display: none !important;
+}
+
+.settings-frame-iframe{
+  width: min(1120px, calc(100% - 24px));
+  height: min(760px, calc(100% - 24px));
+  border: 0;
+  border-radius: 22px;
+  background: transparent;
+  box-shadow: 0 18px 70px rgba(0,0,0,.45);
+}
+
+.settings-frame-close{
+  position: fixed;
+  top: 26px;
+  right: 26px;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(30,30,30,.45);
+  color: rgba(255,255,255,.92);
+  font-size: 22px;
+  line-height: 38px;
+  cursor: pointer;
+  z-index: 10000;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* ===============================
+   SETTINGS MODAL (embedded)
+   - scoped to .settings-modal only
+=============================== */
+
+.settings-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.35);
+  z-index:9998;
+}
+
+.settings-modal{
+  position:fixed;
+  inset:0;
+  z-index:9999;
   display:flex;
-  min-height:540px;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+
+  /* settings.html の :root 相当（ページ全体を汚染しない） */
+  --bg:#0e0f10;
+  --text:#e7e7e7;
+  --muted:#a9aaac;
+  --line:rgba(255,255,255,.08);
+  --soft:rgba(255,255,255,.06);
+  --shadow:0 10px 30px rgba(0,0,0,.45);
+
+  --modalBg: rgba(20,21,22,.96);
+  --modalBorder: rgba(255,255,255,.10);
+
+  --card:rgba(255,255,255,.03);
+  --cardBorder:rgba(255,255,255,.10);
+
+  --dangerBg: rgba(255,255,80,.10);
+  --dangerBd: rgba(255,80,80,.28);
+
+  --okBg: rgba(120,220,140,.10);
+  --okBd: rgba(120,220,140,.24);
+
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Hiragino Sans", "Noto Sans JP", sans-serif;
+
+  font-family:var(--font);
+  color:var(--text);
 }
 
-.settings.settings--gpt .settings-nav{
-  width:240px;
-  padding:12px;
+.settings-modal[hidden],
+.settings-overlay[hidden]{
+  display:none !important;
+}
+
+/* index側の×（右上固定） */
+.settings-close{
+  position:fixed;
+  top:26px;
+  right:26px;
+  width:40px;height:40px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(30,30,30,.45);
+  color:rgba(255,255,255,.92);
+  font-size:22px;
+  line-height:38px;
+  cursor:pointer;
+  z-index:10000;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.settings-close:hover{
+  background:rgba(255,255,255,.10);
+}
+
+/* ===== settings.html body部分（スコープ） ===== */
+
+/* Tabs (CSS-only) */
+.settings-modal .tab-input{
+  position:fixed;
+  left:-9999px;
+  width:1px;height:1px;
+  overflow:hidden;
+  opacity:0;
+  pointer-events:none;
+}
+
+/* Overlay + Modal（settings 専用） */
+.settings-modal > .overlay{
+  width:100%;
+  height:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+  background:transparent; /* overlay自体は settings-overlay が担当 */
+}
+
+.settings-modal > .overlay > .modal{
+  width:min(1040px, calc(100% - 24px));
+  height:760px;                /* 固定 */
+  max-height:calc(100vh - 64px);/* 画面からはみ出さない */
+  background:var(--modalBg);
+  border:1px solid var(--modalBorder);
+  border-radius:18px;
+  box-shadow:var(--shadow);
+  overflow:hidden;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  display:grid;
+  grid-template-columns: 300px 1fr;
+  min-width:0;
+  position:relative;
+}
+
+/* settings.html内の close（modal内の×） */
+.settings-modal .close{
+  position:absolute;
+  top:10px;
+  right:10px;
+  width:36px;height:36px;border-radius:10px;
+  border:1px solid transparent;
+  background:transparent;
+  color:var(--text);
+  cursor:pointer;
+  display:grid;place-items:center;
+  z-index:4;
+}
+.settings-modal .close:hover{
+  background:var(--soft);
+  border-color:rgba(255,255,255,.06);
+}
+.settings-modal .close i{
+  font-size:16px;
+  opacity:.92;
+}
+
+/* Left nav */
+.settings-modal .nav{
   border-right:1px solid var(--line);
-  background:rgba(255,255,255,.02);
+  background:linear-gradient(180deg, rgba(255,255,255,.02), transparent 35%);
+  display:flex;
+  flex-direction:column;
+  min-width:0;
 }
-
-.settings.settings--gpt .snav-item{
+.settings-modal .nav-hd{
+  padding:18px 16px 10px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.settings-modal .nav-title{
+  font-size:14px;
+  color:rgba(255,255,255,.92);
+  letter-spacing:.02em;
+}
+.settings-modal .nav-list{
+  padding:6px;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  overflow:auto;
+  min-height:0;
+}
+.settings-modal .nav-item{
   width:100%;
   display:flex;
   align-items:center;
@@ -914,111 +1036,664 @@ body.project-open .project-modal{ display:flex; }
   color:rgba(255,255,255,.88);
   cursor:pointer;
   text-align:left;
+  font-size:13px;
+  line-height:1;
+  user-select:none;
 }
-
-.settings.settings--gpt .snav-item:hover{
-  background:rgba(255,255,255,.04);
-  border-color:rgba(255,255,255,.06);
+.settings-modal .nav-item:hover{ background:var(--soft); }
+.settings-modal .nav-ic{
+  width:18px;height:18px;
+  display:grid;place-items:center;
+  opacity:.9;flex:0 0 auto;
 }
+.settings-modal .nav-ic i{ font-size:14px; }
 
-.settings.settings--gpt .snav-item.is-active{
-  background:rgba(255,255,255,.06);
+/* Active nav item */
+.settings-modal #tab-general:checked ~ .overlay .modal .nav label[for="tab-general"],
+.settings-modal #tab-apps:checked ~ .overlay .modal .nav label[for="tab-apps"],
+.settings-modal #tab-data:checked ~ .overlay .modal .nav label[for="tab-data"],
+.settings-modal #tab-trainer:checked ~ .overlay .modal .nav label[for="tab-trainer"],
+.settings-modal #tab-account:checked ~ .overlay .modal .nav label[for="tab-account"]{
+  background:rgba(255,255,255,.08);
   border-color:rgba(255,255,255,.10);
 }
 
-.settings.settings--gpt .snav-ic{
-  width:18px;
-  opacity:.85;
-  display:inline-flex;
-  justify-content:center;
-}
-
-.settings.settings--gpt .snav-txt{
-  font-size:13px;
-  line-height:1.2;
-}
-
-.settings.settings--gpt .settings-main{
-  flex:1;
-  padding:14px 16px 18px;
-  overflow:auto;
-}
-
-.settings.settings--gpt .spage{
-  display:none;
-}
-.settings.settings--gpt .spage.is-active{
-  display:block;
-}
-
-.settings.settings--gpt .spage-h{
-  margin:2px 0 14px;
-}
-.settings.settings--gpt .spage-ttl{
-  font-size:14px;
-  color:rgba(255,255,255,.92);
-}
-.settings.settings--gpt .spage-sub{
-  margin-top:4px;
-  font-size:12px;
-  color:rgba(255,255,255,.55);
-}
-
-.settings.settings--gpt .sform{
+/* Right content */
+.settings-modal .content{
+  min-width:0;
+  min-height:0;
   display:flex;
   flex-direction:column;
-  gap:10px;
+  height:100%;
 }
 
-.settings.settings--gpt .srow{
+.settings-modal .panel{
+  display:none;
+  height:100%;
+  min-height:0;
+  flex:1 1 auto;
+  flex-direction:column;
+}
+
+.settings-modal #tab-general:checked ~ .overlay .modal .content .panel-general{display:flex}
+.settings-modal #tab-apps:checked ~ .overlay .modal .content .panel-apps{display:flex}
+.settings-modal #tab-data:checked ~ .overlay .modal .content .panel-data{display:flex}
+.settings-modal #tab-trainer:checked ~ .overlay .modal .content .panel-trainer{display:flex}
+.settings-modal #tab-account:checked ~ .overlay .modal .content .panel-account{display:flex}
+
+.settings-modal .content-hd{
+  padding:16px 18px;
+  border-bottom:1px solid var(--line);
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:16px;
-  padding:12px 12px;
-  border-radius:14px;
-  border:1px solid rgba(255,255,255,.10);
-  background:rgba(255,255,255,.04);
+  gap:14px;
+  min-width:0;
+  flex:0 0 auto;
+  height:88px;
 }
 
-.settings.settings--gpt .srow-ttl{
+.settings-modal .content-title{
+  font-size:16px;
+  color:rgba(255,255,255,.94);
+  letter-spacing:.01em;
+}
+.settings-modal .content-sub{
+  font-size:12px;
+  color:rgba(255,255,255,.58);
+  margin-top:6px;
+  line-height:1.5;
+}
+.settings-modal .content-bd{
+  padding:14px 18px 18px;
+  overflow:auto;
+  min-height:0;
+  flex:1 1 auto;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-start;
+}
+
+/* Sections (あなたの現行settingsは「線で見せる」版) */
+.settings-modal .section{
+  border:0;
+  background:transparent;
+  border-radius:0;
+  padding:0;
+  margin:0;
+}
+.settings-modal .section + .section{
+  margin-top:18px;
+  padding-top:18px;
+  border-top:1px solid var(--line);
+}
+
+.settings-modal .sec-title{
+  font-size:14px;
+  color:rgba(255,255,255,.92);
+  line-height:1.2;
+  margin:0 0 12px 0;
+}
+.settings-modal .sec-desc{
+  font-size:12px;
+  color:rgba(255,255,255,.60);
+  line-height:1.55;
+  margin-top:6px;
+}
+
+.settings-modal .row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:10px 0;
+  border-top:1px solid rgba(255,255,255,.08);
+}
+
+@media (max-width: 520px){
+  .settings-modal{
+    align-items:flex-start; /* 中央固定解除 */
+  }
+
+  .settings-modal .row{
+    flex-direction:column;
+    align-items:flex-start;
+    justify-content:flex-start;
+    gap:10px;
+  }
+
+  .settings-modal .row > .l{
+    width:100%;
+    min-width:0;
+  }
+
+  .settings-modal .row > .input{
+    width:100%;
+  }
+
+  /* ピルは文字サイズに追従（伸び禁止） */
+  .settings-modal .row > .select,
+  .settings-modal .row > .btn{
+    width:auto;
+    max-width:100%;
+    align-self:flex-start;
+  }
+
+  /* ボタンは折り返しOK（幅は増やさず高さで吸収） */
+  .settings-modal .btn{
+    white-space:normal;
+    height:auto;
+    min-height:34px;
+    line-height:1.2;
+    padding:8px 12px;
+  }
+
+  .settings-modal .select{
+    padding-right:34px;
+  }
+}
+
+.settings-modal .row:first-of-type{border-top:0;padding-top:0}
+.settings-modal .row:last-of-type{padding-bottom:0}
+
+.settings-modal .row .l{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+.settings-modal .row .k{
   font-size:13px;
   color:rgba(255,255,255,.88);
+  line-height:1.2;
 }
-
-.settings.settings--gpt .sselect{
-  height:34px;
-  padding:0 10px;
-  border-radius:12px;
-  border:1px solid rgba(255,255,255,.10);
-  background:rgba(255,255,255,.04);
-  color:rgba(255,255,255,.90);
-}
-
-.settings.settings--gpt .splaceholder{
-  padding:12px 12px;
-  border-radius:14px;
-  border:1px dashed rgba(255,255,255,.14);
+.settings-modal .row .v{
+  font-size:12px;
   color:rgba(255,255,255,.55);
-  background:rgba(255,255,255,.02);
+  line-height:1.45;
 }
 
-/* responsive */
-@media (max-width: 820px){
-  .settings.settings--gpt .settings-shell{
-    flex-direction:column;
-    min-height:auto;
+/* Controls */
+.settings-modal .btn{
+  height:34px;
+  padding:0 12px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.05);
+  color:rgba(255,255,255,.85);
+  cursor:pointer;
+  user-select:none;
+  font-size:13px;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  white-space:nowrap;
+  max-width:100%;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.settings-modal .btn:hover{background:rgba(255,255,255,.08)}
+.settings-modal .btn i{font-size:14px;opacity:.92;flex:0 0 auto}
+
+.settings-modal .btn.secondary{
+  background:transparent;
+  border-color:rgba(255,255,255,.10);
+  color:rgba(255,255,255,.78);
+}
+.settings-modal .btn.secondary:hover{background:rgba(255,255,255,.06)}
+
+.settings-modal .btn.ok{
+  border-color:var(--okBd);
+  background:var(--okBg);
+  color:rgba(210,255,220,.95);
+}
+
+.settings-modal .btn.danger{
+  border-color:rgba(255,255,255,.14);
+  background:transparent;
+  color:rgba(255,255,255,.86);
+}
+.settings-modal .btn.danger:hover{
+  background:rgba(255,255,255,.06);
+  border-color:rgba(255,255,255,.18);
+}
+
+.settings-modal .select{
+  height:34px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.05);
+  color:rgba(255,255,255,.86);
+  padding:0 34px 0 10px; /* 右側矢印分 */
+  font-size:13px;
+  outline:0;
+  cursor:pointer;
+  max-width:100%;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.settings-modal .input{
+  height:34px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.05);
+  color:rgba(255,255,255,.90);
+  padding:0 10px;
+  font-size:13px;
+  outline:0;
+  width:min(420px, 100%);
+}
+
+/* Apps grid */
+.settings-modal .apps-header{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:10px;
+}
+.settings-modal .apps-grid{
+  display:grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap:14px;
+  margin-top:12px;
+}
+.settings-modal .saas{
+  border-radius:16px;
+  border:1px solid var(--cardBorder);
+  background:var(--card);
+  padding:14px;
+  min-height:150px;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+}
+.settings-modal .saas:hover{
+  background:rgba(255,255,255,.035);
+  border-color:rgba(255,255,255,.12);
+}
+.settings-modal .brand{
+  width:38px;height:38px;border-radius:999px;
+  display:grid;place-items:center;
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(0,0,0,.14);
+}
+.settings-modal .brand i{font-size:16px;color:#fff}
+
+.settings-modal .status-btn{
+  margin-top:12px;
+  height:34px;
+  padding:0 14px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.035);
+  color:rgba(255,255,255,.86);
+  font-size:13px;
+  font-weight:700;
+  letter-spacing:.01em;
+  cursor:pointer;
+}
+.settings-modal .status-btn:hover{
+  background:rgba(255,255,255,.06);
+  border-color:rgba(255,255,255,.18);
+}
+.settings-modal .status-btn.off{
+  background:rgba(255,255,255,.035);
+  border-color:rgba(255,255,255,.14);
+  color:rgba(255,255,255,.82);
+}
+.settings-modal .status-btn.on{
+  border-color:rgba(120,220,140,.28);
+  background:rgba(120,220,140,.08);
+  color:rgba(210,255,220,.95);
+}
+
+@media (max-width: 1080px){
+  .settings-modal .apps-grid{grid-template-columns: repeat(3, minmax(0, 1fr));}
+}
+
+@media (max-width: 920px){
+
+  /* ===== モーダル全体 ===== */
+  .settings-modal{
+    padding:0;
   }
-  .settings.settings--gpt .settings-nav{
-    width:100%;
-    border-right:none;
-    border-bottom:1px solid var(--line);
+
+  .settings-modal > .overlay{
+    padding:12px;
+    align-items:center;
+    justify-content:center;
+  }
+
+.settings-modal > .overlay > .modal{
+  width:min(560px, calc(100% - 24px));
+  height:760px;                 /* 固定 */
+  max-height:760px;             /* 固定 */
+  grid-template-columns: 1fr;
+  grid-template-rows: auto 1fr; /* ヘッダー固定 + 本文 */
+  border-radius:22px;
+}
+
+  /* ===== 上部アイコンナビ ===== */
+  .settings-modal .nav{
+    border:0;
+    background:transparent;
+  }
+
+  .settings-modal .nav-hd{
+    display:none;
+  }
+
+  .settings-modal .nav-list{
     display:flex;
-    gap:8px;
-    overflow:auto;
+    flex-direction:row;
+    justify-content:center;
+    align-items:center;
+    gap:14px;
+    padding:10px 56px 10px 16px; /* 右上×の逃げ */
+    min-height:56px;
+    border-bottom:1px solid var(--line);
   }
-  .settings.settings--gpt .snav-item{
-    width:auto;
+
+  .settings-modal .nav-item{
+    width:40px;
+    height:40px;
+    padding:0;
+    border-radius:12px;
+    background:transparent;
+    border:1px solid transparent;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .settings-modal .nav-txt{
+    display:none; /* 縮小時はアイコンのみ */
+  }
+
+  .settings-modal .nav-item:hover{
+    background:var(--soft);
+  }
+
+  .settings-modal .nav-ic{
+    width:20px;
+    height:20px;
+    opacity:.6;
+  }
+
+  .settings-modal .nav-ic i{
+    font-size:18px;
+  }
+
+  .settings-modal #tab-general:checked ~ .overlay .modal .nav label[for="tab-general"],
+  .settings-modal #tab-apps:checked ~ .overlay .modal .nav label[for="tab-apps"],
+  .settings-modal #tab-data:checked ~ .overlay .modal .nav label[for="tab-data"],
+  .settings-modal #tab-trainer:checked ~ .overlay .modal .nav label[for="tab-trainer"],
+  .settings-modal #tab-account:checked ~ .overlay .modal .nav label[for="tab-account"]{
+    background:var(--soft);
+  }
+
+  .settings-modal #tab-general:checked ~ .overlay .modal .nav label[for="tab-general"] .nav-ic,
+  .settings-modal #tab-apps:checked ~ .overlay .modal .nav label[for="tab-apps"] .nav-ic,
+  .settings-modal #tab-data:checked ~ .overlay .modal .nav label[for="tab-data"] .nav-ic,
+  .settings-modal #tab-trainer:checked ~ .overlay .modal .nav label[for="tab-trainer"] .nav-ic,
+  .settings-modal #tab-account:checked ~ .overlay .modal .nav label[for="tab-account"] .nav-ic{
+    opacity:1;
+  }
+
+  /* ===== 本文 ===== */
+  .settings-modal .content{
+    min-height:0;
+    height:100%;
+  }
+
+  .settings-modal .panel{
+    height:auto;
     flex:0 0 auto;
   }
+
+  .settings-modal .content-bd{
+    padding:16px;
+    overflow:visible;              /* デフォルトはスクロールしない */
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+    min-height:0;
+    flex:0 0 auto;
+  }
+
+  /* Appsタブだけ：本文をスクロール領域にする */
+  .settings-modal #tab-apps:checked ~ .overlay .modal .content .panel-apps{
+    height:100%;
+    min-height:0;
+    flex:1 1 auto;
+  }
+
+  .settings-modal #tab-apps:checked ~ .overlay .modal .content .panel-apps .content-bd{
+    overflow:auto;
+    -webkit-overflow-scrolling:touch;
+    min-height:0;
+    flex:1 1 auto;
+  }
+
+  .settings-modal .row{
+    flex-direction:row;
+    align-items:center;
+    gap:12px;
+  }
+
+  .settings-modal .select{
+    width:auto;
+    min-width:0;
+    white-space:nowrap;
+  }
+
+  .settings-modal .btn{
+    width:auto;
+    min-width:0;
+    white-space:nowrap;
+  }
+}
+
+/* ===============================
+   Regulations tabs (規約・規定)
+=============================== */
+.settings-modal .reg-wrap{
+  border:0;
+  background:transparent;
+  padding:0;
+}
+
+/* 規約・規定：見出しの太さは他の見出しと同じ基準に揃える */
+.settings-modal .panel-account .section[aria-label="規約・規定"] .reg-head{
+  font-size:13px;
+  font-weight:400;
+  color:rgba(255,255,255,.88);
+  margin-bottom:6px;
+  letter-spacing:0;
+  font-family:inherit;
+  line-height:1.2;
+}
+
+.settings-modal .panel-account .section[aria-label="規約・規定"] .reg-tabs{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:0;
+  border-bottom:0;
+  margin:0;
+}
+
+.settings-modal .panel-account .section[aria-label="規約・規定"] .reg-tab{
+  -webkit-appearance:none;
+  appearance:none;
+  background:transparent;
+  border:0;
+  outline:0;
+
+  padding:0;
+  margin:0;
+  color:rgba(255,255,255,.55);
+  font-size:12px;
+  font-weight:400;
+  font-family:inherit;
+  cursor:pointer;
+  position:relative;
+  line-height:1.45;
+}
+
+.settings-modal .panel-account .section[aria-label="規約・規定"] .reg-tab:hover{
+  color:rgba(255,255,255,.70);
+}
+
+.settings-modal .panel-account .section[aria-label="規約・規定"] .reg-tab[aria-selected="true"]{
+  color:rgba(255,255,255,.70);
+}
+.settings-modal .panel-account .section[aria-label="規約・規定"] .reg-tab[aria-selected="true"]::after{
+  content:none;
+}
+
+/* 本文 */
+.settings-modal .reg-body{
+  margin-top:12px;
+}
+
+.settings-modal .reg-card{
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(255,255,255,.03);
+  padding:14px 14px;
+}
+.settings-modal .reg-card:empty{
+  display:none;
+}
+
+.settings-modal .reg-title{
+  font-size:13px;
+  font-weight:700;
+  color:rgba(255,255,255,.90);
+  margin-bottom:8px;
+}
+
+.settings-modal .reg-text{
+  font-size:13px;
+  line-height:1.6;
+  color:rgba(255,255,255,.78);
+}
+
+/* ===============================
+   AI Stack Popup (UI unified)
+=============================== */
+
+.settings-modal #aiStackOverlay{
+  position: fixed;
+  inset: 0;
+  display: none; /* JSで flex にする */
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(0,0,0,.45);
+  z-index: 10050;
+}
+
+.settings-modal #aiStackOverlay .modal{
+  width:min(1400px, calc(100% - 32px));
+  height:auto;
+  background:var(--modalBg);
+  border:1px solid var(--modalBorder);
+  border-radius:18px;
+  box-shadow:var(--shadow);
+  font-family:var(--font); /* フォントを全体と完全一致 */
+  position: relative;
+}
+
+/* Table layout */
+.settings-modal #aiStackOverlay .table{
+  width:100%;
+  font-family:var(--font);
+  overflow:visible;
+}
+
+.settings-modal #aiStackOverlay .table__head,
+.settings-modal #aiStackOverlay .table__body{
+  min-width:0;
+}
+
+.settings-modal #aiStackOverlay .table__row{
+  display:grid;
+  grid-template-columns: 160px 140px 1fr; /* AI / Ver, / 稼働条件 */
+  gap:0;
+  padding:8px 0;
+}
+
+@media (max-width: 520px){
+  .settings-modal #aiStackOverlay .table__row{
+    grid-template-columns: 110px 92px 1fr; /* AI / Ver, / 稼働条件 */
+  }
+}
+
+.settings-modal #aiStackOverlay .table__row--head{
+  padding-top:0;
+  padding-bottom:8px;
+  border-bottom:1px solid var(--line);
+}
+
+.settings-modal #aiStackOverlay .table__body .table__row:last-child{
+  border-bottom:0;
+}
+
+.settings-modal #aiStackOverlay .table__cell{
+  font-size:13px;
+  line-height:1.4;
+  color:rgba(255,255,255,.86);
+  font-family:var(--font); /* セル単位でも固定 */
+  min-width:0;
+}
+
+.settings-modal #aiStackOverlay .table__row--head .table__cell{
+  font-size:12px;
+  font-weight:600;
+  color:rgba(255,255,255,.55);
+  white-space:nowrap;
+  word-break:keep-all;
+}
+
+/* Ver column */
+.settings-modal #aiStackOverlay .table__body .table__row .table__cell:nth-child(2){
+  text-align:left;
+  color:rgba(255,255,255,.70);
+  white-space:nowrap;
+}
+
+/* Condition column（1行＋省略） */
+.settings-modal #aiStackOverlay .table__body .table__row .table__cell:nth-child(3){
+  color:rgba(255,255,255,.78);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* Editable condition text（1行＋省略） */
+.settings-modal #aiStackOverlay .ai-cond{
+  display:block;
+  font:inherit;
+  color:inherit;
+  line-height:inherit;
+  white-space:nowrap;
+  overflow:visible;
+  text-overflow:clip;
+  word-break:keep-all;
+  outline:none;
+  border:0;
+  background:transparent;
+  padding:0;
+  min-width:0;
+}
+
+.settings-modal #aiStackOverlay .ai-cond:focus{
+  outline:none;
 }
