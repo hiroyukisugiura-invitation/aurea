@@ -32,16 +32,33 @@
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
 
   /* ================= storage ================= */
-  const STORAGE_KEY = "aurea_main_v1";
+  const STORAGE_KEY_LOCAL = "aurea_main_v1_local";
+  const STORAGE_KEY_CLOUD = "aurea_main_v1_cloud";
+  const STORAGE_PREF_KEY = "aurea_data_storage"; // "cloud" | "local"
+
+  const getStorageMode = () => {
+    try {
+      const v = localStorage.getItem(STORAGE_PREF_KEY);
+      return (v === "local") ? "local" : "cloud";
+    } catch {
+      return "cloud";
+    }
+  };
+
+  const getStorageKey = () => {
+    return (getStorageMode() === "local") ? STORAGE_KEY_LOCAL : STORAGE_KEY_CLOUD;
+  };
+
   const load = () => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(getStorageKey());
       if (!raw) return null;
       return JSON.parse(raw);
     } catch { return null; }
   };
+
   const save = (s) => {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch {}
+    try { localStorage.setItem(getStorageKey(), JSON.stringify(s)); } catch {}
   };
 
   /* ================= state ================= */
@@ -294,6 +311,10 @@
   };
 
   const openSettings = () => {
+    // 常に「一般」から開始
+    const tabGeneral = document.getElementById("tab-general");
+    if (tabGeneral) tabGeneral.checked = true;
+
     settingsOverlay?.removeAttribute("hidden");
     settingsModal?.removeAttribute("hidden");
     body.style.overflow = "hidden";
@@ -1627,9 +1648,9 @@ btnNewChat?.addEventListener("click", (e) => {
   document.addEventListener("pointerdown", (e) => {
     const t = e.target;
 
-    // settings: モーダル外クリックで閉じる（他領域タップで閉じない問題の解消）
+    // settings: モーダル外タップで閉じる（overlay含む）
     if (settingsModal && !settingsModal.hasAttribute("hidden")) {
-      const modalCard = $(".settings-modal > .overlay > .modal");
+      const modalCard = settingsModal.querySelector(".modal");
       if (modalCard && !isInside(modalCard, t)) {
         closeSettings();
         return;
@@ -1863,6 +1884,10 @@ btnNewChat?.addEventListener("click", (e) => {
       language: "ja"        // "ja" | "en"
     };
   }
+
+  // 保存先（クラウド/端末内）を常に優先（起動時に反映）
+  state.settings.dataStorage = getStorageMode();
+
   if (!state.apps) {
     state.apps = {
       Google: false,
@@ -1964,6 +1989,265 @@ btnNewChat?.addEventListener("click", (e) => {
     });
   };
 
+  /* ================= SaaS add popup (UI only) ================= */
+  let saasAddWrap = null;
+
+  const SAAS_CATALOG = [
+    { name: "Google",        icon: `<i class="fa-brands fa-google"></i>`,        desc: "Googleアカウント連携" },
+    { name: "Gmail",         icon: `<i class="fa-solid fa-envelope"></i>`,       desc: "メールの検索・参照" },
+    { name: "Google Drive",  icon: `<i class="fa-brands fa-google-drive"></i>`,  desc: "Driveの検索・参照" },
+    { name: "GitHub",        icon: `<i class="fa-brands fa-github"></i>`,        desc: "リポジトリ参照・検索" },
+    { name: "Notion",        icon: `<i class="fa-brands fa-notion"></i>`,        desc: "Notionページ参照・検索" },
+    { name: "Slack",         icon: `<i class="fa-brands fa-slack"></i>`,         desc: "Slack検索・参照" },
+    { name: "Dropbox",       icon: `<i class="fa-brands fa-dropbox"></i>`,       desc: "Dropbox検索・参照" },
+    { name: "Jira",          icon: `<i class="fa-brands fa-jira"></i>`,          desc: "課題参照・検索" },
+    { name: "Salesforce",    icon: `<i class="fa-brands fa-salesforce"></i>`,    desc: "CRM参照・検索" },
+    { name: "Zoom",          icon: `<i class="fa-brands fa-zoom"></i>`,          desc: "会議情報参照・検索" }
+  ];
+
+  const ensureSaasAddPopup = () => {
+    if (saasAddWrap) return saasAddWrap;
+
+    saasAddWrap = document.createElement("div");
+    saasAddWrap.id = "aureaSaasAdd";
+    saasAddWrap.setAttribute("aria-hidden", "true");
+    saasAddWrap.style.cssText = `
+      position:fixed; inset:0; display:none; align-items:center; justify-content:center;
+      background:rgba(0,0,0,.45); z-index:10060; padding:18px;
+    `;
+
+    saasAddWrap.innerHTML = `
+      <div id="aureaSaasAddCard" style="
+        width:min(860px, calc(100% - 24px));
+        max-height:calc(100vh - 64px);
+        background:rgba(20,21,22,.96);
+        border:1px solid rgba(255,255,255,.10);
+        border-radius:18px;
+        box-shadow:0 10px 30px rgba(0,0,0,.45);
+        overflow:hidden;
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        color:rgba(255,255,255,.92);
+        font-family: -apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Hiragino Sans','Noto Sans JP',sans-serif;
+        display:flex;
+        flex-direction:column;
+        min-width:0;
+      ">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.08);">
+          <div style="font-size:14px;font-weight:600;">+ SaaS 追加</div>
+          <button type="button" data-action="close" style="
+            width:36px;height:36px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
+            background:rgba(255,255,255,.06);color:rgba(255,255,255,.92);
+            cursor:pointer; font-size:18px; line-height:34px;
+          ">×</button>
+        </div>
+
+        <div style="padding:12px 16px;display:flex;gap:10px;align-items:center;">
+          <input id="aureaSaasAddSearch" type="search" placeholder="検索" aria-label="検索" style="
+            flex:1;min-width:0;height:38px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
+            background:rgba(255,255,255,.05);color:rgba(255,255,255,.92);
+            outline:none;padding:0 12px;font-size:13px;
+          "/>
+          <button type="button" data-action="add-custom" style="
+            height:38px;padding:0 12px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
+            background:rgba(255,255,255,.06);color:rgba(255,255,255,.92);cursor:pointer;font-size:13px;
+            white-space:nowrap;
+          ">カスタム追加</button>
+        </div>
+
+        <div id="aureaSaasAddList" style="padding:0 16px 16px;overflow:auto;min-height:0;display:flex;flex-direction:column;gap:10px;"></div>
+      </div>
+    `;
+
+    document.body.appendChild(saasAddWrap);
+
+    // overlay click close
+    saasAddWrap.addEventListener("click", (e) => {
+      if (e.target === saasAddWrap) closeSaasAddPopup();
+    });
+
+    // card actions
+    saasAddWrap.addEventListener("click", async (e) => {
+      const t = e.target;
+
+      const closeBtn = t.closest("[data-action='close']");
+      if (closeBtn) {
+        e.preventDefault();
+        closeSaasAddPopup();
+        return;
+      }
+
+      const addCustom = t.closest("[data-action='add-custom']");
+      if (addCustom) {
+        e.preventDefault();
+        const name = (window.prompt("SaaS名", "") || "").trim();
+        if (!name) return;
+
+        state.customApps = Array.isArray(state.customApps) ? state.customApps : [];
+        if (!state.customApps.some(a => a.name === name)) {
+          state.customApps.unshift({ name, connected: false, createdAt: nowISO() });
+          save(state);
+
+          // Appsグリッドにカード追加（存在しない場合のみ）
+          const grid = document.querySelector(".panel-apps .apps-grid");
+          if (grid && !Array.from(grid.querySelectorAll(".saas-name")).some(el => (el.textContent || "").trim() === name)) {
+            const card = document.createElement("div");
+            card.className = "saas";
+            card.innerHTML = `
+              <div class="saas-top">
+                <div class="brand" aria-hidden="true"><i class="fa-solid fa-plug"></i></div>
+              </div>
+              <div>
+                <div class="saas-name">${escHtml(name)}</div>
+                <button class="status-btn off" type="button" aria-pressed="false">未接続</button>
+              </div>
+            `;
+            grid.insertBefore(card, grid.firstChild);
+          }
+
+          syncSettingsUi();
+        }
+
+        renderSaasAddList((document.getElementById("aureaSaasAddSearch")?.value || "").trim());
+        return;
+      }
+
+      const actBtn = t.closest("[data-action='toggle-connect']");
+      if (actBtn) {
+        e.preventDefault();
+
+        const name = (actBtn.getAttribute("data-name") || "").trim();
+        if (!name) return;
+
+        const isCustom = (Array.isArray(state.customApps) && state.customApps.some(a => a.name === name));
+        const on = isCustom
+          ? !!(state.customApps.find(a => a.name === name)?.connected)
+          : !!state.apps?.[name];
+
+        if (!on) {
+          const msg = (name === "Google") ? "Google を再接続しますか？" : `${name} を接続しますか？`;
+          const ok = await confirmModal(msg);
+          if (!ok) return;
+
+          if (isCustom) {
+            const a = state.customApps.find(x => x.name === name);
+            if (a) a.connected = true;
+          } else {
+            if (!state.apps) state.apps = {};
+            state.apps[name] = true;
+          }
+
+          save(state);
+          syncSettingsUi();
+          renderSaasAddList((document.getElementById("aureaSaasAddSearch")?.value || "").trim());
+          return;
+        }
+
+        {
+          const ok = await confirmModal(`${name} を解除しますか？`);
+          if (!ok) return;
+
+          if (isCustom) {
+            const a = state.customApps.find(x => x.name === name);
+            if (a) a.connected = false;
+          } else {
+            state.apps[name] = false;
+          }
+
+          save(state);
+          syncSettingsUi();
+          renderSaasAddList((document.getElementById("aureaSaasAddSearch")?.value || "").trim());
+        }
+      }
+    });
+
+    const search = document.getElementById("aureaSaasAddSearch");
+    search?.addEventListener("input", () => {
+      renderSaasAddList((search.value || "").trim());
+    });
+
+    return saasAddWrap;
+  };
+
+  const renderSaasAddList = (q) => {
+    ensureSaasAddPopup();
+
+    const list = document.getElementById("aureaSaasAddList");
+    if (!list) return;
+
+    const query = (q || "").toLowerCase();
+
+    const custom = Array.isArray(state.customApps) ? state.customApps.map(a => ({
+      name: a.name,
+      icon: `<i class="fa-solid fa-plug"></i>`,
+      desc: "カスタムSaaS",
+      _custom: true
+    })) : [];
+
+    const merged = [...SAAS_CATALOG, ...custom]
+      .filter(x => x.name && (!query || x.name.toLowerCase().includes(query)));
+
+    if (merged.length === 0) {
+      list.innerHTML = `<div style="padding:14px;border-radius:14px;border:1px dashed rgba(255,255,255,.14);opacity:.8;font-size:13px;">一致するSaaSがありません。</div>`;
+      return;
+    }
+
+    list.innerHTML = "";
+
+    merged.forEach((s) => {
+      const isCustom = !!s._custom;
+      const on = isCustom
+        ? !!(state.customApps.find(a => a.name === s.name)?.connected)
+        : !!state.apps?.[s.name];
+
+      const row = document.createElement("div");
+      row.style.cssText = `
+        display:flex;align-items:center;justify-content:space-between;gap:12px;
+        padding:12px;border-radius:16px;border:1px solid rgba(255,255,255,.10);
+        background:rgba(255,255,255,.04);
+      `;
+
+      row.innerHTML = `
+        <div style="display:flex;align-items:center;gap:12px;min-width:0;">
+          <div style="width:38px;height:38px;border-radius:999px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.14);flex:0 0 auto;">
+            ${s.icon}
+          </div>
+          <div style="min-width:0;">
+            <div style="font-size:14px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(s.name)}</div>
+            <div style="margin-top:4px;font-size:12px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(s.desc || "")}</div>
+          </div>
+        </div>
+
+        <button type="button" data-action="toggle-connect" data-name="${escHtml(s.name)}" style="
+          height:34px;padding:0 14px;border-radius:999px;border:1px solid rgba(255,255,255,.12);
+          background:${on ? "rgba(120,220,140,.08)" : "rgba(255,255,255,.035)"};
+          color:${on ? "rgba(210,255,220,.95)" : "rgba(255,255,255,.86)"};
+          cursor:pointer;font-size:13px;font-weight:700;letter-spacing:.01em;white-space:nowrap;
+        ">${on ? "接続" : "未接続"}</button>
+      `;
+
+      list.appendChild(row);
+    });
+  };
+
+  const openSaasAddPopup = () => {
+    ensureSaasAddPopup();
+    const search = document.getElementById("aureaSaasAddSearch");
+    if (search) search.value = "";
+    renderSaasAddList("");
+    saasAddWrap.style.display = "flex";
+    saasAddWrap.setAttribute("aria-hidden", "false");
+
+    // Lang（placeholderのみ）
+    if (search) search.placeholder = (state.settings?.language === "en") ? "Search" : "検索";
+  };
+
+  const closeSaasAddPopup = () => {
+    if (!saasAddWrap) return;
+    saasAddWrap.style.display = "none";
+    saasAddWrap.setAttribute("aria-hidden", "true");
+  };
+
   // Settings bindings (General / Apps / Data / Account)
   const bindSettings = () => {
 
@@ -2012,40 +2296,32 @@ btnNewChat?.addEventListener("click", (e) => {
   if (selData) {
     selData.addEventListener("change", () => {
       const tval = (selData.value || selData.options[selData.selectedIndex]?.textContent || "").trim();
-      state.settings.dataStorage =
-        (tval === "端末内" || tval === "Local") ? "local" : "cloud";
+      const nextMode = (tval === "端末内" || tval === "Local") ? "local" : "cloud";
+
+      const prevKey = getStorageKey();
+
+      try { localStorage.setItem(STORAGE_PREF_KEY, nextMode); } catch {}
+
+      // state側も更新
+      state.settings.dataStorage = nextMode;
+
+      // 移行：新キーへ保存（旧キーは保持）
+      try { localStorage.setItem(getStorageKey(), JSON.stringify(state)); } catch {}
+
+      // UI反映
       saveSettings();
+
+      // 旧キーに残っているデータがある場合もあるため、必要なら参照できるよう保持
+      // prevKey は未使用でも削除しない
+      void prevKey;
     });
   }
 
-    /* ===== Apps ===== */
+/* ===== Apps ===== */
     const btnAddSaas = document.querySelector(".panel-apps .apps-header .btn");
-    btnAddSaas?.addEventListener("click", async (e) => {
+    btnAddSaas?.addEventListener("click", (e) => {
       e.preventDefault();
-      const name = (window.prompt("SaaS名", "") || "").trim();
-      if (!name) return;
-      state.customApps = Array.isArray(state.customApps) ? state.customApps : [];
-      state.customApps.unshift({ name, connected: false, createdAt: nowISO() });
-      save(state);
-
-      // UIにカード追加（最小：FontAwesomeの汎用アイコン）
-      const grid = document.querySelector(".panel-apps .apps-grid");
-      if (grid) {
-        const card = document.createElement("div");
-        card.className = "saas";
-        card.innerHTML = `
-          <div class="saas-top">
-            <div class="brand" aria-hidden="true"><i class="fa-solid fa-plug"></i></div>
-          </div>
-          <div>
-            <div class="saas-name">${escHtml(name)}</div>
-            <button class="status-btn off" type="button" aria-pressed="false">未接続</button>
-          </div>
-        `;
-        grid.insertBefore(card, grid.firstChild);
-      }
-
-      syncSettingsUi();
+      openSaasAddPopup();
     });
 
     bindAppsConnectorsOnce();
