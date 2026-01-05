@@ -76,8 +76,40 @@
     // images library (aggregated, independent)
     images: [],
 
+    // settings
+    settings: {
+      theme: "dark",        // "system" | "light" | "dark"
+      sendMode: "cmdEnter", // "cmdEnter" | "enter"
+      dataStorage: "cloud", // "cloud" | "local"
+      language: "ja"        // i18nは次工程で使用
+    },
+
+    // apps/connectors
+    apps: {
+      Google: false,
+      Gmail: false,
+      "Google Drive": false,
+      GitHub: false,
+      Notion: false,
+      Slack: false,
+      Dropbox: false,
+      Jira: false,
+      Salesforce: false,
+      Zoom: false
+    },
+    customApps: [],
+
     // plan
-    plan: "Free"
+    plan: "Free",
+
+    // account
+    user: {
+      displayName: "Cocoro Sugiura",
+      userName: "@cocoro",
+      email: "hiroyuki.sugiura@invitation.co",
+      trustedDevice: "MacBook Pro ・ Japan ・ Chrome",
+      deviceTrusted: true
+    }
   });
 
   const state = load() || defaultState();
@@ -130,13 +162,115 @@
   const settingsModal = document.getElementById("settingsModal");
   const settingsClose = document.getElementById("settingsClose");
 
+  const applyTheme = () => {
+    const th = state.settings?.theme || "dark";
+    body.classList.remove("theme-light", "theme-dark");
+
+    // v1: system は dark 扱い（CSS拡張は後工程で可）
+    if (th === "light") body.classList.add("theme-light");
+    else body.classList.add("theme-dark");
+  };
+
+  const syncSettingsUi = () => {
+    // Theme
+    const selTheme = document.querySelector(".settings-modal select[aria-label='テーマ']");
+    if (selTheme && state.settings?.theme) {
+      const v = state.settings.theme;
+      const map = { system: "システム", light: "ライト", dark: "ダーク" };
+      const label = map[v] || "ダーク";
+      Array.from(selTheme.options).forEach(o => { o.selected = (o.textContent === label); });
+    }
+
+    // Send mode
+    const selSend = document.querySelector(".settings-modal select[aria-label='AUREAへの送信方法']");
+    if (selSend) {
+      const mode = state.settings?.sendMode || (localStorage.getItem("aurea_send_mode") || "cmdEnter");
+      const label =
+        mode === "enter"
+          ? "Enterで送信（Shift + Enterで改行）"
+          : "⌘ + Enterで送信（Enterは改行）";
+      Array.from(selSend.options).forEach(o => { o.selected = (o.textContent === label); });
+    }
+
+    // Data storage
+    const selData = document.querySelector(".settings-modal select[aria-label='会話とデータの保存先']");
+    if (selData && state.settings?.dataStorage) {
+      const label = (state.settings.dataStorage === "local") ? "端末内" : "クラウド";
+      Array.from(selData.options).forEach(o => { o.selected = (o.textContent === label); });
+    }
+
+    const dataNow = document.querySelector(".panel-data .section[aria-label='保存設定'] .row .l .v");
+    if (dataNow) dataNow.textContent = `現在：${(state.settings?.dataStorage === "local") ? "端末内" : "クラウド"}`;
+
+    // Apps status
+    const appCards = Array.from(document.querySelectorAll(".panel-apps .apps-grid .saas"));
+    appCards.forEach((card) => {
+      const nameEl = card.querySelector(".saas-name");
+      const btn = card.querySelector(".status-btn");
+      const name = (nameEl?.textContent || "").trim();
+      if (!btn || !name) return;
+
+      const on = !!state.apps?.[name];
+      btn.classList.toggle("on", on);
+      btn.classList.toggle("off", !on);
+      btn.textContent = on ? "接続" : "未接続";
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+
+    applyTheme();
+  };
+
+  const syncAccountUi = () => {
+    const u = state.user || {};
+
+    // sidebar user card
+    const sbName = document.querySelector(".user-card .user-meta .name");
+    const sbPlan = document.querySelector(".user-card .user-meta .plan");
+    if (sbName && u.displayName) sbName.textContent = u.displayName;
+    if (sbPlan && state.plan) sbPlan.textContent = state.plan;
+
+    // user pop head
+    const popName = document.querySelector(".user-pop .uhead .n");
+    const popMail = document.querySelector(".user-pop .uhead .m");
+    if (popName && u.displayName) popName.textContent = u.displayName;
+    if (popMail && u.email) popMail.textContent = u.email;
+
+    // settings account inputs / fields
+    const dn = document.getElementById("displayName");
+    const un = document.getElementById("userName");
+    if (dn && u.displayName != null) dn.value = u.displayName;
+    if (un && u.userName != null) un.value = u.userName;
+
+    const planV = document.querySelector(".panel-account .section[aria-label='プラン'] .row .l .v");
+    if (planV && state.plan) planV.textContent = state.plan;
+
+    const emailV = document.querySelector(".panel-account .section[aria-label='サインイン'] .row .l .v");
+    if (emailV && u.email) emailV.textContent = u.email;
+
+    const devV = document.querySelector(".panel-account .section[aria-label='信頼できるデバイス'] .row .l .v");
+    if (devV) devV.textContent = u.deviceTrusted ? (u.trustedDevice || "") : "なし";
+
+    const devBtn = document.getElementById("btnRevokeDevice");
+    if (devBtn) {
+      devBtn.disabled = !u.deviceTrusted;
+      devBtn.style.opacity = u.deviceTrusted ? "" : ".45";
+      devBtn.style.cursor = u.deviceTrusted ? "" : "not-allowed";
+    }
+  };
+
   const openSettings = () => {
     settingsOverlay?.removeAttribute("hidden");
     settingsModal?.removeAttribute("hidden");
     body.style.overflow = "hidden";
+    syncAccountUi();
+    syncSettingsUi();
   };
 
   const closeSettings = () => {
+    // AI Stack が開いたまま残る事故を防ぐ
+    const ai = document.getElementById("aiStackOverlay");
+    if (ai) ai.style.display = "none";
+
     settingsOverlay?.setAttribute("hidden", "");
     settingsModal?.setAttribute("hidden", "");
     body.style.overflow = "";
@@ -147,6 +281,126 @@
   const chatGroup = $$(".sb-group").find(d => d.querySelector("summary[aria-label='チャット']"));
   const projectList = projectGroup ? $(".group-body", projectGroup) : null;
   const chatList = chatGroup ? $(".group-body", chatGroup) : null;
+
+  /* ================= AI Stack popup ================= */
+  const btnOpenAiStackPopup = document.getElementById("btnOpenAiStackPopup");
+  const btnCloseAiStackPopup = document.getElementById("btnCloseAiStackPopup");
+  const aiStackOverlay = document.getElementById("aiStackOverlay");
+  const aiStackPopupBody = document.getElementById("aiStackPopupBody");
+
+  const AI_STACK_COND_KEY = "aurea_ai_stack_conditions_v1";
+
+  const loadAiStackConditions = () => {
+    try {
+      const raw = localStorage.getItem(AI_STACK_COND_KEY);
+      if (!raw) return {};
+      const obj = JSON.parse(raw);
+      return (obj && typeof obj === "object") ? obj : {};
+    } catch { return {}; }
+  };
+
+  const saveAiStackConditions = (map) => {
+    try { localStorage.setItem(AI_STACK_COND_KEY, JSON.stringify(map || {})); } catch {}
+  };
+
+  // 表示用データ（最新版文字列 + 稼働条件）
+  let AI_STACK = [
+    { name: "GPT",        ver: "GPT-5.2",            condition: "総合監修・最終判断/回答提案" },
+    { name: "Gemini",     ver: "Gemini 3",          condition: "大規模範囲の情報収集・マルチモーダル対応" },
+    { name: "Claude",     ver: "Claude 4",          condition: "長文分析・構造/論点の洗い出し" },
+    { name: "Perplexity", ver: "最新版",         condition: "検証・裏取り・ハルシネーション対応" },
+    { name: "Mistral",    ver: "Mistral Lange3,",   condition: "高速処理・軽量質疑対応" },
+    { name: "Sora",       ver: "Sora 2",            condition: "画像生成時に稼働" }
+  ];
+
+  const syncAiStackHeader = () => {
+    if (!aiStackOverlay) return;
+    const headRow = aiStackOverlay.querySelector(".table__row--head");
+    if (!headRow) return;
+
+    headRow.innerHTML = `
+      <div class="table__cell">AI</div>
+      <div class="table__cell">Ver,</div>
+      <div class="table__cell">稼働条件</div>
+    `;
+  };
+
+  // 最新バージョン取得（API接続時に自動反映）
+  const refreshAiStackLatest = async () => {
+    try {
+      const ext = window.__AUREA_AI_STACK_LATEST__;
+      if (ext && typeof ext === "object") {
+        AI_STACK = AI_STACK.map(a => ({ ...a, ver: ext[a.name] || a.ver || "" }));
+        return;
+      }
+    } catch {}
+  };
+
+  const renderAiStackPopup = () => {
+    if (!aiStackPopupBody) return;
+
+    // localStorage の上書きを反映（ユーザーが編集した稼働条件）
+    const localCond = loadAiStackConditions();
+
+    aiStackPopupBody.innerHTML = "";
+    for (const a of AI_STACK) {
+      const row = document.createElement("div");
+      row.className = "table__row";
+
+      const verText = (a.ver && String(a.ver).trim()) ? String(a.ver) : "";
+      const condText = (localCond[a.name] != null) ? String(localCond[a.name]) : String(a.condition || "");
+
+      row.innerHTML = `
+        <div class="table__cell">${escHtml(a.name)}</div>
+        <div class="table__cell">${escHtml(verText)}</div>
+        <div class="table__cell"><div class="ai-cond" contenteditable="true" data-ai="${escHtml(a.name)}">${escHtml(condText)}</div></div>
+      `;
+
+      aiStackPopupBody.appendChild(row);
+    }
+
+    // 編集内容を保存（localStorage）
+    aiStackPopupBody.querySelectorAll(".ai-cond[contenteditable='true']").forEach((el) => {
+      el.addEventListener("input", () => {
+        const map = loadAiStackConditions();
+        const key = el.getAttribute("data-ai") || "";
+        map[key] = el.textContent || "";
+        saveAiStackConditions(map);
+      });
+    });
+  };
+
+  const openAiStackPopup = async () => {
+    await refreshAiStackLatest();
+    syncAiStackHeader();
+    renderAiStackPopup();
+    if (aiStackOverlay) aiStackOverlay.style.display = "flex";
+  };
+
+  const closeAiStackPopup = () => {
+    if (aiStackOverlay) aiStackOverlay.style.display = "none";
+  };
+
+  btnOpenAiStackPopup?.addEventListener("click", (e) => {
+    e.preventDefault();
+    openAiStackPopup();
+  });
+
+  btnCloseAiStackPopup?.addEventListener("click", (e) => {
+    e.preventDefault();
+    closeAiStackPopup();
+  });
+
+  // 背景クリックで閉じる（モーダル外のみ）
+  aiStackOverlay?.addEventListener("click", (e) => {
+    if (e.target === aiStackOverlay) closeAiStackPopup();
+  });
+
+  // ESCで閉じる（既存ESC処理に干渉しない）
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    if (aiStackOverlay && aiStackOverlay.style.display !== "none") closeAiStackPopup();
+  });
 
   /* ================= search box mount ================= */
   let sbSearchInput = null;
@@ -1313,6 +1567,9 @@
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
 
+    // AI Stack が開いていれば最優先で閉じる
+    if (aiStackOverlay && aiStackOverlay.style.display === "flex") { closeAiStackPopup(); return; }
+
     // settings first
     if (settingsModal && !settingsModal.hasAttribute("hidden")) { closeSettings(); return; }
 
@@ -1452,6 +1709,17 @@
   /* ================= boot ================= */
   if (!state.plan) state.plan = "Free";
 
+  if (!state.user) {
+    state.user = {
+      displayName: "Cocoro Sugiura",
+      userName: "@cocoro",
+      email: "hiroyuki.sugiura@invitation.co",
+      trustedDevice: "MacBook Pro ・ Japan ・ Chrome",
+      deviceTrusted: true
+    };
+  }
+  if (typeof state.user.deviceTrusted !== "boolean") state.user.deviceTrusted = true;
+
   if (!state.context || (state.context.type !== "global" && state.context.type !== "project")) {
     state.context = { type: "global" };
   }
@@ -1462,6 +1730,277 @@
   if (!state.projects) state.projects = [];
   if (!state.images) state.images = [];
 
+  // settings/apps が古いstateに無い場合の補完
+  if (!state.settings) {
+    state.settings = {
+      theme: "dark",        // "system" | "light" | "dark"
+      sendMode: "cmdEnter", // "cmdEnter" | "enter"
+      dataStorage: "cloud", // "cloud" | "local"
+      language: "ja"
+    };
+  }
+  if (!state.apps) {
+    state.apps = {
+      Google: false,
+      Gmail: false,
+      "Google Drive": false,
+      GitHub: false,
+      Notion: false,
+      Slack: false,
+      Dropbox: false,
+      Jira: false,
+      Salesforce: false,
+      Zoom: false
+    };
+  }
+  if (!Array.isArray(state.customApps)) state.customApps = [];
+
+  // Settings bindings (General / Apps / Data / Account)
+  const bindSettings = () => {
+    /* ===== General ===== */
+    const selTheme = document.querySelector(".settings-modal select[aria-label='テーマ']");
+    const selSend = document.querySelector(".settings-modal select[aria-label='AUREAへの送信方法']");
+    const selData = document.querySelector(".settings-modal select[aria-label='会話とデータの保存先']");
+
+    const saveSettings = () => {
+      save(state);
+      syncSettingsUi();
+      syncAccountUi();
+    };
+
+    if (selTheme) {
+      selTheme.addEventListener("change", () => {
+        const t = (selTheme.value || selTheme.options[selTheme.selectedIndex]?.textContent || "").trim();
+        if (t === "ライト") state.settings.theme = "light";
+        else if (t === "システム") state.settings.theme = "system";
+        else state.settings.theme = "dark";
+        saveSettings();
+      });
+    }
+
+    if (selSend) {
+      selSend.addEventListener("change", () => {
+        const t = (selSend.value || selSend.options[selSend.selectedIndex]?.textContent || "").trim();
+        const mode = (t.startsWith("Enterで送信")) ? "enter" : "cmdEnter";
+        state.settings.sendMode = mode;
+        try { localStorage.setItem("aurea_send_mode", mode); } catch {}
+        saveSettings();
+      });
+    }
+
+    if (selData) {
+      selData.addEventListener("change", () => {
+        const t = (selData.value || selData.options[selData.selectedIndex]?.textContent || "").trim();
+        state.settings.dataStorage = (t === "端末内") ? "local" : "cloud";
+        saveSettings();
+      });
+    }
+
+    /* ===== Apps ===== */
+    const btnAddSaas = document.querySelector(".panel-apps .apps-header .btn");
+    btnAddSaas?.addEventListener("click", async (e) => {
+      e.preventDefault();
+      const name = (window.prompt("SaaS名", "") || "").trim();
+      if (!name) return;
+      state.customApps = Array.isArray(state.customApps) ? state.customApps : [];
+      state.customApps.unshift({ name, connected: false, createdAt: nowISO() });
+      save(state);
+
+      // UIにカード追加（最小：FontAwesomeの汎用アイコン）
+      const grid = document.querySelector(".panel-apps .apps-grid");
+      if (grid) {
+        const card = document.createElement("div");
+        card.className = "saas";
+        card.innerHTML = `
+          <div class="saas-top">
+            <div class="brand" aria-hidden="true"><i class="fa-solid fa-plug"></i></div>
+          </div>
+          <div>
+            <div class="saas-name">${escHtml(name)}</div>
+            <button class="status-btn off" type="button" aria-pressed="false">未接続</button>
+          </div>
+        `;
+        grid.insertBefore(card, grid.firstChild);
+      }
+
+      syncSettingsUi();
+    });
+
+    document.addEventListener("click", async (e) => {
+      const t = e.target;
+
+      const btn = t.closest(".panel-apps .status-btn");
+      if (!btn) return;
+
+      const card = btn.closest(".saas");
+      const name = (card?.querySelector(".saas-name")?.textContent || "").trim();
+      if (!name) return;
+
+      const isCustom = (Array.isArray(state.customApps) && state.customApps.some(a => a.name === name));
+
+      const on = isCustom
+        ? !!(state.customApps.find(a => a.name === name)?.connected)
+        : !!state.apps?.[name];
+
+      if (!on) {
+        const msg = (name === "Google") ? "Google を再接続しますか？" : `${name} を接続しますか？`;
+        const ok = await confirmModal(msg);
+        if (!ok) return;
+
+        if (isCustom) {
+          const a = state.customApps.find(x => x.name === name);
+          if (a) a.connected = true;
+        } else {
+          state.apps[name] = true;
+        }
+
+        save(state);
+        syncSettingsUi();
+        return;
+      }
+
+      {
+        const ok = await confirmModal(`${name} を解除しますか？`);
+        if (!ok) return;
+
+        if (isCustom) {
+          const a = state.customApps.find(x => x.name === name);
+          if (a) a.connected = false;
+        } else {
+          state.apps[name] = false;
+        }
+
+        save(state);
+        syncSettingsUi();
+      }
+    });
+
+    /* ===== Data ===== */
+    const btnDeleteAll = document.querySelector(".panel-data .section[aria-label='削除'] .btn.danger");
+    btnDeleteAll?.addEventListener("click", async (e) => {
+      e.preventDefault();
+      const ok = await confirmModal("すべてのチャットを削除しますか？");
+      if (!ok) return;
+
+      state.threads.global = [];
+      state.threads.projects = {};
+      state.activeThreadIdByScope.global = null;
+      state.activeThreadIdByScope.projects = {};
+      state.context = { type: "global" };
+      state.activeProjectId = null;
+
+      save(state);
+      renderSidebar();
+      renderView();
+    });
+
+    const kbBtns = Array.from(document.querySelectorAll(".panel-data .section[aria-label='ナレッジベース'] .btn.secondary"));
+    kbBtns.forEach((b) => {
+      b.addEventListener("click", async (e) => {
+        e.preventDefault();
+        const txt = (b.textContent || "").trim();
+
+        if (txt.startsWith("クラウドストレージと接続する")) {
+          await confirmModal("クラウドストレージ接続を開始しますか？");
+          return;
+        }
+
+        if (txt.startsWith("ドキュメントを一時アップロード")) {
+          const input = document.createElement("input");
+          input.type = "file";
+          input.multiple = true;
+          input.accept = ".txt,.md,.pdf,.png,.jpg,.jpeg,.webp";
+          input.style.display = "none";
+          document.body.appendChild(input);
+          input.addEventListener("change", () => document.body.removeChild(input));
+          input.click();
+        }
+      });
+    });
+
+    /* ===== Account ===== */
+    const dn = document.getElementById("displayName");
+    const un = document.getElementById("userName");
+
+    let dnTimer = null;
+    let unTimer = null;
+
+    const saveUser = () => {
+      save(state);
+      syncAccountUi();
+      syncSettingsUi();
+    };
+
+    if (dn) {
+      dn.addEventListener("input", () => {
+        const v = (dn.value || "").trim();
+        state.user.displayName = v || "";
+        if (dnTimer) clearTimeout(dnTimer);
+        dnTimer = setTimeout(saveUser, 250);
+      });
+      dn.addEventListener("blur", saveUser);
+    }
+
+    if (un) {
+      un.addEventListener("input", () => {
+        const v = (un.value || "").trim();
+        state.user.userName = v || "";
+        if (unTimer) clearTimeout(unTimer);
+        unTimer = setTimeout(saveUser, 250);
+      });
+      un.addEventListener("blur", saveUser);
+    }
+
+    const btnBilling = document.getElementById("btnBilling");
+    btnBilling?.addEventListener("click", async (e) => {
+      e.preventDefault();
+      await confirmModal("請求情報を開きますか？");
+    });
+
+    const btnChangeEmail = document.getElementById("btnChangeEmail");
+    btnChangeEmail?.addEventListener("click", async (e) => {
+      e.preventDefault();
+      const next = window.prompt("新しいメールアドレス", state.user.email || "");
+      if (next === null) return;
+      const v = next.trim();
+      if (!v) return;
+      state.user.email = v;
+      saveUser();
+    });
+
+    const btnRevoke = document.getElementById("btnRevokeDevice");
+    btnRevoke?.addEventListener("click", async (e) => {
+      e.preventDefault();
+      if (!state.user.deviceTrusted) return;
+      const ok1 = await confirmModal("この端末を解除しますか？");
+      if (!ok1) return;
+      state.user.deviceTrusted = false;
+      saveUser();
+    });
+
+    // Regulations tabs
+    const tabs = Array.from(document.querySelectorAll(".settings-modal .reg-tab"));
+    const panels = Array.from(document.querySelectorAll(".settings-modal .reg-panel"));
+
+    const openReg = (key) => {
+      tabs.forEach(b => b.setAttribute("aria-selected", (b.dataset.regTab === key) ? "true" : "false"));
+      panels.forEach(p => {
+        const on = (p.dataset.regPanel === key);
+        if (on) p.removeAttribute("hidden");
+        else p.setAttribute("hidden", "");
+      });
+    };
+
+    tabs.forEach((b) => {
+      b.addEventListener("click", (e) => {
+        e.preventDefault();
+        openReg(b.dataset.regTab || "tokusho");
+      });
+    });
+
+    openReg("tokusho");
+  };
+
   ensureActiveThread();
 
   // sidebar search (必ず初期化)
@@ -1470,6 +2009,11 @@
   // render
   renderSidebar();
   renderView();
+
+  // reflect immediately
+  syncAccountUi();
+  syncSettingsUi();
+  bindSettings();
 
   // centered ask (no thread selected / no messages)
   setHasChat(false);
