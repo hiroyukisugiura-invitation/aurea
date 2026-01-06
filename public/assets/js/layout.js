@@ -2048,12 +2048,13 @@ btnNewChat?.addEventListener("click", (e) => {
   const startGoogleAccountConnect = async (serviceName) => {
     const name = String(serviceName || "Google");
 
+    // Hosting rewrite で /ai/* が index.html を返す環境があるため、/api/* を優先
     const paths =
       (name === "Gmail")
-        ? ["/ai/gmail/connect", "/api/gmail/connect", "/ai/google/connect", "/api/google/connect"]
+        ? ["/api/gmail/connect", "/api/google/connect", "/ai/gmail/connect", "/ai/google/connect"]
         : (name === "Google Drive")
-          ? ["/ai/drive/connect", "/api/drive/connect", "/ai/google/connect", "/api/google/connect"]
-          : ["/ai/google/connect", "/api/google/connect", "/ai/drive/connect", "/api/drive/connect"];
+          ? ["/api/drive/connect", "/api/google/connect", "/ai/drive/connect", "/ai/google/connect"]
+          : ["/api/google/connect", "/api/drive/connect", "/ai/google/connect", "/ai/drive/connect"];
 
     const url = await pickFirstOkUrl(paths);
     if (!url) return;
@@ -2309,6 +2310,15 @@ btnNewChat?.addEventListener("click", (e) => {
       selLang.addEventListener("change", () => {
         const v = (selLang.value || "ja").trim();
         state.settings.language = (v === "en") ? "en" : "ja";
+
+        // 既に生成済みのポップアップは文言が固定化されるため、破棄して作り直す
+        const cm = document.getElementById("aureaConfirmModal");
+        if (cm) cm.remove();
+
+        const sp = document.getElementById("aureaSaasAdd");
+        if (sp) sp.remove();
+        saasAddWrap = null;
+
         saveSettings();
         applyI18n();
         renderSidebar();
