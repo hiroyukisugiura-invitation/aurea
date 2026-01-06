@@ -160,7 +160,7 @@
 
   // sidebar buttons
   const btnSearchLegacy = $(".sb-item[aria-label='チャット内を検索']");
-  const btnNewChat = $(".sb-item[aria-label='新しいチャット']");
+  const btnNewChat = $(".sb-item[data-nav='newChat']");
   const btnImages = $(".sb-item[data-nav='images']");
   const btnShare = $(".topbar .icon-btn[aria-label='シェア']");
 
@@ -197,30 +197,22 @@
 
   const syncSettingsUi = () => {
     // Theme
-    const selTheme = document.querySelector(".settings-modal select[aria-label='テーマ']");
-    if (selTheme && state.settings?.theme) {
-      const v = state.settings.theme;
-      const map = { system: "システム", light: "ライト", dark: "ダーク" };
-      const label = map[v] || "ダーク";
-      Array.from(selTheme.options).forEach(o => { o.selected = (o.textContent === label || o.value === label); });
+    const selTheme = document.querySelector(".settings-modal #settingsTheme");
+    if (selTheme) {
+      selTheme.value = (state.settings?.theme || "dark");
     }
 
     // Language
-    const selLang = document.querySelector(".settings-modal select[aria-label='言語']");
-    if (selLang && state.settings?.language) {
-      const label = (state.settings.language === "en") ? "English (US)" : "日本語";
-      Array.from(selLang.options).forEach(o => { o.selected = (o.textContent === label); });
+    const selLang = document.querySelector(".settings-modal #settingsLang");
+    if (selLang) {
+      selLang.value = (state.settings?.language || "ja");
     }
 
     // Send mode
-    const selSend = document.querySelector(".settings-modal select[aria-label='AUREAへの送信方法']");
+    const selSend = document.querySelector(".settings-modal #settingsSendMode");
     if (selSend) {
       const mode = state.settings?.sendMode || (localStorage.getItem("aurea_send_mode") || "cmdEnter");
-      const label =
-        mode === "enter"
-          ? "Enterで送信（Shift + Enterで改行）"
-          : "⌘ + Enterで送信（Enterは改行）";
-      Array.from(selSend.options).forEach(o => { o.selected = (o.textContent === label); });
+      selSend.value = (mode === "enter") ? "enter" : "cmdEnter";
     }
 
     // Data storage
@@ -372,8 +364,8 @@ const closeSettings = () => {
 };
 
   // groups
-  const projectGroup = $$(".sb-group").find(d => d.querySelector("summary[aria-label='プロジェクト']"));
-  const chatGroup = $$(".sb-group").find(d => d.querySelector("summary[aria-label='チャット']"));
+  const projectGroup = $(".sb-group[data-group='projects']");
+  const chatGroup = $(".sb-group[data-group='chats']");
   const projectList = projectGroup ? $(".group-body", projectGroup) : null;
   const chatList = chatGroup ? $(".group-body", chatGroup) : null;
 
@@ -1462,7 +1454,7 @@ const closeSettings = () => {
   };
 
   const fakeReply = async (userText) => {
-    const reply = `（AUREA）\n${userText}\n\n※ここは後で /api/chat に接続します。`;
+    const reply = `${tr("aureaPrefix")}\n${userText}\n\n${tr("replyPlaceholder")}`;
 
     const m = appendMessage("assistant", "");
     if (!m) return;
@@ -1508,7 +1500,8 @@ const closeSettings = () => {
       src: makePlaceholderImageDataUrl(prompt)
     });
 
-    appendMessage("assistant", `（画像を保存しました）\n「${tr("images")}」→保存ボックスに追加済み。\n\nPrompt:\n${prompt}`);
+    const line = tr("imageSavedInLibrary").replace("{images}", tr("images"));
+    appendMessage("assistant", `${tr("imageSaved")}\n${line}\n\nPrompt:\n${prompt}`);
   };
 
   /* ================= clipboard ================= */
@@ -2280,10 +2273,10 @@ btnNewChat?.addEventListener("click", (e) => {
   const bindSettings = () => {
 
     /* ===== General ===== */
-    const selTheme = document.querySelector(".settings-modal select[aria-label='テーマ']");
-    const selLang  = document.querySelector(".settings-modal select[aria-label='言語']");
-    const selSend  = document.querySelector(".settings-modal select[aria-label='AUREAへの送信方法']");
-    const selData  = document.querySelector(".settings-modal select[aria-label='会話とデータの保存先']");
+    const selTheme = document.querySelector(".settings-modal #settingsTheme");
+    const selLang  = document.querySelector(".settings-modal #settingsLang");
+    const selSend  = document.querySelector(".settings-modal #settingsSendMode");
+    const selData  = document.querySelector(".settings-modal #settingsDataStorage");
 
     const saveSettings = () => {
       save(state);
@@ -2293,18 +2286,16 @@ btnNewChat?.addEventListener("click", (e) => {
 
     if (selTheme) {
       selTheme.addEventListener("change", () => {
-        const tval = (selTheme.value || selTheme.options[selTheme.selectedIndex]?.textContent || "").trim();
-        if (tval === "ライト" || tval === "Light") state.settings.theme = "light";
-        else if (tval === "システム" || tval === "System") state.settings.theme = "system";
-        else state.settings.theme = "dark";
+        const v = (selTheme.value || "dark").trim();
+        state.settings.theme = (v === "light" || v === "system" || v === "dark") ? v : "dark";
         saveSettings();
       });
     }
 
     if (selLang) {
       selLang.addEventListener("change", () => {
-        const tval = (selLang.value || selLang.options[selLang.selectedIndex]?.textContent || "").trim();
-        state.settings.language = (tval.startsWith("English")) ? "en" : "ja";
+        const v = (selLang.value || "ja").trim();
+        state.settings.language = (v === "en") ? "en" : "ja";
         saveSettings();
         applyI18n();
         renderSidebar();
@@ -2313,8 +2304,8 @@ btnNewChat?.addEventListener("click", (e) => {
 
     if (selSend) {
       selSend.addEventListener("change", () => {
-        const tval = (selSend.value || selSend.options[selSend.selectedIndex]?.textContent || "").trim();
-        const mode = (tval.startsWith("Enterで送信") || tval.startsWith("Enter to send")) ? "enter" : "cmdEnter";
+        const v = (selSend.value || "cmdEnter").trim();
+        const mode = (v === "enter") ? "enter" : "cmdEnter";
         state.settings.sendMode = mode;
         try { localStorage.setItem("aurea_send_mode", mode); } catch {}
         saveSettings();
