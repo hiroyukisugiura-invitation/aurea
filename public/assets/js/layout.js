@@ -121,9 +121,9 @@
 
     // account
     user: {
-      displayName: "Cocoro Sugiura",
-      userName: "@cocoro",
-      email: "hiroyuki.sugiura@invitation.co",
+      displayName: "User name",
+      userName: "@Username",
+      email: "user@dmain.com",
       trustedDevice: "MacBook Pro ・ Japan ・ Chrome",
       deviceTrusted: true
     }
@@ -152,7 +152,7 @@
   const board = $(".board");
 
   // ask
-  const askInput = $(".ask .in");
+  const askInput = document.querySelector(".ask .in");
   const sendBtn = $(".ask [data-action='send']");
   const micBtn = $(".ask [data-action='mic']");
   const voiceBtn = $(".ask [data-action='voice']");
@@ -175,9 +175,8 @@
     || $(".user-pop a[aria-label='ログアウト']");
 
   /* ================= settings (embedded modal) ================= */
-  const settingsOverlay = document.getElementById("settingsOverlay");
   const settingsModal = document.getElementById("settingsModal");
-  const settingsClose = document.getElementById("settingsClose");
+  const settingsClose = document.querySelector(".settings-modal .close");
 
   const applyTheme = () => {
     const th = state.settings?.theme || "dark";
@@ -297,6 +296,9 @@
   const applyI18n = () => {
     const lang = state.settings?.language || "ja";
 
+    // html lang も同期
+    try { document.documentElement.lang = (lang === "en") ? "en" : "ja"; } catch {}
+
     const setText = (sel, text) => {
       const el = document.querySelector(sel);
       if (el && text != null) el.textContent = text;
@@ -316,10 +318,6 @@
       sbSearch.placeholder = tr("search");
       sbSearch.setAttribute("aria-label", tr("search"));
     }
-
-    // User menu
-    setText(".user-pop a[aria-label='設定']", tr("settings"));
-    setText(".user-pop a[aria-label='ログアウト']", tr("logout"));
 
     // ===== Settings modal (embedded) =====
     setText(".settings-modal .nav-title", tr("settings"));
@@ -346,30 +344,32 @@
     if (selLang) {
       selLang.setAttribute("aria-label", tr("language"));
     }
+
+    // data-i18n / data-i18n-aria 全反映（HTML属性ベース）
+    applyI18nAttrs();
   };
 
-  const openSettings = () => {
-    // 常に「一般」から開始
-    const tabGeneral = document.getElementById("tab-general");
-    if (tabGeneral) tabGeneral.checked = true;
+const openSettings = () => {
+  const tabGeneral = document.getElementById("tab-general");
+  if (tabGeneral) tabGeneral.checked = true;
 
-    settingsOverlay?.removeAttribute("hidden");
-    settingsModal?.removeAttribute("hidden");
-    body.style.overflow = "hidden";
-    syncAccountUi();
-    syncSettingsUi();
-    applyI18n();
-  };
+  settingsModal?.removeAttribute("hidden");
+  settingsModal?.classList.add("is-open");
+  body.style.overflow = "hidden";
 
-  const closeSettings = () => {
-    // AI Stack が開いたまま残る事故を防ぐ
-    const ai = document.getElementById("aiStackOverlay");
-    if (ai) ai.style.display = "none";
+  syncAccountUi();
+  syncSettingsUi();
+  applyI18n();
+};
 
-    settingsOverlay?.setAttribute("hidden", "");
-    settingsModal?.setAttribute("hidden", "");
-    body.style.overflow = "";
-  };
+const closeSettings = () => {
+  const ai = document.getElementById("aiStackOverlay");
+  if (ai) ai.style.display = "none";
+
+  settingsModal?.classList.remove("is-open");
+  settingsModal?.setAttribute("hidden", "");
+  body.style.overflow = "";
+};
 
   // groups
   const projectGroup = $$(".sb-group").find(d => d.querySelector("summary[aria-label='プロジェクト']"));
@@ -1577,10 +1577,6 @@ btnNewChat?.addEventListener("click", (e) => {
     e.preventDefault();
     closeSettings();
   });
-  settingsOverlay?.addEventListener("click", (e) => {
-    e.preventDefault();
-    closeSettings();
-  });
 
   // settings内の close（button.close）でも閉じる
   document.addEventListener("click", (e) => {
@@ -1619,14 +1615,14 @@ btnNewChat?.addEventListener("click", (e) => {
     if (projectCreateBtn) projectCreateBtn.disabled = !v;
   });
 
-  // plus menu items
+  // plus menu items（i18n対応：aria-label では判定しない）
   $$(".plus-pop a[role='menuitem']").forEach((a) => {
-    const label = a.getAttribute("aria-label") || "";
+    const action = (a.getAttribute("data-action") || "").trim();
     a.addEventListener("click", async (e) => {
       e.preventDefault();
       closeDetails(plusDetails);
 
-      if (label === "写真とファイルを追加") {
+      if (action === "add-file") {
         const input = document.createElement("input");
         input.type = "file";
         input.multiple = true;
@@ -1638,8 +1634,8 @@ btnNewChat?.addEventListener("click", (e) => {
         return;
       }
 
-      if (label === "画像を作成する") {
-        const prompt = (askInput?.value || "").trim() || "（未入力）";
+      if (action === "create-image") {
+        const prompt = (askInput?.value || "").trim() || tr("promptEmpty");
         if (!getActiveThreadId()) createThread();
         await createImageFromPrompt(prompt);
         state.view = "images";
@@ -1685,14 +1681,15 @@ btnNewChat?.addEventListener("click", (e) => {
   micBtn?.addEventListener("click", (e) => { e.preventDefault(); });
   voiceBtn?.addEventListener("click", (e) => { e.preventDefault(); });
 
-  /* ================= global close rules ================= */
+/* ================= global close rules ================= */
   document.addEventListener("pointerdown", (e) => {
     const t = e.target;
 
-    // settings: モーダル外タップで閉じる（overlay含む）
+    // settings: 背景（overlay）を直接タップした時だけ閉じる
+    // ※ radio(tab-input) や select option がモーダル外判定になって誤閉じするのを防止
     if (settingsModal && !settingsModal.hasAttribute("hidden")) {
-      const modalCard = settingsModal.querySelector(".modal");
-      if (modalCard && !isInside(modalCard, t)) {
+      const overlay = settingsModal.querySelector(":scope > .overlay");
+      if (overlay && t === overlay) {
         closeSettings();
         return;
       }
@@ -1897,9 +1894,9 @@ btnNewChat?.addEventListener("click", (e) => {
 
   if (!state.user) {
     state.user = {
-      displayName: "Cocoro Sugiura",
-      userName: "@cocoro",
-      email: "hiroyuki.sugiura@invitation.co",
+      displayName: "User name",
+      userName: "@user name",
+      email: "user@domain.com",
       trustedDevice: "MacBook Pro ・ Japan ・ Chrome",
       deviceTrusted: true
     };
@@ -1945,119 +1942,24 @@ btnNewChat?.addEventListener("click", (e) => {
   }
   if (!Array.isArray(state.customApps)) state.customApps = [];
 
-/* ===== i18n (v1) ===== */
-  const I18N = {
-    ja: {
-      newChat: "新しいチャット",
-      threadNew: "新しいチャット",
-      titleMatch: "（タイトル一致）",
-
-      images: "ライブラリ",
-      library: "ライブラリ",
-      projects: "プロジェクト",
-      chats: "チャット",
-      search: "検索",
-
-      settings: "設定",
-      logout: "ログアウト",
-
-      general: "一般",
-      apps: "アプリ",
-      data: "データ",
-      trainer: "AUREA Data Trainer",
-      accountSecurity: "アカウント・セキュリティ",
-
-      addSaas: "+ SaaS 追加",
-
-      // Library view
-      librarySub: "会話内で作成された画像がここに保存されます",
-      libraryEmpty: "まだ保存された画像がありません。",
-
-      // Search view
-      searchTitle: "検索結果",
-      searchPrompt: "検索語を入力してください",
-      searchNoMatch: "一致する会話が見つかりませんでした。",
-      searchSubPrefix: "「",
-      searchSubMid: "」の検索結果（",
-      searchSubSuffix: "件）",
-
-      // Confirm messages
-      confirmLogout: "ログアウトしますか？",
-      confirmDelete: "削除しますか？",
-      confirmDeleteProject: "プロジェクトを削除しますか？",
-      confirmDeleteAllChats: "すべてのチャットを削除しますか？",
-      confirmCreateProject: "プロジェクトを作成しますか？",
-      confirmDeleteImage: "画像を削除しますか？",
-
-      // Prompts
-      promptNewName: "新しい名前",
-      promptSaasName: "SaaS名",
-      promptNewEmail: "新しいメールアドレス",
-
-      theme: "テーマ",
-      language: "言語",
-      sendMode: "AUREAへの送信方法",
-      dataStorage: "会話とデータの保存先"
-
-    },
-    en: {
-      newChat: "New chat",
-      threadNew: "New chat",
-      titleMatch: "(Title match)",
-
-      images: "Library",
-      library: "Library",
-      projects: "Projects",
-      chats: "Chats",
-      search: "Search",
-
-      settings: "Settings",
-      logout: "Log out",
-
-      general: "General",
-      apps: "Apps",
-      data: "Data",
-      trainer: "AUREA Data Trainer",
-      accountSecurity: "Account & Security",
-
-      addSaas: "+ Add SaaS",
-
-      // Library view
-      librarySub: "Images created in chats are saved here.",
-      libraryEmpty: "No images saved yet.",
-
-      // Search view
-      searchTitle: "Search results",
-      searchPrompt: "Type to search",
-      searchNoMatch: "No matching chats found.",
-      searchSubPrefix: "“",
-      searchSubMid: "” results (",
-      searchSubSuffix: ")",
-
-      // Confirm messages
-      confirmLogout: "Log out?",
-      confirmDelete: "Delete?",
-      confirmDeleteProject: "Delete this project?",
-      confirmDeleteAllChats: "Delete all chats?",
-      confirmCreateProject: "Create this project?",
-      confirmDeleteImage: "Delete this image?",
-
-      // Prompts
-      promptNewName: "New name",
-      promptSaasName: "SaaS name",
-      promptNewEmail: "New email address",
-
-      theme: "Theme",
-      language: "Language",
-      sendMode: "Send behavior",
-      dataStorage: "Data storage"
-    }
-  };
-
+  /* ===== i18n (v1) ===== */
   const tr = (key) => {
-    const lang = state.settings?.language || "ja";
-    return I18N[lang]?.[key] || I18N.ja[key] || key;
+    return (window.AUREA_I18N && typeof window.AUREA_I18N.tr === "function")
+      ? window.AUREA_I18N.tr(state, key)
+      : key;
   };
+
+  function applyI18nAttrs() {
+    document.querySelectorAll("[data-i18n]").forEach(el => {
+      const key = el.getAttribute("data-i18n");
+      el.textContent = tr(key);
+    });
+
+    document.querySelectorAll("[data-i18n-aria]").forEach(el => {
+      const key = el.getAttribute("data-i18n-aria");
+      el.setAttribute("aria-label", tr(key));
+    });
+  }
 
   // Apps connectors click (bind once)
   let appsClickBound = false;
@@ -2604,12 +2506,12 @@ btnNewChat?.addEventListener("click", (e) => {
 
   ensureActiveThread();
 
-  // sidebar search (必ず初期化)
-  mountSidebarSearch();
-
   // render
   renderSidebar();
   renderView();
+
+  // sidebar search（render 後に必ず mount）
+  mountSidebarSearch();
 
   // reflect immediately
   syncAccountUi();
@@ -2620,7 +2522,9 @@ btnNewChat?.addEventListener("click", (e) => {
   // centered ask (no thread selected / no messages)
   setHasChat(false);
 
-  // ask init
-  autosizeTextarea();
-  updateSendButtonVisibility();
+  // ask init（DOM確定後）
+  if (askInput) {
+    autosizeTextarea();
+    updateSendButtonVisibility();
+  }
 })();
