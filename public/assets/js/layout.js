@@ -162,7 +162,7 @@
   const btnSearchLegacy = $(".sb-item[aria-label='チャット内を検索']");
   const btnNewChat = $(".sb-item[data-nav='newChat']");
   const btnImages = $(".sb-item[data-nav='images']");
-  const btnShare = $(".topbar .icon-btn[aria-label='シェア']");
+  const btnShare = $(".topbar .icon-btn[data-i18n-aria='share']");
 
   const linkSettings =
     document.getElementById("btnOpenSettings")
@@ -240,7 +240,7 @@
 
       btn.classList.toggle("on", on);
       btn.classList.toggle("off", !on);
-      btn.textContent = on ? "接続" : "未接続";
+      btn.textContent = on ? tr("connected") : tr("notConnected");
       btn.setAttribute("aria-pressed", on ? "true" : "false");
     });
 
@@ -297,12 +297,10 @@
     };
 
     // ===== Sidebar =====
-    setText(".sb-item[aria-label='新しいチャット'] .label", tr("newChat"));
+    setText(".sb-item[data-nav='newChat'] .label", tr("newChat"));
     setText(".sb-item[data-nav='images'] .label", tr("library"));
 
-    // Group headers
-    setText(".sb-group summary[aria-label='プロジェクト'] > span", tr("projects"));
-    setText(".sb-group summary[aria-label='チャット'] > span", tr("chats"));
+    // Group headers（中身は data-i18n で反映）
 
     // Sidebar search placeholder (mounted)
     const sbSearch = document.getElementById("aureaSearchInput");
@@ -325,14 +323,14 @@
     setText(".settings-modal .panel-data .content-title", tr("data"));
     setText(".settings-modal .panel-account .content-title", tr("accountSecurity"));
 
-    // Apps: "+ SaaS 追加" button label
+    // Apps: "SaaS 追加" button label
     const addBtn = document.querySelector(".settings-modal .panel-apps .apps-header .btn");
     if (addBtn) {
       addBtn.innerHTML = `<i class="fa-solid fa-plus"></i> ${tr("addSaas")}`;
     }
 
     // Settings: language select placeholder-like consistency (表示のみ)
-    const selLang = document.querySelector(".settings-modal select[aria-label='言語']");
+    const selLang = document.querySelector(".settings-modal #settingsLang");
     if (selLang) {
       selLang.setAttribute("aria-label", tr("language"));
     }
@@ -348,6 +346,8 @@ const openSettings = () => {
   settingsModal?.removeAttribute("hidden");
   settingsModal?.classList.add("is-open");
   body.style.overflow = "hidden";
+
+  ensureAppsGrid();
 
   syncAccountUi();
   syncSettingsUi();
@@ -662,26 +662,6 @@ const closeSettings = () => {
     const btnCancel = $("#aureaConfirmCancel");
     const btnOk = $("#aureaConfirmOk");
 
-    if (text) text.textContent = message || ((state.settings?.language === "en") ? "Are you sure?" : "よろしいですか？");
-
-    const cleanup = () => {
-      btnCancel?.removeEventListener("click", onCancel);
-      btnOk?.removeEventListener("click", onOk);
-      document.removeEventListener("keydown", onEsc);
-    };
-
-    const close = (val) => {
-      cleanup();
-      wrap.style.display = "none";
-      wrap.setAttribute("aria-hidden", "true");
-      resolve(val);
-    };
-  const confirmModal = (message) => new Promise((resolve) => {
-    const wrap = ensureConfirmModal();
-    const text = $("#aureaConfirmText");
-    const btnCancel = $("#aureaConfirmCancel");
-    const btnOk = $("#aureaConfirmOk");
-
     if (text) text.textContent = message || tr("areYouSure");
 
     const cleanup = () => {
@@ -696,18 +676,6 @@ const closeSettings = () => {
       wrap.setAttribute("aria-hidden", "true");
       resolve(val);
     };
-
-    const onCancel = () => close(false);
-    const onOk = () => close(true);
-    const onEsc = (e) => { if (e.key === "Escape") close(false); };
-
-    btnCancel?.addEventListener("click", onCancel);
-    btnOk?.addEventListener("click", onOk);
-    document.addEventListener("keydown", onEsc);
-
-    wrap.style.display = "flex";
-    wrap.setAttribute("aria-hidden", "false");
-  });
 
     const onCancel = () => close(false);
     const onOk = () => close(true);
@@ -1108,8 +1076,8 @@ const closeSettings = () => {
         <div class="img-meta">
           <div class="img-date">${escHtml(dateText)}</div>
           <div class="img-actions">
-            <button class="img-btn" type="button" data-action="open" title="開く">↗</button>
-            <button class="img-btn" type="button" data-action="delete" title="削除">×</button>
+            <button class="img-btn" type="button" data-action="open" title="${escHtml(tr("open"))}">↗</button>
+            <button class="img-btn" type="button" data-action="delete" title="${escHtml(tr("delete"))}">×</button>
           </div>
         </div>
       `;
@@ -1159,10 +1127,12 @@ const closeSettings = () => {
 
     for (const h of hits) {
       const projName = h.scopeType === "project"
-        ? (state.projects.find(p => p.id === h.projectId)?.name || "プロジェクト")
-        : "チャット";
+        ? (state.projects.find(p => p.id === h.projectId)?.name || tr("project"))
+        : tr("chat");
 
-      const meta = h.scopeType === "project" ? `プロジェクト: ${projName}` : "グローバル";
+      const meta = h.scopeType === "project"
+        ? `${tr("project")}: ${projName}`
+        : tr("global");
 
       const card = document.createElement("div");
       card.className = "search-card";
@@ -1272,13 +1242,13 @@ const closeSettings = () => {
         const rename = document.createElement("button");
         rename.type = "button";
         rename.className = "sb-act";
-        rename.textContent = "名前を変更する";
+        rename.textContent = tr("menuRename");
         rename.dataset.action = "rename-project";
 
         const del = document.createElement("button");
         del.type = "button";
         del.className = "sb-act danger";
-        del.textContent = "削除する";
+        del.textContent = tr("menuDelete");
         del.dataset.action = "delete-project";
 
         pop.appendChild(rename);
@@ -1389,13 +1359,13 @@ const closeSettings = () => {
       const rename = document.createElement("button");
       rename.type = "button";
       rename.className = "sb-act";
-      rename.textContent = "名前を変更する";
+      rename.textContent = tr("menuRename");
       rename.dataset.action = "rename-thread";
 
       const del = document.createElement("button");
       del.type = "button";
       del.className = "sb-act danger";
-      del.textContent = "削除する";
+      del.textContent = tr("menuDelete");
       del.dataset.action = "delete-thread";
 
       pop.appendChild(rename);
@@ -1983,6 +1953,16 @@ btnNewChat?.addEventListener("click", (e) => {
       const key = el.getAttribute("data-i18n-aria");
       el.setAttribute("aria-label", tr(key));
     });
+
+    document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
+      const key = el.getAttribute("data-i18n-placeholder");
+      el.setAttribute("placeholder", tr(key));
+    });
+
+    document.querySelectorAll("[data-i18n-title]").forEach(el => {
+      const key = el.getAttribute("data-i18n-title");
+      el.setAttribute("title", tr(key));
+    });
   }
 
   // Apps connectors click (bind once)
@@ -2008,9 +1988,20 @@ btnNewChat?.addEventListener("click", (e) => {
         : !!state.apps?.[name];
 
       if (!on) {
-        const msg = (name === "Google") ? "Google を再接続しますか？" : `${name} を接続しますか？`;
+        const msg = (name === "Google")
+          ? tr("confirmConnectGoogle")
+          : tr("confirmConnectSaas").replace("{name}", name);
+
         const ok = await confirmModal(msg);
         if (!ok) return;
+
+        if (name === "Google") {
+          await startGoogleAccountConnect();
+          state.apps[name] = true;
+          save(state);
+          syncSettingsUi();
+          return;
+        }
 
         if (isCustom) {
           const a = state.customApps.find(x => x.name === name);
@@ -2044,7 +2035,29 @@ btnNewChat?.addEventListener("click", (e) => {
   /* ================= SaaS add popup (UI only) ================= */
   let saasAddWrap = null;
 
+  const pickFirstOkUrl = async (paths) => {
+    for (const p of paths) {
+      try {
+        const r = await fetch(p, { method: "HEAD" });
+        if (r && r.ok) return p;
+      } catch {}
+    }
+    return paths[0] || "";
+  };
+
+  const startGoogleAccountConnect = async () => {
+    const url = await pickFirstOkUrl([
+      "/ai/google/connect",
+      "/api/google/connect",
+      "/ai/drive/connect",
+      "/api/drive/connect"
+    ]);
+    if (!url) return;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
   const SAAS_CATALOG = [
+
     { name: "Google",        icon: `<i class="fa-brands fa-google"></i>`,        desc: "Googleアカウント連携" },
     { name: "Gmail",         icon: `<i class="fa-solid fa-envelope"></i>`,       desc: "メールの検索・参照" },
     { name: "Google Drive",  icon: `<i class="fa-brands fa-google-drive"></i>`,  desc: "Driveの検索・参照" },
@@ -2056,6 +2069,45 @@ btnNewChat?.addEventListener("click", (e) => {
     { name: "Salesforce",    icon: `<i class="fa-brands fa-salesforce"></i>`,    desc: "CRM参照・検索" },
     { name: "Zoom",          icon: `<i class="fa-brands fa-zoom"></i>`,          desc: "会議情報参照・検索" }
   ];
+
+  function ensureAppsGrid(){
+    const grid = document.querySelector(".panel-apps .apps-grid");
+    if (!grid) return;
+
+    // 既にカードがあるなら何もしない
+    if (grid.querySelector(".saas")) return;
+
+    const custom = Array.isArray(state.customApps)
+      ? state.customApps.map(a => ({
+          name: a.name,
+          icon: `<i class="fa-solid fa-plug"></i>`,
+          _custom: true
+        }))
+      : [];
+
+    const merged = [...SAAS_CATALOG, ...custom];
+
+    merged.forEach((s) => {
+      const isCustom = !!s._custom;
+      const on = isCustom
+        ? !!(state.customApps.find(a => a.name === s.name)?.connected)
+        : !!state.apps?.[s.name];
+
+      const card = document.createElement("div");
+      card.className = "saas";
+      card.innerHTML = `
+        <div class="saas-top">
+          <div class="brand" aria-hidden="true">${s.icon}</div>
+        </div>
+        <div>
+          <div class="saas-name">${escHtml(s.name)}</div>
+          <button class="status-btn ${on ? "on" : "off"}" type="button" aria-pressed="${on ? "true" : "false"}">${escHtml(on ? tr("connected") : tr("notConnected"))}</button>
+        </div>
+      `;
+
+      grid.appendChild(card);
+    });
+  }
 
   const ensureSaasAddPopup = () => {
     if (saasAddWrap) return saasAddWrap;
@@ -2070,7 +2122,7 @@ btnNewChat?.addEventListener("click", (e) => {
 
     saasAddWrap.innerHTML = `
       <div id="aureaSaasAddCard" style="
-        width:min(860px, calc(100% - 24px));
+        width:min(720px, calc(100% - 24px));
         max-height:calc(100vh - 64px);
         background:rgba(20,21,22,.96);
         border:1px solid rgba(255,255,255,.10);
@@ -2086,7 +2138,7 @@ btnNewChat?.addEventListener("click", (e) => {
         min-width:0;
       ">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.08);">
-          <div style="font-size:14px;font-weight:600;">+ SaaS 追加</div>
+          <div style="font-size:14px;font-weight:600;">${escHtml(tr("addSaas"))}</div>
           <button type="button" data-action="close" style="
             width:36px;height:36px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
             background:rgba(255,255,255,.06);color:rgba(255,255,255,.92);
@@ -2094,204 +2146,129 @@ btnNewChat?.addEventListener("click", (e) => {
           ">×</button>
         </div>
 
-        <div style="padding:12px 16px;display:flex;gap:10px;align-items:center;">
-          <input id="aureaSaasAddSearch" type="search" placeholder="検索" aria-label="検索" style="
-            flex:1;min-width:0;height:38px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
-            background:rgba(255,255,255,.05);color:rgba(255,255,255,.92);
-            outline:none;padding:0 12px;font-size:13px;
-          "/>
-          <button type="button" data-action="add-custom" style="
-            height:38px;padding:0 12px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
-            background:rgba(255,255,255,.06);color:rgba(255,255,255,.92);cursor:pointer;font-size:13px;
-            white-space:nowrap;
-          ">カスタム追加</button>
-        </div>
+        <div style="padding:14px 16px 16px;display:flex;flex-direction:column;gap:12px;">
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div style="font-size:12px;opacity:.72;">${escHtml(tr("saasName"))}</div>
+            <input id="aureaSaasName" type="text" placeholder="${escHtml(tr("saasNamePh"))}" style="
+              width:100%;height:40px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
+              background:rgba(255,255,255,.05);color:rgba(255,255,255,.92);
+              outline:none;padding:0 12px;font-size:13px;
+            "/>
+          </div>
 
-        <div id="aureaSaasAddList" style="padding:0 16px 16px;overflow:auto;min-height:0;display:flex;flex-direction:column;gap:10px;"></div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div style="font-size:12px;opacity:.72;">${escHtml(tr("apiBaseUrl"))}</div>
+            <input id="aureaSaasBaseUrl" type="text" placeholder="${escHtml(tr("apiBaseUrlPh"))}" style="
+              width:100%;height:40px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
+              background:rgba(255,255,255,.05);color:rgba(255,255,255,.92);
+              outline:none;padding:0 12px;font-size:13px;
+            "/>
+          </div>
+
+          <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+            <div style="flex:1;min-width:220px;display:flex;flex-direction:column;gap:6px;">
+              <div style="font-size:12px;opacity:.72;">${escHtml(tr("authMode"))}</div>
+              <select id="aureaSaasAuthMode" style="
+                width:100%;height:40px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
+                background:rgba(255,255,255,.05);color:rgba(255,255,255,.92);
+                outline:none;padding:0 10px;font-size:13px;
+              ">
+                <option value="apiKey">${escHtml(tr("authApiKey"))}</option>
+                <option value="bearer">${escHtml(tr("authBearer"))}</option>
+              </select>
+            </div>
+
+            <div style="flex:2;min-width:260px;display:flex;flex-direction:column;gap:6px;">
+              <div style="font-size:12px;opacity:.72;">${escHtml(tr("apiToken"))}</div>
+              <input id="aureaSaasToken" type="password" placeholder="${escHtml(tr("apiTokenPh"))}" style="
+                width:100%;height:40px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
+                background:rgba(255,255,255,.05);color:rgba(255,255,255,.92);
+                outline:none;padding:0 12px;font-size:13px;
+              "/>
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:flex-end;gap:10px;padding-top:6px;">
+            <button type="button" data-action="cancel" style="
+              height:40px;padding:0 14px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
+              background:transparent;color:rgba(255,255,255,.86);cursor:pointer;font-size:13px;
+            ">${escHtml(tr("cancel"))}</button>
+            <button type="button" data-action="save" style="
+              height:40px;padding:0 14px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
+              background:rgba(255,255,255,.08);color:rgba(255,255,255,.92);cursor:pointer;font-size:13px;
+            ">${escHtml(tr("save"))}</button>
+          </div>
+        </div>
       </div>
     `;
 
     document.body.appendChild(saasAddWrap);
 
-    // overlay click close
     saasAddWrap.addEventListener("click", (e) => {
       if (e.target === saasAddWrap) closeSaasAddPopup();
     });
 
-    // card actions
-    saasAddWrap.addEventListener("click", async (e) => {
+    saasAddWrap.addEventListener("click", (e) => {
       const t = e.target;
 
       const closeBtn = t.closest("[data-action='close']");
-      if (closeBtn) {
-        e.preventDefault();
-        closeSaasAddPopup();
-        return;
+      if (closeBtn) { e.preventDefault(); closeSaasAddPopup(); return; }
+
+      const cancelBtn = t.closest("[data-action='cancel']");
+      if (cancelBtn) { e.preventDefault(); closeSaasAddPopup(); return; }
+
+      const saveBtn = t.closest("[data-action='save']");
+      if (!saveBtn) return;
+
+      e.preventDefault();
+
+      const name = (document.getElementById("aureaSaasName")?.value || "").trim();
+      const baseUrl = (document.getElementById("aureaSaasBaseUrl")?.value || "").trim();
+      const authMode = (document.getElementById("aureaSaasAuthMode")?.value || "apiKey").trim();
+      const token = (document.getElementById("aureaSaasToken")?.value || "").trim();
+
+      if (!name) return;
+
+      state.customApps = Array.isArray(state.customApps) ? state.customApps : [];
+      const exists = state.customApps.some(a => (a.name || "").trim() === name);
+      if (!exists) {
+        state.customApps.unshift({
+          name,
+          baseUrl,
+          authMode: (authMode === "bearer") ? "bearer" : "apiKey",
+          token,
+          connected: false,
+          createdAt: nowISO()
+        });
+        save(state);
       }
 
-      const addCustom = t.closest("[data-action='add-custom']");
-      if (addCustom) {
-        e.preventDefault();
-        const name = (window.prompt(tr("promptSaasName"), "") || "").trim();
-        if (!name) return;
-
-        state.customApps = Array.isArray(state.customApps) ? state.customApps : [];
-        if (!state.customApps.some(a => a.name === name)) {
-          state.customApps.unshift({ name, connected: false, createdAt: nowISO() });
-          save(state);
-
-          // Appsグリッドにカード追加（存在しない場合のみ）
-          const grid = document.querySelector(".panel-apps .apps-grid");
-          if (grid && !Array.from(grid.querySelectorAll(".saas-name")).some(el => (el.textContent || "").trim() === name)) {
-            const card = document.createElement("div");
-            card.className = "saas";
-            card.innerHTML = `
-              <div class="saas-top">
-                <div class="brand" aria-hidden="true"><i class="fa-solid fa-plug"></i></div>
-              </div>
-              <div>
-                <div class="saas-name">${escHtml(name)}</div>
-                <button class="status-btn off" type="button" aria-pressed="false">未接続</button>
-              </div>
-            `;
-            grid.insertBefore(card, grid.firstChild);
-          }
-
-          syncSettingsUi();
-        }
-
-        renderSaasAddList((document.getElementById("aureaSaasAddSearch")?.value || "").trim());
-        return;
-      }
-
-      const actBtn = t.closest("[data-action='toggle-connect']");
-      if (actBtn) {
-        e.preventDefault();
-
-        const name = (actBtn.getAttribute("data-name") || "").trim();
-        if (!name) return;
-
-        const isCustom = (Array.isArray(state.customApps) && state.customApps.some(a => a.name === name));
-        const on = isCustom
-          ? !!(state.customApps.find(a => a.name === name)?.connected)
-          : !!state.apps?.[name];
-
-        if (!on) {
-          const msg = (name === "Google") ? "Google を再接続しますか？" : `${name} を接続しますか？`;
-          const ok = await confirmModal(msg);
-          if (!ok) return;
-
-          if (isCustom) {
-            const a = state.customApps.find(x => x.name === name);
-            if (a) a.connected = true;
-          } else {
-            if (!state.apps) state.apps = {};
-            state.apps[name] = true;
-          }
-
-          save(state);
-          syncSettingsUi();
-          renderSaasAddList((document.getElementById("aureaSaasAddSearch")?.value || "").trim());
-          return;
-        }
-
-        {
-          const ok = await confirmModal(`${name} を解除しますか？`);
-          if (!ok) return;
-
-          if (isCustom) {
-            const a = state.customApps.find(x => x.name === name);
-            if (a) a.connected = false;
-          } else {
-            state.apps[name] = false;
-          }
-
-          save(state);
-          syncSettingsUi();
-          renderSaasAddList((document.getElementById("aureaSaasAddSearch")?.value || "").trim());
-        }
-      }
-    });
-
-    const search = document.getElementById("aureaSaasAddSearch");
-    search?.addEventListener("input", () => {
-      renderSaasAddList((search.value || "").trim());
+      syncSettingsUi();
+      closeSaasAddPopup();
     });
 
     return saasAddWrap;
   };
 
   const renderSaasAddList = (q) => {
-    ensureSaasAddPopup();
-
-    const list = document.getElementById("aureaSaasAddList");
-    if (!list) return;
-
-    const query = (q || "").toLowerCase();
-
-    const custom = Array.isArray(state.customApps) ? state.customApps.map(a => ({
-      name: a.name,
-      icon: `<i class="fa-solid fa-plug"></i>`,
-      desc: "カスタムSaaS",
-      _custom: true
-    })) : [];
-
-    const merged = [...SAAS_CATALOG, ...custom]
-      .filter(x => x.name && (!query || x.name.toLowerCase().includes(query)));
-
-    if (merged.length === 0) {
-      list.innerHTML = `<div style="padding:14px;border-radius:14px;border:1px dashed rgba(255,255,255,.14);opacity:.8;font-size:13px;">一致するSaaSがありません。</div>`;
-      return;
-    }
-
-    list.innerHTML = "";
-
-    merged.forEach((s) => {
-      const isCustom = !!s._custom;
-      const on = isCustom
-        ? !!(state.customApps.find(a => a.name === s.name)?.connected)
-        : !!state.apps?.[s.name];
-
-      const row = document.createElement("div");
-      row.style.cssText = `
-        display:flex;align-items:center;justify-content:space-between;gap:12px;
-        padding:12px;border-radius:16px;border:1px solid rgba(255,255,255,.10);
-        background:rgba(255,255,255,.04);
-      `;
-
-      row.innerHTML = `
-        <div style="display:flex;align-items:center;gap:12px;min-width:0;">
-          <div style="width:38px;height:38px;border-radius:999px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.14);flex:0 0 auto;">
-            ${s.icon}
-          </div>
-          <div style="min-width:0;">
-            <div style="font-size:14px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(s.name)}</div>
-            <div style="margin-top:4px;font-size:12px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(s.desc || "")}</div>
-          </div>
-        </div>
-
-        <button type="button" data-action="toggle-connect" data-name="${escHtml(s.name)}" style="
-          height:34px;padding:0 14px;border-radius:999px;border:1px solid rgba(255,255,255,.12);
-          background:${on ? "rgba(120,220,140,.08)" : "rgba(255,255,255,.035)"};
-          color:${on ? "rgba(210,255,220,.95)" : "rgba(255,255,255,.86)"};
-          cursor:pointer;font-size:13px;font-weight:700;letter-spacing:.01em;white-space:nowrap;
-        ">${on ? "接続" : "未接続"}</button>
-      `;
-
-      list.appendChild(row);
-    });
+    void q;
   };
 
   const openSaasAddPopup = () => {
     ensureSaasAddPopup();
-    const search = document.getElementById("aureaSaasAddSearch");
-    if (search) search.value = "";
-    renderSaasAddList("");
+
+    const n = document.getElementById("aureaSaasName");
+    const u = document.getElementById("aureaSaasBaseUrl");
+    const m = document.getElementById("aureaSaasAuthMode");
+    const k = document.getElementById("aureaSaasToken");
+
+    if (n) n.value = "";
+    if (u) u.value = "";
+    if (m) m.value = "apiKey";
+    if (k) k.value = "";
+
     saasAddWrap.style.display = "flex";
     saasAddWrap.setAttribute("aria-hidden", "false");
-
-    // Lang（placeholderのみ）
-    if (search) search.placeholder = (state.settings?.language === "en") ? "Search" : "検索";
   };
 
   const closeSaasAddPopup = () => {
@@ -2330,6 +2307,10 @@ btnNewChat?.addEventListener("click", (e) => {
         saveSettings();
         applyI18n();
         renderSidebar();
+
+        // 強制再描画（混在防止）
+        clearBoardViewNodes();
+        renderView();
       });
     }
 

@@ -55,7 +55,40 @@
       accountSecurity: "アカウント・セキュリティ",
       accountDesc: "利用ユーザー情報とセキュリティ詳細",
 
-      addSaas: "+ SaaS 追加",
+      addSaas: "SaaS 追加",
+
+      addCustom: "カスタム追加",
+
+      connected: "接続済み",
+      notConnected: "未接続",
+
+      saasCustom: "カスタムSaaS",
+      saasNoMatch: "一致するSaaSがありません。",
+
+      confirmReconnectGoogle: "Google を再接続しますか？",
+      confirmConnectGoogle: "Google アカウントと接続しますか？",
+      confirmConnectSaas: "{name} を接続しますか？",
+      confirmDisconnectSaas: "{name} を解除しますか？",
+
+      saasName: "SaaS名",
+      saasNamePh: "例）Custom CRM",
+      apiBaseUrl: "API Base URL",
+      apiBaseUrlPh: "https://api.example.com",
+      authMode: "認証方式",
+      authApiKey: "API Key",
+      authBearer: "Bearer Token",
+      apiToken: "API Key / Token",
+      apiTokenPh: "********",
+      save: "保存",
+
+      createProject: "プロジェクトを作成する",
+      projectName: "プロジェクト名",
+
+      dataNowCloud: "現在：クラウド",
+      deleteAllChats: "すべてのチャットを削除する",
+
+      trainerSection: "AUREAを育てる（AET）",
+      trainerSectionDesc: "「こんな質問にはこれ」といったケースを登録し、社内AIの回答精度を育てます",
 
       theme: "テーマ",
       themeSystem: "システム",
@@ -70,7 +103,7 @@
       sendCmdEnter: "⌘ + Enterで送信（Enterは改行）",
       sendEnter: "Enterで送信（Shift + Enterで改行）",
 
-      dataStorage: "データ保存",
+      dataStorage: "会話とデータの保存先",
 
       /* ===== Library view ===== */
       librarySub: "会話内で作成された画像がここに保存されます",
@@ -100,7 +133,35 @@
       confirmTitle: "確認",
       cancel: "キャンセル",
       ok: "OK",
-      areYouSure: "よろしいですか？"
+      areYouSure: "よろしいですか？",
+
+      open: "開く",
+      delete: "削除",
+
+      project: "プロジェクト",
+      chat: "チャット",
+      global: "グローバル",
+
+      displayName: "表示名",
+      userName: "ユーザー名",
+      userHandleOptional: "@handle（任意）",
+      currentPlan: "現在のプラン",
+      billing: "請求情報",
+      emailAddress: "登録メールアドレス",
+      change: "変更",
+      trustedDevices: "信頼できるデバイス",
+      revokeDevice: "この端末を解除",
+
+      regulations: "規約・規定",
+      tokusho: "特定商取引法",
+      terms: "利用規約",
+      privacy: "プライバシー",
+
+      aiStack: "AI Stack",
+      aiStackDesc: "展開中のAI / 最新Ver, / 稼働条件",
+      listTable: "一覧表",
+      ver: "Ver,",
+      condition: "稼働条件"
     },
 
     en: {
@@ -156,7 +217,40 @@
       accountSecurity: "Account & security",
       accountDesc: "User information and security details",
 
-      addSaas: "+ Add SaaS",
+      addSaas: "Add SaaS",
+      addCustom: "Add custom",
+
+      connected: "Connected",
+      notConnected: "Not connected",
+
+      saasCustom: "Custom SaaS",
+      saasNoMatch: "No matching SaaS.",
+
+      confirmReconnectGoogle: "Reconnect Google?",
+      confirmConnectGoogle: "Connect Google account?",
+      confirmConnectSaas: "Connect {name}?",
+      confirmDisconnectSaas: "Disconnect {name}?",
+
+      saasName: "SaaS name",
+      saasNamePh: "e.g., Custom CRM",
+      apiBaseUrl: "API Base URL",
+      apiBaseUrlPh: "https://api.example.com",
+      authMode: "Auth mode",
+      authApiKey: "API Key",
+      authBearer: "Bearer Token",
+      apiToken: "API Key / Token",
+      apiTokenPh: "********",
+      save: "Save",
+
+      createProject: "Create project",
+      projectName: "Project name",
+
+      dataNowCloud: "Current: Cloud",
+      deleteAllChats: "Delete all chats",
+
+
+      trainerSection: "Train AUREA (AET)",
+      trainerSectionDesc: "Register cases like “For this question, use this” to improve internal answer quality.",
 
       theme: "Theme",
       themeSystem: "System",
@@ -171,7 +265,7 @@
       sendCmdEnter: "Send with ⌘ + Enter (Enter = newline)",
       sendEnter: "Send with Enter (Shift + Enter = newline)",
 
-      dataStorage: "Data storage"
+      dataStorage: "Chat & data storage",
 
       /* ===== Library view ===== */
       librarySub: "Images created in chats are saved here.",
@@ -201,7 +295,35 @@
       confirmTitle: "Confirm",
       cancel: "Cancel",
       ok: "OK",
-      areYouSure: "Are you sure?"
+      areYouSure: "Are you sure?",
+
+      open: "Open",
+      delete: "Delete",
+
+      project: "Project",
+      chat: "Chat",
+      global: "Global",
+
+      displayName: "Display name",
+      userName: "Username",
+      userHandleOptional: "@handle (optional)",
+      currentPlan: "Current plan",
+      billing: "Billing",
+      emailAddress: "Email address",
+      change: "Change",
+      trustedDevices: "Trusted devices",
+      revokeDevice: "Revoke this device",
+
+      regulations: "Regulations",
+      tokusho: "Specified Commercial Transaction Act",
+      terms: "Terms",
+      privacy: "Privacy",
+
+      aiStack: "AI Stack",
+      aiStackDesc: "Active AIs / Latest ver / Conditions",
+      listTable: "List",
+      ver: "Ver,",
+      condition: "Condition"
     }
   };
 
