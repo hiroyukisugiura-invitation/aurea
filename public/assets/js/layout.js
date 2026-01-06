@@ -1988,15 +1988,15 @@ btnNewChat?.addEventListener("click", (e) => {
         : !!state.apps?.[name];
 
       if (!on) {
-        const msg = (name === "Google")
+        const msg = (name === "Google" || name === "Gmail" || name === "Google Drive")
           ? tr("confirmConnectGoogle")
           : tr("confirmConnectSaas").replace("{name}", name);
 
         const ok = await confirmModal(msg);
         if (!ok) return;
 
-        if (name === "Google") {
-          await startGoogleAccountConnect();
+        if (name === "Google" || name === "Gmail" || name === "Google Drive") {
+          await startGoogleAccountConnect(name);
           state.apps[name] = true;
           save(state);
           syncSettingsUi();
@@ -2045,14 +2045,19 @@ btnNewChat?.addEventListener("click", (e) => {
     return paths[0] || "";
   };
 
-  const startGoogleAccountConnect = async () => {
-    const url = await pickFirstOkUrl([
-      "/ai/google/connect",
-      "/api/google/connect",
-      "/ai/drive/connect",
-      "/api/drive/connect"
-    ]);
+  const startGoogleAccountConnect = async (serviceName) => {
+    const name = String(serviceName || "Google");
+
+    const paths =
+      (name === "Gmail")
+        ? ["/ai/gmail/connect", "/api/gmail/connect", "/ai/google/connect", "/api/google/connect"]
+        : (name === "Google Drive")
+          ? ["/ai/drive/connect", "/api/drive/connect", "/ai/google/connect", "/api/google/connect"]
+          : ["/ai/google/connect", "/api/google/connect", "/ai/drive/connect", "/api/drive/connect"];
+
+    const url = await pickFirstOkUrl(paths);
     if (!url) return;
+
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
