@@ -30,11 +30,6 @@ body{
   -moz-osx-font-smoothing:grayscale;
 }
 
-/* Theme (v1) */
-body.theme-dark{
-  /* default vars are already dark */
-}
-
 body.theme-light{
   /* 目に優しいホワイト（白飛び抑制） */
   --bg:#f2f3f5;

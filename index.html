@@ -4,720 +4,9 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>AUREA</title>
-  <style>
-    :root{
-      --bg:#0e0f10;
-      --panel:#141516;
-      --panel2:#101112;
-      --text:#e7e7e7;
-      --muted:#a9aaac;
-      --line:rgba(255,255,255,.08);
-      --soft:rgba(255,255,255,.06);
-      --hover:rgba(255,255,255,.10);
-      --pill:#232425;
-      --pill2:#1c1d1e;
-      --shadow:0 10px 30px rgba(0,0,0,.45);
-      --radius:14px;
-      --radius2:18px;
-      --sbw:260px;
-      --zFloat:30;
-      --zOverlay:40;
-      --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Hiragino Sans", "Noto Sans JP", sans-serif;
-    }
-
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;
-      background:radial-gradient(1200px 800px at 50% 30%, rgba(255,255,255,.05), transparent 60%), var(--bg);
-      color:var(--text);
-      font-family:var(--font);
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
-    }
-
-    /* LAYOUT */
-    .app{
-      display:grid;
-      grid-template-columns: var(--sbw) 1fr;
-      height:100vh;
-      overflow:hidden;
-    }
-
-    /* SIDEBAR */
-    .sidebar{
-      background:linear-gradient(180deg, rgba(255,255,255,.03), transparent 40%), var(--panel2);
-      border-right:1px solid var(--line);
-      padding:16px 12px;
-      display:flex;
-      flex-direction:column;
-      gap:14px;
-      min-width:0;
-    }
-
-    .sb-top{
-      display:flex;
-      flex-direction:column;
-      gap:8px;
-      padding:4px 6px 0;
-    }
-
-    .sb-item{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      padding:10px 10px;
-      border-radius:12px;
-      color:var(--text);
-      text-decoration:none;
-      user-select:none;
-    }
-    .sb-item:hover{background:var(--soft)}
-    .sb-item .ic{width:18px;height:18px;opacity:.92;flex:0 0 auto}
-    .sb-item .label{font-size:14px;line-height:1}
-
-    .sb-sep{height:10px}
-    .sb-divider{height:1px;background:var(--line);margin:6px 6px}
-
-    details{border-radius:12px}
-    details > summary{
-      list-style:none;
-      cursor:pointer;
-      user-select:none;
-    }
-    details > summary::-webkit-details-marker{display:none}
-
-    .sb-group summary{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      padding:10px 10px;
-      border-radius:12px;
-      color:var(--muted);
-      font-size:12px;
-      letter-spacing:.02em;
-      text-transform:none;
-    }
-    .sb-group summary:hover{background:var(--soft); color:var(--text)}
-    .caret{
-      width:16px;height:16px;opacity:.7;flex:0 0 auto;
-      transform:rotate(0deg);
-      transition:transform .15s ease;
-    }
-    .sb-group[open] .caret{transform:rotate(180deg)}
-    .sb-group .group-body{
-      padding:4px 4px 8px;
-      display:flex;
-      flex-direction:column;
-      gap:4px;
-    }
-
-    .sb-chat{
-      padding:10px 10px;
-      border-radius:12px;
-      background:transparent;
-      border:1px solid transparent;
-      color:var(--text);
-      text-decoration:none;
-      display:flex;
-      flex-direction:column;
-      gap:4px;
-    }
-    .sb-chat:hover{background:var(--soft)}
-    .sb-chat .t{font-size:13px;line-height:1.25}
-    .sb-chat .s{font-size:12px;color:var(--muted);line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .sb-chat .d{font-size:11px;color:rgba(255,255,255,.42);margin-left:auto}
-
-        /* HISTORY ROW (GPT-like left dots + menu) */
-    .sb-row{
-      position:relative;
-      display:flex;
-      align-items:center;
-      gap:8px;
-      padding:6px 6px;
-      border-radius:12px;
-    }
-    .sb-row:hover{background:var(--soft)}
-    .sb-link{
-      flex:1;
-      min-width:0;
-      padding:8px 8px;
-      border-radius:10px;
-      color:var(--text);
-      text-decoration:none;
-      font-size:13px;
-      line-height:1.2;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-
-    .sb-more{position:relative}
-    .sb-more > summary{list-style:none}
-    .sb-more > summary::-webkit-details-marker{display:none}
-
-    .sb-dots{
-      width:30px;height:30px;
-      border-radius:10px;
-      display:grid;place-items:center;
-      color:rgba(255,255,255,.75);
-      cursor:pointer;
-      user-select:none;
-
-      border:0;
-      background:transparent;
-
-      font-size:14px;
-      line-height:1;
-
-      opacity:0;
-      pointer-events:none;
-      transition:opacity .12s ease;
-    }
-
-    /* 行にホバーしたら表示 */
-    .sb-row:hover .sb-dots{
-      opacity:1;
-      pointer-events:auto;
-    }
-
-    /* 開いてる間も表示（ホバー外でも） */
-    .sb-more[open] .sb-dots{
-      opacity:1;
-      pointer-events:auto;
-    }
-
-    .sb-dots:hover{
-      background:transparent;
-      color:rgba(255,255,255,.9);
-      outline:none;
-      box-shadow:none;
-    }
-
-        /* summaryのフォーカスリング/枠を完全に無効化 */
-    .sb-dots:focus,
-    .sb-dots:focus-visible{
-      outline:none;
-      box-shadow:none;
-    }
-
-    .sb-pop{
-      position:absolute;
-      right:0;
-      left:auto;
-      top:34px;
-      width:200px;
-      background:rgba(20,21,22,.96);
-      border:1px solid rgba(255,255,255,.10);
-      border-radius:14px;
-      box-shadow:var(--shadow);
-      padding:8px;
-      z-index:var(--zOverlay);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-    }
-    .sb-act{
-      width:100%;
-      text-align:left;
-      padding:10px 10px;
-      border-radius:12px;
-      background:transparent;
-      border:0;
-      color:var(--text);
-      font-size:13px;
-      cursor:pointer;
-    }
-    .sb-act:hover{background:var(--soft)}
-    .sb-act.danger{color:rgba(255,120,120,.95)}
-
-    /* Visual parity for the sidebar "create project" row */
-    .sb-create-project{
-      border:1px solid transparent;
-    }
-    .sb-create-project:hover{
-      background:var(--soft);
-    }
-
-    /* USER AREA */
-    .sb-bottom{
-      margin-top:auto;
-      padding:6px;
-    }
-    .user-card{
-      width:100%;
-      display:flex;
-      align-items:center;
-      gap:10px;
-      padding:10px 10px;
-      border-radius:14px;
-      background:rgba(255,255,255,.03);
-      border:1px solid var(--line);
-      cursor:pointer;
-      user-select:none;
-    }
-    .user-card:hover{background:rgba(255,255,255,.05)}
-    .avatar{
-      width:28px;height:28px;border-radius:50%;
-      background:linear-gradient(180deg, rgba(255,255,255,.20), rgba(255,255,255,.06));
-      border:1px solid rgba(255,255,255,.12);
-      display:grid;place-items:center;
-      font-size:12px;color:rgba(255,255,255,.9);
-      flex:0 0 auto;
-    }
-    .user-meta{display:flex;flex-direction:column;gap:2px;min-width:0}
-    .user-meta .name{font-size:13px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .user-meta .plan{font-size:11px;color:var(--muted);line-height:1.1}
-    .user-menu{
-      position:relative;
-    }
-    .user-menu details{
-      position:relative;
-    }
-    .user-pop{
-      position:absolute;
-      left:6px;
-      bottom:54px;
-      width:220px;
-      background:rgba(20,21,22,.95);
-      border:1px solid rgba(255,255,255,.10);
-      border-radius:16px;
-      box-shadow:var(--shadow);
-      padding:10px;
-      z-index:var(--zOverlay);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-    }
-    .user-pop .uhead{
-      padding:8px 8px 10px;
-      border-bottom:1px solid var(--line);
-      margin-bottom:8px;
-    }
-    .user-pop .uhead .n{font-size:13px}
-    .user-pop .uhead .m{font-size:12px;color:var(--muted)}
-    .user-pop a{
-      display:flex;align-items:center;gap:10px;
-      padding:10px 10px;
-      border-radius:12px;
-      color:var(--text);
-      text-decoration:none;
-      font-size:13px;
-    }
-    .user-pop a:hover{background:var(--soft)}
-    .user-pop .ic{width:16px;height:16px;opacity:.9}
-
-    /* MAIN */
-    .main{
-      position:relative;
-      min-width:0;
-      display:flex;
-      flex-direction:column;
-      background:transparent;
-    }
-
-    .topbar{
-      height:56px;
-      display:flex;
-      align-items:center;
-      justify-content:flex-end;
-      padding:12px 18px;
-      gap:10px;
-    }
-    .icon-btn{
-      width:36px;height:36px;
-      border-radius:10px;
-      border:1px solid transparent;
-      background:transparent;
-      display:grid;place-items:center;
-      cursor:pointer;
-    }
-    .icon-btn:hover{background:var(--soft);border-color:rgba(255,255,255,.06)}
-    .icon-btn svg{width:18px;height:18px;opacity:.92}
-
-    .icon-white{color:#fff}
-
-    .board{
-      flex:1;
-      min-height:0;
-      padding:0 0 110px;
-      overflow:auto;
-    }
-
-    /* AUREA vertical mark */
-    .brand-rail{
-      position:absolute;
-      left:24px;
-      top:80px;
-      width:56px;
-      opacity:.95;
-      user-select:none;
-      pointer-events:none;
-    }
-
-    .brand-rail .brand-stack{
-      width:56px;
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      gap:10px;
-    }
-
-    .brand-rail .brand-logo-wrap{
-      width:56px;
-      height:220px;
-      position:relative;
-      overflow:visible;
-    }
-
-    .brand-rail .brand-logo{
-      width:120px;
-      height:auto;
-      display:block;
-      opacity:.95;
-      position:absolute;
-      top:0;
-      left:50%;
-      transform:translateX(-50%) rotate(90deg);
-      transform-origin:50% 0%;
-    }
-
-    /* ASK AREA */
-    .ask-wrap{
-      position:absolute;
-      left:0; right:0;
-      bottom:22px;
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      gap:10px;
-      z-index:var(--zFloat);
-      pointer-events:none;
-    }
-    .ask{
-      width:min(860px, calc(100% - 64px));
-      background:rgba(35,36,37,.92);
-      border:1px solid rgba(255,255,255,.10);
-      border-radius:22px;
-      display:flex;
-      align-items:center;
-      padding:10px 12px;
-      gap:10px;
-      box-shadow:0 18px 45px rgba(0,0,0,.42);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      pointer-events:auto;
-    }
-    .ask .left, .ask .right{display:flex;align-items:center;gap:8px}
-    .ask .spacer{flex:1}
-    .ask .in{
-      flex:1;
-      min-width:0;
-      border:0;
-      outline:0;
-      background:transparent;
-      color:var(--text);
-      font-size:14px;
-      line-height:1.4;
-      padding:6px 2px;
-    }
-    .ask .mini{
-      width:34px;height:34px;border-radius:12px;
-      border:1px solid transparent;
-      background:transparent;
-      display:grid;place-items:center;
-      cursor:pointer;
-    }
-    .ask .mini:hover{background:var(--hover);border-color:rgba(255,255,255,.06)}
-    .ask .mini svg{width:18px;height:18px;opacity:.92}
-
-    .ask-note{
-      width:min(860px, calc(100% - 64px));
-      color:rgba(255,255,255,.70);
-      font-size:12px;
-      line-height:1.45;
-      text-align:center;
-      padding:0 8px;
-      pointer-events:auto;
-      white-space:normal;
-    }
-
-    @media (min-width: 980px){
-      .ask-note{white-space:nowrap}
-    }
-
-    /* PLUS MENU */
-    .plus-menu{position:relative}
-    .plus-menu details{position:relative}
-    .plus-pop{
-      position:absolute;
-      left:0;
-      bottom:46px;
-      width:260px;
-      background:rgba(20,21,22,.96);
-      border:1px solid rgba(255,255,255,.10);
-      border-radius:16px;
-      box-shadow:var(--shadow);
-      padding:8px;
-      z-index:var(--zOverlay);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-    }
-    .plus-pop a{
-      display:flex;align-items:center;gap:10px;
-      padding:10px 10px;
-      border-radius:12px;
-      color:var(--text);
-      text-decoration:none;
-      font-size:13px;
-    }
-    .plus-pop a:hover{background:var(--soft)}
-    .plus-pop .ic{width:16px;height:16px;opacity:.9}
-    .plus-pop .sub{
-      color:var(--muted);
-      font-size:11px;
-      margin-left:auto;
-    }
-
-    /* CENTER ASK (no chat) */
-    body:not(.has-chat) .ask-wrap{
-      bottom:auto;
-      top:52%;
-      transform:translateY(-50%);
-    }
-    body:not(.has-chat) .board{
-      padding-bottom:0;
-    }
-
-    /* CHAT VIEW (sample structure) */
-    .chat{
-      width:min(760px, calc(100% - 64px));
-      margin:0 auto;
-      padding:18px 0;
-      display:flex;
-      flex-direction:column;
-      gap:18px;
-    }
-    .msg{
-      display:flex;
-      gap:10px;
-      align-items:flex-start;
-    }
-    .msg.user{justify-content:flex-end}
-    .bubble{
-      max-width:100%;
-      border-radius:18px;
-      padding:14px 16px;
-      background:rgba(255,255,255,.05);
-      border:1px solid rgba(255,255,255,.08);
-      line-height:1.55;
-      font-size:14px;
-      white-space:pre-wrap;
-    }
-    .msg.user .bubble{
-      background:rgba(255,255,255,.08);
-    }
-
-    .actions{
-      display:flex;
-      gap:12px;
-      padding:10px 2px 0;
-      opacity:.92;
-    }
-    .act{
-      width:22px;height:22px;
-      border-radius:6px;
-      display:grid;place-items:center;
-      cursor:pointer;
-    }
-    .act:hover{background:var(--soft)}
-    .act svg{width:18px;height:18px;opacity:.9}
-
-    /* RESPONSIVE */
-    @media (max-width: 980px){
-      :root{--sbw:240px}
-      .brand-rail{left:18px}
-    }
-    @media (max-width: 860px){
-      :root{--sbw:220px}
-      .app{grid-template-columns: var(--sbw) 1fr}
-      .sidebar{
-        position:relative;
-        left:auto; top:auto; bottom:auto;
-        width:var(--sbw);
-        z-index:auto;
-        transform:none;
-        transition:none;
-      }
-      .main{grid-column:auto}
-      .topbar{justify-content:flex-end}
-      .burger{display:none}
-    }
-    .burger{display:none}
-
-    /* SETTINGS (UI only) */
-    .settings-modal{
-      position:fixed;
-      inset:0;
-      background:rgba(0,0,0,.35);
-      display:none;
-      align-items:center;
-      justify-content:center;
-      z-index:60;
-      padding:18px;
-    }
-    body.settings-open .settings-modal{display:flex}
-    .settings{
-      width:min(760px, calc(100% - 24px));
-      background:rgba(20,21,22,.96);
-      border:1px solid rgba(255,255,255,.10);
-      border-radius:18px;
-      box-shadow:var(--shadow);
-      overflow:hidden;
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-    }
-    .settings .hd{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      padding:14px 16px;
-      border-bottom:1px solid var(--line);
-    }
-    .settings .hd .ttl{font-size:14px;color:rgba(255,255,255,.9)}
-    .settings .hd button{
-      width:34px;height:34px;border-radius:10px;
-      border:1px solid transparent;background:transparent;color:var(--text);
-      cursor:pointer;display:grid;place-items:center;
-    }
-    .settings .hd button:hover{background:var(--soft);border-color:rgba(255,255,255,.06)}
-    .settings .tabs{
-      padding:12px 16px;
-      border-bottom:1px solid var(--line);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      gap:14px;
-    }
-    .settings .tab{
-      width:34px;height:34px;border-radius:10px;
-      display:grid;place-items:center;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(255,255,255,.04);
-    }
-    .settings .tab svg{width:18px;height:18px;opacity:.9}
-    .settings .bd{
-      padding:14px 16px 18px;
-      color:rgba(255,255,255,.85);
-      font-size:13px;
-      line-height:1.6;
-    }
-    @media (min-width: 740px){
-      .settings .tabs{justify-content:flex-start}
-    }
-
-    /* CREATE PROJECT MODAL (UI only) */
-    .project-modal{
-      position:fixed;
-      inset:0;
-      background:rgba(0,0,0,.35);
-      display:none;
-      align-items:center;
-      justify-content:center;
-      z-index:61;
-      padding:18px;
-    }
-    body.project-open .project-modal{display:flex}
-
-    .project-card{
-      width:min(640px, calc(100% - 24px));
-      background:rgba(20,21,22,.96);
-      border:1px solid rgba(255,255,255,.10);
-      border-radius:18px;
-      box-shadow:var(--shadow);
-      overflow:hidden;
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-    }
-    .project-card .phd{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      padding:14px 16px;
-      border-bottom:1px solid var(--line);
-    }
-    .project-card .pttl{font-size:16px;color:rgba(255,255,255,.92)}
-    .project-card .pactions{display:flex;align-items:center;gap:8px}
-    .project-card .picon{
-      width:34px;height:34px;border-radius:10px;
-      border:1px solid transparent;background:transparent;color:var(--text);
-      cursor:pointer;display:grid;place-items:center;
-    }
-    .project-card .picon:hover{background:var(--soft);border-color:rgba(255,255,255,.06)}
-    .project-card .picon svg{width:18px;height:18px;opacity:.92}
-
-    .project-card .pbd{padding:14px 16px 18px}
-    .project-card .pname{
-      width:100%;
-      height:44px;
-      border-radius:12px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(255,255,255,.04);
-      color:var(--text);
-      outline:0;
-      padding:0 12px;
-      font-size:14px;
-    }
-
-    .project-card .ptags{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      padding:12px 0 6px;
-    }
-    .project-card .ptag{
-      height:34px;
-      padding:0 12px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(255,255,255,.04);
-      color:rgba(255,255,255,.9);
-      cursor:pointer;
-      display:flex;
-      align-items:center;
-      gap:8px;
-      font-size:13px;
-    }
-    .project-card .ptag:hover{background:var(--soft)}
-    .project-card .ptag .dot{font-size:14px;line-height:1}
-
-    .project-card .phint{
-      margin-top:8px;
-      padding:12px 12px;
-      border-radius:14px;
-      background:rgba(255,255,255,.04);
-      border:1px solid rgba(255,255,255,.08);
-      color:rgba(255,255,255,.82);
-      font-size:13px;
-      line-height:1.6;
-    }
-
-    .project-card .pcreate{
-      margin-top:14px;
-      width:100%;
-      height:44px;
-      border-radius:12px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(255,255,255,.06);
-      color:rgba(255,255,255,.55);
-      font-size:14px;
-      cursor:not-allowed;
-    }
-
-    /* Utility */
-    .sr-only{
-      position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;
-    }
-  </style>
+  <link rel="stylesheet" href="/assets/css/base.css">
+  <link rel="stylesheet" href="/assets/css/layout.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 
 <body class="">
@@ -725,30 +14,22 @@
 
     <!-- SIDEBAR -->
     <aside class="sidebar" aria-label="左カラム">
-      <div class="sb-top">
-        <a class="sb-item" href="#" aria-label="チャット内を検索">
-          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.2-3.2"></path>
-          </svg>
-          <span class="label">チャット内を検索</span>
-        </a>
-
-        <div class="sb-sep"></div>
-
+<div class="sb-top">
         <a class="sb-item" href="#" aria-label="新しいチャット">
           <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 5v14"></path><path d="M5 12h14"></path>
+            <path d="M12 5v14"></path>
+            <path d="M5 12h14"></path>
           </svg>
           <span class="label">新しいチャット</span>
         </a>
 
-        <a class="sb-item" href="#" aria-label="画像">
+        <a class="sb-item" href="#images" aria-label="ライブラリ" data-nav="images">
           <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <rect x="4" y="5" width="16" height="14" rx="2"></rect>
             <path d="M8 13l2-2 3 3 2-2 3 3"></path>
             <path d="M9 9h.01"></path>
           </svg>
-          <span class="label">画像</span>
+          <span class="label">ライブラリ</span>
         </a>
 
         <div class="sb-sep"></div>
@@ -796,8 +77,8 @@
         </details>
 
         <details class="sb-group">
-          <summary aria-label="フリーチャット">
-            <span>フリーチャット</span>
+          <summary aria-label="チャット">
+            <span>チャット</span>
             <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <path d="M6 9l6 6 6-6"></path>
             </svg>
@@ -845,7 +126,7 @@
                 <div class="m">hiroyuki.sugiura@invitation.co</div>
               </div>
 
-              <a href="#" role="menuitem" aria-label="設定">
+              <a id="btnOpenSettings" data-action="open-settings" href="#" role="menuitem" aria-label="設定">
                 <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"></path>
                   <path d="M19.4 15a7.9 7.9 0 0 0 .1-1 7.9 7.9 0 0 0-.1-1l2-1.5-2-3.4-2.4 1a8.4 8.4 0 0 0-1.7-1l-.3-2.6H9l-.3 2.6a8.4 8.4 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.5a7.9 7.9 0 0 0-.1 1 7.9 7.9 0 0 0 .1 1l-2 1.5 2 3.4 2.4-1a8.4 8.4 0 0 0 1.7 1l.3 2.6h6l.3-2.6a8.4 8.4 0 0 0 1.7-1l2.4 1 2-3.4-2-1.5z"></path>
@@ -853,7 +134,7 @@
                 設定
               </a>
 
-              <a href="#" role="menuitem" aria-label="ログアウト">
+              <a id="btnLogout" data-action="logout" href="#" role="menuitem" aria-label="ログアウト">
                 <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M10 17l5-5-5-5"></path>
                   <path d="M15 12H3"></path>
@@ -871,12 +152,6 @@
     <main class="main" aria-label="メインボード">
 
       <div class="topbar">
-        <button class="icon-btn burger" type="button" aria-label="メニュー">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M4 7h16"></path><path d="M4 12h16"></path><path d="M4 17h16"></path>
-          </svg>
-        </button>
-
         <div style="flex:1"></div>
 
         <button class="icon-btn icon-white" type="button" aria-label="シェア">
@@ -896,10 +171,25 @@
         </div>
       </div>
 
-      <div class="board" aria-label="会話エリア">
-        <div class="chat" aria-label="会話">
-          <!-- （UIのみ） -->
-        </div>
+      <div class="board" aria-label="メインコンテンツ">
+
+        <!-- VIEW: CHAT -->
+        <section class="view view-chat" id="viewChat" data-view="chat" aria-label="会話エリア">
+          <div class="chat" aria-label="会話">
+            <!-- （UIのみ） -->
+          </div>
+        </section>
+
+        <!-- VIEW: IMAGES -->
+        <section class="view view-images" id="viewImages" data-view="images" aria-label="保存画像" hidden>
+          <div class="images-head">
+            <div class="images-title">保存画像</div>
+          </div>
+
+          <div class="images-grid" id="imagesGrid" aria-label="保存画像グリッド">
+            <!-- JSでカード描画 -->
+          </div>
+        </section>
       </div>
 
       <!-- ASK -->
@@ -931,10 +221,10 @@
             </div>
           </div>
 
-          <input class="in" type="text" placeholder="" aria-label="入力" />
+          <textarea class="in" aria-label="入力" rows="1"></textarea>
 
           <div class="right">
-            <button class="mini icon-white" type="button" aria-label="マイク（音声入力）" title="マイク（音声入力）">
+            <button class="mini icon-white" type="button" aria-label="マイク（音声入力）" title="マイク（音声入力）" data-action="mic">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 1a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V4a3 3 0 0 1 3-3z"></path>
                 <path d="M19 11a7 7 0 0 1-14 0"></path>
@@ -942,7 +232,7 @@
               </svg>
             </button>
 
-            <button class="mini icon-white" type="button" aria-label="音声モードを使用する" title="音声モードを使用する">
+            <button class="mini icon-white" type="button" aria-label="音声モードを使用する" title="音声モードを使用する" data-action="voice">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M4 12h2"></path>
                 <path d="M8 8v8"></path>
@@ -952,7 +242,15 @@
               </svg>
             </button>
 
-            <button class="mini icon-white" type="button" aria-label="停止" title="停止" style="display:none">
+            <!-- GPT-like send (show only when text exists) -->
+            <button class="mini icon-white" type="button" aria-label="送信" title="送信" data-action="send" style="display:none">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 5l0 14"></path>
+                <path d="M6 11l6-6 6 6"></path>
+              </svg>
+            </button>
+
+            <button class="mini icon-white" type="button" aria-label="停止" title="停止" data-action="stop" style="display:none">
               <svg viewBox="0 0 24 24" fill="currentColor">
                 <rect x="7" y="7" width="10" height="10" rx="2"></rect>
               </svg>
@@ -966,49 +264,6 @@
       </div>
 
     </main>
-  </div>
-
-  <!-- SETTINGS MODAL (UI only) -->
-  <div class="settings-modal" aria-hidden="true">
-    <div class="settings" role="dialog" aria-label="設定">
-      <div class="hd">
-        <div class="ttl">一般</div>
-        <button type="button" aria-label="閉じる">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M18 6L6 18"></path><path d="M6 6l12 12"></path>
-          </svg>
-        </button>
-      </div>
-
-      <div class="tabs" aria-label="設定大項目（縮小時はアイコンのみ）">
-        <div class="tab" title="一般" aria-label="一般">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2l3 7 7 3-7 3-3 7-3-7-7-3 7-3 3-7z"></path>
-          </svg>
-        </div>
-        <div class="tab" title="音声" aria-label="音声">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 1a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V4a3 3 0 0 1 3-3z"></path>
-            <path d="M19 11a7 7 0 0 1-14 0"></path>
-            <path d="M12 18v4"></path>
-          </svg>
-        </div>
-        <div class="tab" title="データ" aria-label="データ">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M4 6h16"></path><path d="M6 6v14"></path><path d="M18 6v14"></path><path d="M8 10h8"></path><path d="M8 14h8"></path>
-          </svg>
-        </div>
-        <div class="tab" title="アカウント" aria-label="アカウント">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 21a8 8 0 0 0-16 0"></path><circle cx="12" cy="7" r="4"></circle>
-          </svg>
-        </div>
-      </div>
-
-      <div class="bd">
-        （UIのみ）
-      </div>
-    </div>
   </div>
 
   <!-- CREATE PROJECT MODAL (UI only) -->
@@ -1033,47 +288,510 @@
 
       <div class="pbd">
         <input class="pname" type="text" placeholder="プロジェクト名" aria-label="プロジェクト名" />
-
-        <div class="ptags" aria-label="テンプレート">
-          <button class="ptag" type="button"><span class="dot">💰</span>投資</button>
-          <button class="ptag" type="button"><span class="dot">📘</span>宿題</button>
-          <button class="ptag" type="button"><span class="dot">✍️</span>ライティング</button>
-          <button class="ptag" type="button"><span class="dot">❤️</span>健康</button>
-          <button class="ptag" type="button"><span class="dot">✈️</span>旅行</button>
-        </div>
-
-        <div class="phint">
-          プロジェクトを使用すると、チャット、ファイル、カスタム指示が 1 か所にまとまります。これは進行中の作業にも、単に物事を整理するためにも使用できます。
-        </div>
-
         <button class="pcreate" type="button" disabled>プロジェクトを作成する</button>
       </div>
     </div>
   </div>
-    <script>
-    // 外側クリックで <details> を閉じる（ユーザーメニュー / Askの＋メニュー）
-    document.addEventListener('pointerdown', (e) => {
-      const userDetails = document.querySelector('.user-menu details');
-      const plusDetails = document.querySelector('.plus-menu details');
-      const moreDetails = document.querySelectorAll('.sb-more');
 
-      // ユーザーメニュー外を押したら閉じる
-      if (userDetails && userDetails.hasAttribute('open')) {
-        if (!userDetails.contains(e.target)) userDetails.removeAttribute('open');
-      }
+  <!-- SETTINGS MODAL (embedded) -->
+  <div id="settingsOverlay" class="settings-overlay" hidden></div>
 
-      // ＋メニュー外を押したら閉じる
-      if (plusDetails && plusDetails.hasAttribute('open')) {
-        if (!plusDetails.contains(e.target)) plusDetails.removeAttribute('open');
-      }
+  <div id="settingsModal" class="settings-modal" hidden role="dialog" aria-modal="true" aria-label="設定">
 
-      // 履歴の「•••」外を押したら閉じる（開いてるものだけ）
-      moreDetails.forEach(d => {
-        if (d.hasAttribute('open') && !d.contains(e.target)) {
-          d.removeAttribute('open');
-        }
-      });
-    });
-  </script>
+    <!-- settings.html の body 中身だけ（doctype/html/head/style/script は削除済み） -->
+    <input class="tab-input" type="radio" name="tab" id="tab-general" checked>
+    <input class="tab-input" type="radio" name="tab" id="tab-apps">
+    <input class="tab-input" type="radio" name="tab" id="tab-data">
+    <input class="tab-input" type="radio" name="tab" id="tab-trainer">
+    <input class="tab-input" type="radio" name="tab" id="tab-account">
+
+    <div class="overlay" aria-hidden="false">
+      <div class="modal" role="dialog" aria-label="設定">
+      <button class="close" type="button" aria-label="閉じる">×</button>
+
+        <!-- Left nav -->
+        <aside class="nav" aria-label="設定ナビ">
+          <div class="nav-hd">
+            <div class="nav-title">設定</div>
+          </div>
+
+          <div class="nav-list" role="list">
+            <label class="nav-item" for="tab-general" role="listitem">
+              <span class="nav-ic"><i class="fa-solid fa-sliders"></i></span>
+              <span class="nav-txt">一般</span>
+            </label>
+
+            <label class="nav-item" for="tab-apps" role="listitem">
+              <span class="nav-ic"><i class="fa-solid fa-plug-circle-bolt"></i></span>
+              <span class="nav-txt">アプリ</span>
+            </label>
+
+            <label class="nav-item" for="tab-data" role="listitem">
+              <span class="nav-ic"><i class="fa-solid fa-database"></i></span>
+              <span class="nav-txt">データ</span>
+            </label>
+
+            <label class="nav-item" for="tab-trainer" role="listitem">
+              <span class="nav-ic"><i class="fa-solid fa-layer-group"></i></span>
+              <span class="nav-txt">AUREA Data Trainer</span>
+            </label>
+
+            <label class="nav-item" for="tab-account" role="listitem">
+              <span class="nav-ic"><i class="fa-regular fa-circle-user"></i></span>
+              <span class="nav-txt">アカウント・セキュリティ</span>
+            </label>
+          </div>
+        </aside>
+
+        <!-- Right content -->
+        <section class="content" aria-label="設定内容">
+
+          <!-- ===== General ===== -->
+          <div class="panel panel-general">
+            <header class="content-hd">
+              <div style="min-width:0">
+                <div class="content-title">一般</div>
+                <div class="sec-desc">
+                  端末の基本的な設定
+                </div>
+              </div>
+            </header>
+
+            <div class="content-bd">
+              <div class="section" aria-label="一般設定">
+                <div class="row">
+                  <div class="l">
+                    <div class="k">テーマ</div>
+                  </div>
+                  <select class="select" aria-label="テーマ">
+                    <option>システム</option>
+                    <option>ライト</option>
+                    <option selected>ダーク</option>
+                  </select>
+                </div>
+
+                <div class="row">
+                  <div class="l">
+                    <div class="k">言語</div>
+                  </div>
+                  <select class="select" aria-label="言語">
+                    <option selected>日本語</option>
+                    <option>English (US)</option>
+                    <option>English (UK)</option>
+                    <option>Español (ES)</option>
+                    <option>Español (LATAM)</option>
+                    <option>Français</option>
+                    <option>Deutsch</option>
+                    <option>Italiano</option>
+                    <option>Português (BR)</option>
+                    <option>Português (PT)</option>
+                    <option>Nederlands</option>
+                    <option>Svenska</option>
+                    <option>Norsk</option>
+                    <option>Dansk</option>
+                    <option>Suomi</option>
+                    <option>Polski</option>
+                    <option>Čeština</option>
+                    <option>Magyar</option>
+                    <option>Română</option>
+                    <option>Türkçe</option>
+                    <option>Українська</option>
+                    <option>Русский</option>
+                    <option>العربية</option>
+                    <option>עברית</option>
+                    <option>हिन्दी</option>
+                    <option>ภาษาไทย</option>
+                    <option>Tiếng Việt</option>
+                    <option>Bahasa Indonesia</option>
+                    <option>Filipino</option>
+                    <option>한국어</option>
+                    <option>中文（简体）</option>
+                    <option>中文（繁體）</option>
+                  </select>
+                </div>
+
+                <div class="row">
+                  <div class="l">
+                    <div class="k">AUREAへの送信方法</div>
+                  </div>
+                  <select class="select" aria-label="AUREAへの送信方法">
+                    <option selected>⌘ + Enterで送信（Enterは改行）</option>
+                    <option>Enterで送信（Shift + Enterで改行）</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== Apps ===== -->
+          <div class="panel panel-apps">
+            <header class="content-hd">
+              <div style="min-width:0">
+                <div class="content-title">アプリ</div>
+                <div class="sec-desc">
+                  各種SaaSと連携、任意でAPI接続が設定可能
+                </div>
+              </div>
+            </header>
+
+            <div class="content-bd">
+              <div class="section" aria-label="">
+                <div class="apps-header">
+                  <div style="min-width:0"></div>
+                  <button class="btn" type="button">
+                    <i class="fa-solid fa-plus"></i>
+                    + SaaS 追加
+                  </button>
+                </div>
+
+                <div class="apps-grid" aria-label="SaaS一覧">
+                  <div class="saas">
+                    <div class="saas-top">
+                      <div class="brand b-google" aria-hidden="true"><i class="fa-brands fa-google"></i></div>
+                    </div>
+                    <div>
+                      <div class="saas-name">Google</div>
+                      <button class="status-btn off" type="button">未接続</button>
+                    </div>
+                  </div>
+
+                  <div class="saas">
+                    <div class="saas-top">
+                      <div class="brand b-gmail" aria-hidden="true"><i class="fa-solid fa-envelope"></i></div>
+                    </div>
+                    <div>
+                      <div class="saas-name">Gmail</div>
+                      <button class="status-btn off" type="button">未接続</button>
+                    </div>
+                  </div>
+
+                  <div class="saas">
+                    <div class="saas-top">
+                      <div class="brand b-drive" aria-hidden="true"><i class="fa-brands fa-google-drive"></i></div>
+                    </div>
+                    <div>
+                      <div class="saas-name">Google Drive</div>
+                      <button class="status-btn on" type="button">接続</button>
+                    </div>
+                  </div>
+
+                  <div class="saas">
+                    <div class="saas-top">
+                      <div class="brand b-github" aria-hidden="true"><i class="fa-brands fa-github"></i></div>
+                    </div>
+                    <div>
+                      <div class="saas-name">GitHub</div>
+                      <button class="status-btn off" type="button">未接続</button>
+                    </div>
+                  </div>
+
+                  <div class="saas">
+                    <div class="saas-top">
+                      <div class="brand b-notion" aria-hidden="true"><i class="fa-brands fa-notion"></i></div>
+                    </div>
+                    <div>
+                      <div class="saas-name">Notion</div>
+                      <button class="status-btn off" type="button">未接続</button>
+                    </div>
+                  </div>
+
+                  <div class="saas">
+                    <div class="saas-top">
+                      <div class="brand b-slack" aria-hidden="true"><i class="fa-brands fa-slack"></i></div>
+                    </div>
+                    <div>
+                      <div class="saas-name">Slack</div>
+                      <button class="status-btn off" type="button">未接続</button>
+                    </div>
+                  </div>
+
+                  <div class="saas">
+                    <div class="saas-top">
+                      <div class="brand b-dropbox" aria-hidden="true"><i class="fa-brands fa-dropbox"></i></div>
+                    </div>
+                    <div>
+                      <div class="saas-name">Dropbox</div>
+                      <button class="status-btn off" type="button">未接続</button>
+                    </div>
+                  </div>
+
+                  <div class="saas">
+                    <div class="saas-top">
+                      <div class="brand b-jira" aria-hidden="true"><i class="fa-brands fa-jira"></i></div>
+                    </div>
+                    <div>
+                      <div class="saas-name">Jira</div>
+                      <button class="status-btn off" type="button">未接続</button>
+                    </div>
+                  </div>
+
+                  <div class="saas">
+                    <div class="saas-top">
+                      <div class="brand b-salesforce" aria-hidden="true"><i class="fa-brands fa-salesforce"></i></div>
+                    </div>
+                    <div>
+                      <div class="saas-name">Salesforce</div>
+                      <button class="status-btn off" type="button">未接続</button>
+                    </div>
+                  </div>
+
+                  <div class="saas">
+                    <div class="saas-top">
+                      <div class="brand b-zoom" aria-hidden="true"><i class="fa-brands fa-zoom"></i></div>
+                    </div>
+                    <div>
+                      <div class="saas-name">Zoom</div>
+                      <button class="status-btn off" type="button">未接続</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== Data ===== -->
+          <div class="panel panel-data">
+            <header class="content-hd">
+              <div style="min-width:0">
+                <div class="content-title">データ</div>
+                <div class="sec-desc">
+                  データ管理や保存先について
+                </div>
+              </div>
+            </header>
+
+            <div class="content-bd">
+              <div class="section" aria-label="保存設定">
+                <div class="row">
+                  <div class="l">
+                    <div class="k">会話とデータの保存先</div>
+                    <div class="v">現在：クラウド</div>
+                  </div>
+                  <select class="select" aria-label="会話とデータの保存先">
+                    <option selected>クラウド</option>
+                    <option>端末内</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="section" aria-label="削除">
+                <div class="row" style="border-top:0;padding-top:0">
+                  <div class="l">
+                    <div class="k">すべてのチャットを削除する</div>
+                  </div>
+                  <button class="btn danger" type="button">
+                    <i class="fa-solid fa-trash"></i>
+                    削除
+                  </button>
+                </div>
+              </div>
+
+              <div class="section" aria-label="ナレッジベース">
+                <div class="sec-title">ナレッジベース</div>
+                <div class="sec-desc">
+                  Google Drive など、ユーザー・企業のストレージの保存先設定
+                  を参照します<br>AUREA によるファイル保存は一切せず、読み取りと検索のみを行っています
+                </div>
+
+                <div class="row" style="margin-top:10px;border-top:0;padding-top:0">
+                  <div class="l">
+                    <div class="k">クラウドストレージ</div>
+                    <div class="v">未接続</div>
+                  </div>
+                </div>
+
+                <div class="row" style="border-top:0;padding-top:0">
+                  <button class="btn secondary" type="button">
+                    クラウドストレージと接続する（ Google Drive ）
+                  </button>
+                </div>
+
+                <div class="row" style="border-top:0;padding-top:0">
+                  <button class="btn secondary" type="button">
+                    ドキュメントを一時アップロード（ AUREAには保存されません ）
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== Trainer ===== -->
+          <div class="panel panel-trainer">
+            <header class="content-hd">
+              <div style="min-width:0">
+                <div class="content-title">AUREA Data Trainer , for Enterprise</div>
+                <div class="sec-desc">
+                  独自に社内AIを育てて業務効率化へ
+                </div>
+              </div>
+            </header>
+
+            <div class="content-bd">
+              <div class="section">
+                <div class="sec-title">AUREAを育てる（AET）</div>
+                <div class="sec-desc">
+                  「こんな質問にはこれ」といったケースを登録し、社内AIの回答精度を育てます
+                </div>
+
+                <div class="row" style="margin-top:14px">
+                  <div class="l">
+                    <div class="k">対象プラン</div>
+                    <div class="v">Enterprise 専用機能</div>
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="l">
+                    <div class="k">ステータス</div>
+                    <div class="v">Coming Soon</div>
+                  </div>
+                </div>
+
+                <div class="row" style="margin-top:10px">
+                  <button class="btn secondary" type="button" disabled>
+                    ケースを追加
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== Account ===== -->
+          <div class="panel panel-account">
+            <header class="content-hd">
+              <div style="min-width:0">
+                <div class="content-title">アカウント・セキュリティ</div>
+                <div class="sec-desc">
+                  利用ユーザー情報とセキュリティ詳細
+                </div>
+              </div>
+            </header>
+
+            <div class="content-bd">
+              <div class="section" aria-label="">
+                <div class="row">
+                  <div class="l">
+                    <div class="k">表示名</div>
+                  </div>
+                  <input id="displayName" class="input" type="text" value="Cocoro Sugiura" />
+                </div>
+
+                <div class="row">
+                  <div class="l">
+                    <div class="k">ユーザー名</div>
+                    <div class="v">@handle（任意）</div>
+                  </div>
+                  <input id="userName" class="input" type="text" value="@cocoro" />
+                </div>
+              </div>
+
+              <div class="section" aria-label="プラン">
+                <div class="row">
+                  <div class="l">
+                    <div class="k">現在のプラン</div>
+                    <div class="v">Pro</div>
+                  </div>
+                  <button class="btn" type="button" id="btnBilling">
+                    <i class="fa-regular fa-credit-card"></i>
+                    請求情報
+                  </button>
+                </div>
+              </div>
+
+              <div class="section" aria-label="サインイン">
+                <div class="row" style="border-top:0;padding-top:0">
+                  <div class="l">
+                    <div class="k">登録メールアドレス</div>
+                    <div class="v">hiroyuki.sugiura@invitation.co</div>
+                  </div>
+                  <button class="btn secondary" type="button" id="btnChangeEmail">
+                    <i class="fa-solid fa-pen"></i>
+                    変更
+                  </button>
+                </div>
+              </div>
+
+              <div class="section" aria-label="信頼できるデバイス">
+                <div class="row" style="border-top:0;padding-top:0">
+                  <div class="l">
+                    <div class="k">信頼できるデバイス</div>
+                    <div class="v">MacBook Pro ・ Japan ・ Chrome</div>
+                  </div>
+                  <button class="btn danger" type="button" id="btnRevokeDevice">
+                    <i class="fa-solid fa-link-slash"></i>
+                    この端末を解除
+                  </button>
+                </div>
+              </div>
+
+              <div class="section" aria-label="規約・規定">
+                <div class="reg-wrap" aria-label="規約・規定タブ">
+                  <div class="reg-head">規約・規定</div>
+                  <div class="reg-tabs" role="tablist" aria-label="規約・規定">
+                    <button class="reg-tab" type="button" role="tab" aria-selected="true">特定商取引法</button>
+                    <button class="reg-tab" type="button" role="tab" aria-selected="false">利用規約</button>
+                    <button class="reg-tab" type="button" role="tab" aria-selected="false">プライバシー</button>
+                  </div>
+                  <div class="reg-body" aria-label="規約・規定本文">
+                    <div class="reg-panel" data-reg-panel="tokusho">
+                      <div class="reg-card"></div>
+                    </div>
+
+                    <div class="reg-panel" data-reg-panel="terms" hidden>
+                      <div class="reg-card"></div>
+                    </div>
+
+                    <div class="reg-panel" data-reg-panel="privacy" hidden>
+                      <div class="reg-card"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="section" aria-label="AI Stack">
+                <div class="row" style="border-top:0;padding-top:0">
+                  <div class="l">
+                    <div class="k">AI Stack</div>
+                    <div class="v">展開中のAI / 最新Ver, / 稼働条件</div>
+                  </div>
+                  <button class="btn secondary" type="button" id="btnOpenAiStackPopup">
+                    一覧表
+                  </button>
+                </div>
+              </div>
+
+                <div class="overlay" id="aiStackOverlay" style="display:none">
+                  <div class="modal" style="width:min(610px, calc(100% - 24px));height:auto">
+                    <button class="close" type="button" aria-label="閉じる" id="btnCloseAiStackPopup">
+                      <i class="fa-solid fa-xmark"></i>
+                    </button>
+
+                    <div class="content" style="height:auto">
+                      <header class="content-hd">
+                        <div class="content-title">AI Stack</div>
+                      </header>
+
+                      <div class="content-bd">
+                        <div class="table">
+                          <div class="table__head">
+                            <div class="table__row table__row--head">
+                              <div class="table__cell">AI</div>
+                              <div class="table__cell">Ver,</div>
+                              <div class="table__cell">稼働条件</div>
+                            </div>
+                          </div>
+                          <div class="table__body" id="aiStackPopupBody"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+             </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script src="/assets/js/layout.js" defer></script>
 </body>
 </html>

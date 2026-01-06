@@ -698,67 +698,55 @@
 </head>
 
 <body>
+  <input class="tab-input" type="radio" name="tab" id="tab-general" checked>
+  <input class="tab-input" type="radio" name="tab" id="tab-apps">
+  <input class="tab-input" type="radio" name="tab" id="tab-data">
+  <input class="tab-input" type="radio" name="tab" id="tab-trainer">
+  <input class="tab-input" type="radio" name="tab" id="tab-account">
 
-  <!-- ===== settings popup root (required by setting.js) ===== -->
-  <div class="settings-modal" aria-hidden="true">
-    <div class="settings settings--gpt" role="dialog" aria-label="設定">
+  <div class="overlay" aria-hidden="false">
+    <div class="modal" role="dialog" aria-label="設定">
+      <button class="close" type="button" aria-label="閉じる">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
 
-      <!-- ===== tab states ===== -->
-      <input class="tab-input" type="radio" name="tab" id="tab-general" checked>
-      <input class="tab-input" type="radio" name="tab" id="tab-apps">
-      <input class="tab-input" type="radio" name="tab" id="tab-data">
-      <input class="tab-input" type="radio" name="tab" id="tab-trainer">
-      <input class="tab-input" type="radio" name="tab" id="tab-account">
+      <!-- Left nav -->
+      <aside class="nav" aria-label="設定ナビ">
+        <div class="nav-hd">
+          <div class="nav-title">設定</div>
+        </div>
 
-      <!-- ===== overlay ===== -->
-      <div class="overlay" aria-hidden="true">
-        <div class="modal" role="dialog" aria-label="設定">
+        <div class="nav-list" role="list">
+          <label class="nav-item" for="tab-general" role="listitem">
+            <span class="nav-ic"><i class="fa-solid fa-sliders"></i></span>
+            一般
+          </label>
 
-          <!-- close -->
-          <button class="close" type="button" aria-label="閉じる" data-settings-close>
-            <i class="fa-solid fa-xmark"></i>
-          </button>
+          <!-- 左カラム：アプリのアイコンを未設定→確実に設定 -->
+          <label class="nav-item" for="tab-apps" role="listitem">
+            <span class="nav-ic"><i class="fa-solid fa-plug-circle-bolt"></i></span>
+            アプリ
+          </label>
 
-          <!-- ======================
-               Left nav
-          ======================= -->
-          <aside class="nav" aria-label="設定ナビ">
-            <div class="nav-hd">
-              <div class="nav-title">設定</div>
-            </div>
+          <label class="nav-item" for="tab-data" role="listitem">
+            <span class="nav-ic"><i class="fa-solid fa-database"></i></span>
+            データ
+          </label>
 
-            <div class="nav-list" role="list">
-              <label class="nav-item" for="tab-general" role="listitem">
-                <span class="nav-ic"><i class="fa-solid fa-sliders"></i></span>
-                一般
-              </label>
+          <label class="nav-item" for="tab-trainer" role="listitem">
+            <span class="nav-ic"><i class="fa-solid fa-layer-group"></i></span>
+            AUREA Data Trainer
+          </label>
 
-              <label class="nav-item" for="tab-apps" role="listitem">
-                <span class="nav-ic"><i class="fa-solid fa-plug-circle-bolt"></i></span>
-                アプリ
-              </label>
+          <label class="nav-item" for="tab-account" role="listitem">
+            <span class="nav-ic"><i class="fa-regular fa-circle-user"></i></span>
+            アカウント・セキュリティ
+          </label>
+        </div>
+      </aside>
 
-              <label class="nav-item" for="tab-data" role="listitem">
-                <span class="nav-ic"><i class="fa-solid fa-database"></i></span>
-                データ
-              </label>
-
-              <label class="nav-item" for="tab-trainer" role="listitem">
-                <span class="nav-ic"><i class="fa-solid fa-layer-group"></i></span>
-                AUREA Data Trainer
-              </label>
-
-              <label class="nav-item" for="tab-account" role="listitem">
-                <span class="nav-ic"><i class="fa-regular fa-circle-user"></i></span>
-                アカウント・セキュリティ
-              </label>
-            </div>
-          </aside>
-
-          <!-- ======================
-               Right content
-          ======================= -->
-          <section class="content" aria-label="設定内容">
+      <!-- Right content -->
+      <section class="content" aria-label="設定内容">
 
         <!-- ===== General ===== -->
         <div class="panel panel-general">
@@ -1238,7 +1226,11 @@
 
 /* ===============================
    AI Stack (Latest Ver display)
+   - 表示は [AI名][Ver.] のみ
+   - Ver. は常に現行の最新バージョン文字列
 =============================== */
+
+// 表示用データ（最新版文字列のみ）
 let AI_STACK = [
   { name: "GPT",        ver: "" },
   { name: "Claude",     ver: "" },
@@ -1248,17 +1240,21 @@ let AI_STACK = [
   { name: "Sora",       ver: "" }
 ];
 
+// 最新バージョン取得（正規AI側追従：実装先差替え前提）
 async function refreshAiStackLatest(){
   try{
-    // API接続時に差替え
+    // 例：/api/ai-stack/latest から { GPT:"x.y", Claude:"x.y", ... } を取得
+    // const res = await fetch("/api/ai-stack/latest", { credentials:"include" });
+    // if(!res.ok) return;
+    // const data = await res.json();
+    // AI_STACK = AI_STACK.map(a => ({ ...a, ver: data[a.name] || "" }));
+
+    // 暫定：空文字のまま（API接続時に自動反映）
   }catch(e){}
 }
 
 function escapeHtml(s){
-  return String(s ?? "")
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;");
+  return String(s ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
 }
 
 function renderAiStackPopup(){
@@ -1286,12 +1282,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   renderAiStackPopup();
 
   openBtn?.addEventListener("click", () => {
-    if (!overlay) return;
     overlay.style.display = "flex";
   });
 
   closeBtn?.addEventListener("click", () => {
-    if (!overlay) return;
     overlay.style.display = "none";
   });
 
@@ -1300,12 +1294,5 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 });
 </script>
-
-          </section>
-        </div>
-      </div>
-    </div>
-  </div>
-
 </body>
 </html>

@@ -772,7 +772,7 @@
     const t = threads.find(x => x.id === threadId);
     if (!t) return;
 
-    const next = window.prompt("新しい名前", t.title || "新しいチャット");
+    const next = window.prompt(tr("promptNewName"), t.title || tr("threadNew"));
     if (next === null) return;
     const v = next.trim();
     if (!v) return;
@@ -917,7 +917,7 @@
           scopeType: item.scopeType,
           projectId: item.projectId,
           threadId: t.id,
-          threadTitle: t.title || "新しいチャット",
+          threadTitle: t.title || tr("threadNew"),
           snippet: tr("titleMatch")
         });
         continue;
@@ -940,7 +940,7 @@
           scopeType: item.scopeType,
           projectId: item.projectId,
           threadId: t.id,
-          threadTitle: t.title || "新しいチャット",
+          threadTitle: t.title || tr("threadNew"),
           snippet: snip
         });
         break; // one hit per thread is enough (v1)
@@ -1306,7 +1306,7 @@
               a.removeAttribute("data-active");
             }
 
-            a.innerHTML = `<div class="t">${escHtml(t.title || "新しいチャット")}</div>`;
+            a.innerHTML = `<div class="t">${escHtml(t.title || tr("threadNew"))}</div>`;
             inner.appendChild(a);
           });
 
@@ -1342,8 +1342,8 @@
       const link = document.createElement("a");
       link.className = "sb-link";
       link.href = "#";
-      link.setAttribute("aria-label", t.title || "新しいチャット");
-      link.textContent = t.title || "新しいチャット";
+      link.setAttribute("aria-label", t.title || tr("threadNew"));
+      link.textContent = t.title || tr("threadNew");
 
       // active only when current context is global
       if (state.context?.type === "global" && state.activeThreadIdByScope.global === t.id) {
@@ -1407,7 +1407,7 @@
   const renameProject = (projectId) => {
     const p = state.projects.find(x => x.id === projectId);
     if (!p) return;
-    const next = window.prompt("新しい名前", p.name);
+    const next = window.prompt(tr("promptNewName"), p.name);
     if (next === null) return;
     const v = next.trim();
     if (!v) return;
@@ -1508,7 +1508,7 @@
       src: makePlaceholderImageDataUrl(prompt)
     });
 
-    appendMessage("assistant", `（画像を保存しました）\n「画像」→保存ボックスに追加済み。\n\nPrompt:\n${prompt}`);
+    appendMessage("assistant", `（画像を保存しました）\n「${tr("images")}」→保存ボックスに追加済み。\n\nPrompt:\n${prompt}`);
   };
 
   /* ================= clipboard ================= */
@@ -1945,7 +1945,7 @@ btnNewChat?.addEventListener("click", (e) => {
   }
   if (!Array.isArray(state.customApps)) state.customApps = [];
 
-  /* ===== i18n (v1) ===== */
+/* ===== i18n (v1) ===== */
   const I18N = {
     ja: {
       newChat: "新しいチャット",
@@ -1989,10 +1989,16 @@ btnNewChat?.addEventListener("click", (e) => {
       confirmCreateProject: "プロジェクトを作成しますか？",
       confirmDeleteImage: "画像を削除しますか？",
 
+      // Prompts
+      promptNewName: "新しい名前",
+      promptSaasName: "SaaS名",
+      promptNewEmail: "新しいメールアドレス",
+
       theme: "テーマ",
       language: "言語",
       sendMode: "AUREAへの送信方法",
       dataStorage: "会話とデータの保存先"
+
     },
     en: {
       newChat: "New chat",
@@ -2035,6 +2041,11 @@ btnNewChat?.addEventListener("click", (e) => {
       confirmDeleteAllChats: "Delete all chats?",
       confirmCreateProject: "Create this project?",
       confirmDeleteImage: "Delete this image?",
+
+      // Prompts
+      promptNewName: "New name",
+      promptSaasName: "SaaS name",
+      promptNewEmail: "New email address",
 
       theme: "Theme",
       language: "Language",
@@ -2195,7 +2206,7 @@ btnNewChat?.addEventListener("click", (e) => {
       const addCustom = t.closest("[data-action='add-custom']");
       if (addCustom) {
         e.preventDefault();
-        const name = (window.prompt("SaaS名", "") || "").trim();
+        const name = (window.prompt(tr("promptSaasName"), "") || "").trim();
         if (!name) return;
 
         state.customApps = Array.isArray(state.customApps) ? state.customApps : [];
@@ -2550,7 +2561,7 @@ btnNewChat?.addEventListener("click", (e) => {
     const btnChangeEmail = document.getElementById("btnChangeEmail");
     btnChangeEmail?.addEventListener("click", async (e) => {
       e.preventDefault();
-      const next = window.prompt("新しいメールアドレス", state.user.email || "");
+      const next = window.prompt(tr("promptNewEmail"), state.user.email || "");
       if (next === null) return;
       const v = next.trim();
       if (!v) return;
