@@ -615,10 +615,9 @@ const closeSettings = () => {
       background:rgba(0,0,0,.45); z-index:99999; padding:18px;
     `;
 
-    const isEn = (state.settings?.language === "en");
-    const L_CONFIRM = isEn ? "Confirm" : "確認";
-    const L_CANCEL  = isEn ? "Cancel" : "キャンセル";
-    const L_OK      = "OK";
+    const L_CONFIRM = tr("confirmTitle");
+    const L_CANCEL  = tr("cancel");
+    const L_OK      = tr("ok");
 
     wrap.innerHTML = `
       <div style="
@@ -677,6 +676,38 @@ const closeSettings = () => {
       wrap.setAttribute("aria-hidden", "true");
       resolve(val);
     };
+  const confirmModal = (message) => new Promise((resolve) => {
+    const wrap = ensureConfirmModal();
+    const text = $("#aureaConfirmText");
+    const btnCancel = $("#aureaConfirmCancel");
+    const btnOk = $("#aureaConfirmOk");
+
+    if (text) text.textContent = message || tr("areYouSure");
+
+    const cleanup = () => {
+      btnCancel?.removeEventListener("click", onCancel);
+      btnOk?.removeEventListener("click", onOk);
+      document.removeEventListener("keydown", onEsc);
+    };
+
+    const close = (val) => {
+      cleanup();
+      wrap.style.display = "none";
+      wrap.setAttribute("aria-hidden", "true");
+      resolve(val);
+    };
+
+    const onCancel = () => close(false);
+    const onOk = () => close(true);
+    const onEsc = (e) => { if (e.key === "Escape") close(false); };
+
+    btnCancel?.addEventListener("click", onCancel);
+    btnOk?.addEventListener("click", onOk);
+    document.addEventListener("keydown", onEsc);
+
+    wrap.style.display = "flex";
+    wrap.setAttribute("aria-hidden", "false");
+  });
 
     const onCancel = () => close(false);
     const onOk = () => close(true);

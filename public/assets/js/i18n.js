@@ -95,7 +95,12 @@
 
       promptNewName: "新しい名前",
       promptSaasName: "SaaS名",
-      promptNewEmail: "新しいメールアドレス"
+      promptNewEmail: "新しいメールアドレス",
+
+      confirmTitle: "確認",
+      cancel: "キャンセル",
+      ok: "OK",
+      areYouSure: "よろしいですか？"
     },
 
     en: {
@@ -191,7 +196,12 @@
 
       promptNewName: "New name",
       promptSaasName: "SaaS name",
-      promptNewEmail: "New email address"
+      promptNewEmail: "New email address",
+
+      confirmTitle: "Confirm",
+      cancel: "Cancel",
+      ok: "OK",
+      areYouSure: "Are you sure?"
     }
   };
 
