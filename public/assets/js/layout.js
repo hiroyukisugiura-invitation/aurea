@@ -161,7 +161,7 @@
   // sidebar buttons
   const btnSearchLegacy = $(".sb-item[aria-label='チャット内を検索']");
   const btnNewChat = $(".sb-item[aria-label='新しいチャット']");
-  const btnImages = $(".sb-item[aria-label='画像']");
+  const btnImages = $(".sb-item[data-nav='images']");
   const btnShare = $(".topbar .icon-btn[aria-label='シェア']");
 
   const linkSettings =
@@ -303,48 +303,48 @@
     };
 
     // ===== Sidebar =====
-    setText(".sb-item[aria-label='新しいチャット'] .label", t("newChat"));
-    setText(".sb-item[aria-label='ライブラリ'] .label", t("library"));
+    setText(".sb-item[aria-label='新しいチャット'] .label", tr("newChat"));
+    setText(".sb-item[data-nav='images'] .label", tr("library"));
 
     // Group headers
-    setText(".sb-group summary[aria-label='プロジェクト'] > span", t("projects"));
-    setText(".sb-group summary[aria-label='チャット'] > span", t("chats"));
+    setText(".sb-group summary[aria-label='プロジェクト'] > span", tr("projects"));
+    setText(".sb-group summary[aria-label='チャット'] > span", tr("chats"));
 
     // Sidebar search placeholder (mounted)
     const sbSearch = document.getElementById("aureaSearchInput");
     if (sbSearch) {
-      sbSearch.placeholder = t("search");
-      sbSearch.setAttribute("aria-label", t("search"));
+      sbSearch.placeholder = tr("search");
+      sbSearch.setAttribute("aria-label", tr("search"));
     }
 
     // User menu
-    setText(".user-pop a[aria-label='設定']", t("settings"));
-    setText(".user-pop a[aria-label='ログアウト']", t("logout"));
+    setText(".user-pop a[aria-label='設定']", tr("settings"));
+    setText(".user-pop a[aria-label='ログアウト']", tr("logout"));
 
     // ===== Settings modal (embedded) =====
-    setText(".settings-modal .nav-title", t("settings"));
+    setText(".settings-modal .nav-title", tr("settings"));
 
-    setText(".settings-modal label[for='tab-general'] .nav-txt", t("general"));
-    setText(".settings-modal label[for='tab-apps'] .nav-txt", t("apps"));
-    setText(".settings-modal label[for='tab-data'] .nav-txt", t("data"));
-    setText(".settings-modal label[for='tab-trainer'] .nav-txt", t("trainer"));
-    setText(".settings-modal label[for='tab-account'] .nav-txt", t("accountSecurity"));
+    setText(".settings-modal label[for='tab-general'] .nav-txt", tr("general"));
+    setText(".settings-modal label[for='tab-apps'] .nav-txt", tr("apps"));
+    setText(".settings-modal label[for='tab-data'] .nav-txt", tr("data"));
+    setText(".settings-modal label[for='tab-trainer'] .nav-txt", tr("trainer"));
+    setText(".settings-modal label[for='tab-account'] .nav-txt", tr("accountSecurity"));
 
-    setText(".settings-modal .panel-general .content-title", t("general"));
-    setText(".settings-modal .panel-apps .content-title", t("apps"));
-    setText(".settings-modal .panel-data .content-title", t("data"));
-    setText(".settings-modal .panel-account .content-title", t("accountSecurity"));
+    setText(".settings-modal .panel-general .content-title", tr("general"));
+    setText(".settings-modal .panel-apps .content-title", tr("apps"));
+    setText(".settings-modal .panel-data .content-title", tr("data"));
+    setText(".settings-modal .panel-account .content-title", tr("accountSecurity"));
 
     // Apps: "+ SaaS 追加" button label
     const addBtn = document.querySelector(".settings-modal .panel-apps .apps-header .btn");
     if (addBtn) {
-      addBtn.innerHTML = `<i class="fa-solid fa-plus"></i> ${t("addSaas")}`;
+      addBtn.innerHTML = `<i class="fa-solid fa-plus"></i> ${tr("addSaas")}`;
     }
 
     // Settings: language select placeholder-like consistency (表示のみ)
     const selLang = document.querySelector(".settings-modal select[aria-label='言語']");
     if (selLang) {
-      selLang.setAttribute("aria-label", t("language"));
+      selLang.setAttribute("aria-label", tr("language"));
     }
   };
 
@@ -623,6 +623,11 @@
       background:rgba(0,0,0,.45); z-index:99999; padding:18px;
     `;
 
+    const isEn = (state.settings?.language === "en");
+    const L_CONFIRM = isEn ? "Confirm" : "確認";
+    const L_CANCEL  = isEn ? "Cancel" : "キャンセル";
+    const L_OK      = "OK";
+
     wrap.innerHTML = `
       <div style="
         width:min(420px, calc(100% - 24px));
@@ -636,17 +641,17 @@
         color:rgba(255,255,255,.92);
         font-family: -apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Hiragino Sans','Noto Sans JP',sans-serif;
       ">
-        <div style="padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.08);font-size:14px;font-weight:600;">確認</div>
+        <div style="padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.08);font-size:14px;font-weight:600;">${L_CONFIRM}</div>
         <div id="aureaConfirmText" style="padding:14px 16px;font-size:13px;line-height:1.6;color:rgba(255,255,255,.82);"></div>
         <div style="padding:14px 16px;border-top:1px solid rgba(255,255,255,.08);display:flex;justify-content:flex-end;gap:10px;">
           <button id="aureaConfirmCancel" type="button" style="
             height:34px;padding:0 12px;border-radius:10px;border:1px solid rgba(255,255,255,.12);
             background:transparent;color:rgba(255,255,255,.80);cursor:pointer;font-size:13px;
-          ">キャンセル</button>
+          ">${L_CANCEL}</button>
           <button id="aureaConfirmOk" type="button" style="
             height:34px;padding:0 12px;border-radius:10px;border:1px solid rgba(255,255,255,.12);
             background:rgba(255,255,255,.08);color:rgba(255,255,255,.92);cursor:pointer;font-size:13px;
-          ">OK</button>
+          ">${L_OK}</button>
         </div>
       </div>
     `;
@@ -666,7 +671,7 @@
     const btnCancel = $("#aureaConfirmCancel");
     const btnOk = $("#aureaConfirmOk");
 
-    if (text) text.textContent = message || "よろしいですか？";
+    if (text) text.textContent = message || ((state.settings?.language === "en") ? "Are you sure?" : "よろしいですか？");
 
     const cleanup = () => {
       btnCancel?.removeEventListener("click", onCancel);
@@ -698,7 +703,7 @@
     const name = (projectNameInput?.value || "").trim();
     if (!name) return;
 
-    const ok1 = await confirmModal("プロジェクトを作成しますか？");
+    const ok1 = await confirmModal(tr("confirmCreateProject"));
     if (!ok1) return;
 
     const p = { id: uid(), name, updatedAt: nowISO() };
@@ -724,7 +729,7 @@
 /* ================= threads ================= */
   const createThread = () => {
     const threads = getThreadsForContext();
-    const t = { id: uid(), title: "新しいチャット", updatedAt: nowISO(), messages: [] };
+    const t = { id: uid(), title: tr("threadNew"), updatedAt: nowISO(), messages: [] };
     threads.unshift(t);
     setActiveThreadId(t.id);
     state.view = "chat";
@@ -745,7 +750,7 @@
     if (!state.activeThreadIdByScope.projects) state.activeThreadIdByScope.projects = {};
 
     const threads = state.threads.projects[pid];
-    const t = { id: uid(), title: "新しいチャット", updatedAt: nowISO(), messages: [] };
+    const t = { id: uid(), title: tr("threadNew"), updatedAt: nowISO(), messages: [] };
     threads.unshift(t);
 
     state.activeProjectId = pid;
@@ -779,7 +784,7 @@
   };
 
   const deleteThread = async (threadId) => {
-    const ok1 = await confirmModal("削除しますか？");
+    const ok1 = await confirmModal(tr("confirmDelete"));
     if (!ok1) return;
 
     const threads = state.threads.global || [];
@@ -810,7 +815,7 @@
     t.messages.push(m);
     t.updatedAt = nowISO();
 
-    if (role === "user" && (t.title === "新しいチャット" || !t.title)) {
+    if (role === "user" && (t.title === tr("threadNew") || !t.title)) {
       const s = content.trim();
       t.title = s.length > 28 ? s.slice(0, 28) : s;
     }
@@ -870,7 +875,7 @@
   };
 
   const deleteImageFromLibrary = async (imageId) => {
-    const ok1 = await confirmModal("画像を削除しますか？");
+    const ok1 = await confirmModal(tr("confirmDeleteImage"));
     if (!ok1) return;
     state.images = state.images.filter(x => x.id !== imageId);
     save(state);
@@ -913,7 +918,7 @@
           projectId: item.projectId,
           threadId: t.id,
           threadTitle: t.title || "新しいチャット",
-          snippet: "（タイトル一致）"
+          snippet: tr("titleMatch")
         });
         continue;
       }
@@ -1044,8 +1049,8 @@
     wrap.innerHTML = `
       <div class="images-head">
         <div>
-          <div class="images-title">画像</div>
-          <div class="images-sub">会話内で作成された画像がここに保存されます</div>
+          <div class="images-title">${escHtml(tr("images"))}</div>
+          <div class="images-sub">${escHtml(tr("librarySub"))}</div>
         </div>
       </div>
 
@@ -1058,7 +1063,7 @@
     if (!bodyEl) return;
 
     if (!state.images || state.images.length === 0) {
-      bodyEl.innerHTML = `<div class="images-empty">まだ保存された画像がありません。</div>`;
+      bodyEl.innerHTML = `<div class="images-empty">${escHtml(tr("libraryEmpty"))}</div>`;
       return;
     }
 
@@ -1105,8 +1110,12 @@
     wrap.innerHTML = `
       <div class="search-head">
         <div>
-          <div class="search-title">検索結果</div>
-          <div class="search-sub">${q ? `「${escHtml(q)}」の検索結果（${hits.length}件）` : "検索語を入力してください"}</div>
+          <div class="search-title">${escHtml(tr("searchTitle"))}</div>
+          <div class="search-sub">${
+            q
+              ? `${escHtml(tr("searchSubPrefix"))}${escHtml(q)}${escHtml(tr("searchSubMid"))}${hits.length}${escHtml(tr("searchSubSuffix"))}`
+              : escHtml(tr("searchPrompt"))
+          }</div>
         </div>
       </div>
 
@@ -1121,7 +1130,7 @@
     if (!q) return;
 
     if (hits.length === 0) {
-      list.innerHTML = `<div class="images-empty">一致する会話が見つかりませんでした。</div>`;
+      list.innerHTML = `<div class="images-empty">${escHtml(tr("searchNoMatch"))}</div>`;
       return;
     }
 
@@ -1271,7 +1280,7 @@
           newA.className = "pj-thread pj-new-thread";
           newA.dataset.action = "pj-new-thread";
           newA.dataset.projectId = p.id;
-          newA.innerHTML = `<div class="t">新しいチャット</div>`;
+          newA.innerHTML = `<div class="t">${escHtml(tr("threadNew"))}</div>`;
           inner.appendChild(newA);
 
           // PJ threads（PJ内チャットのみ表示）
@@ -1409,7 +1418,7 @@
   };
 
   const deleteProject = async (projectId) => {
-    const ok1 = await confirmModal("プロジェクトを削除しますか？");
+    const ok1 = await confirmModal(tr("confirmDeleteProject"));
     if (!ok1) return;
 
     // PJ本体削除
@@ -1524,16 +1533,8 @@
   };
 
   /* ================= UI bindings ================= */
-  // sidebar legacy search item -> focus input + open search
-  btnSearchLegacy?.addEventListener("click", (e) => {
-    e.preventDefault();
-    sbSearchInput?.focus();
-    if ((sbSearchInput?.value || "").trim()) {
-      state.view = "search";
-      save(state);
-      renderView();
-    }
-  });
+  // (removed) legacy sidebar search handler
+  // 検索は mountSidebarSearch() で生成される input (#aureaSearchInput) のみを使用
 
 btnNewChat?.addEventListener("click", (e) => {
     e.preventDefault();
@@ -1593,7 +1594,7 @@ btnNewChat?.addEventListener("click", (e) => {
 
   linkLogout?.addEventListener("click", async (e) => {
     e.preventDefault();
-    const ok1 = await confirmModal("ログアウトしますか？");
+    const ok1 = await confirmModal(tr("confirmLogout"));
     if (!ok1) return;
     window.location.href = "/login.html";
   });
@@ -1948,6 +1949,10 @@ btnNewChat?.addEventListener("click", (e) => {
   const I18N = {
     ja: {
       newChat: "新しいチャット",
+      threadNew: "新しいチャット",
+      titleMatch: "（タイトル一致）",
+
+      images: "ライブラリ",
       library: "ライブラリ",
       projects: "プロジェクト",
       chats: "チャット",
@@ -1964,6 +1969,26 @@ btnNewChat?.addEventListener("click", (e) => {
 
       addSaas: "+ SaaS 追加",
 
+      // Library view
+      librarySub: "会話内で作成された画像がここに保存されます",
+      libraryEmpty: "まだ保存された画像がありません。",
+
+      // Search view
+      searchTitle: "検索結果",
+      searchPrompt: "検索語を入力してください",
+      searchNoMatch: "一致する会話が見つかりませんでした。",
+      searchSubPrefix: "「",
+      searchSubMid: "」の検索結果（",
+      searchSubSuffix: "件）",
+
+      // Confirm messages
+      confirmLogout: "ログアウトしますか？",
+      confirmDelete: "削除しますか？",
+      confirmDeleteProject: "プロジェクトを削除しますか？",
+      confirmDeleteAllChats: "すべてのチャットを削除しますか？",
+      confirmCreateProject: "プロジェクトを作成しますか？",
+      confirmDeleteImage: "画像を削除しますか？",
+
       theme: "テーマ",
       language: "言語",
       sendMode: "AUREAへの送信方法",
@@ -1971,6 +1996,10 @@ btnNewChat?.addEventListener("click", (e) => {
     },
     en: {
       newChat: "New chat",
+      threadNew: "New chat",
+      titleMatch: "(Title match)",
+
+      images: "Library",
       library: "Library",
       projects: "Projects",
       chats: "Chats",
@@ -1987,6 +2016,26 @@ btnNewChat?.addEventListener("click", (e) => {
 
       addSaas: "+ Add SaaS",
 
+      // Library view
+      librarySub: "Images created in chats are saved here.",
+      libraryEmpty: "No images saved yet.",
+
+      // Search view
+      searchTitle: "Search results",
+      searchPrompt: "Type to search",
+      searchNoMatch: "No matching chats found.",
+      searchSubPrefix: "“",
+      searchSubMid: "” results (",
+      searchSubSuffix: ")",
+
+      // Confirm messages
+      confirmLogout: "Log out?",
+      confirmDelete: "Delete?",
+      confirmDeleteProject: "Delete this project?",
+      confirmDeleteAllChats: "Delete all chats?",
+      confirmCreateProject: "Create this project?",
+      confirmDeleteImage: "Delete this image?",
+
       theme: "Theme",
       language: "Language",
       sendMode: "Send behavior",
@@ -1994,7 +2043,7 @@ btnNewChat?.addEventListener("click", (e) => {
     }
   };
 
-  const t = (key) => {
+  const tr = (key) => {
     const lang = state.settings?.language || "ja";
     return I18N[lang]?.[key] || I18N.ja[key] || key;
   };
@@ -2396,7 +2445,7 @@ btnNewChat?.addEventListener("click", (e) => {
     const btnDeleteAll = document.querySelector(".panel-data .section[aria-label='削除'] .btn.danger");
     btnDeleteAll?.addEventListener("click", async (e) => {
       e.preventDefault();
-      const ok = await confirmModal("すべてのチャットを削除しますか？");
+      const ok = await confirmModal(tr("confirmDeleteAllChats"));
       if (!ok) return;
 
       state.threads.global = [];
@@ -2554,6 +2603,7 @@ btnNewChat?.addEventListener("click", (e) => {
   // reflect immediately
   syncAccountUi();
   syncSettingsUi();
+  applyI18n();
   bindSettings();
 
   // centered ask (no thread selected / no messages)
