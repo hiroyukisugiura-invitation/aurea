@@ -81,7 +81,10 @@ const oauthCallback = (req, res) => {
     for (const p of parts) {
       if (p.startsWith("rt=")) rt = p.slice(3);
     }
-  } catch {}
+  } catch (e) {
+    // ignore malformed state
+    void e;
+  }
 
   const origin = rt ? fromB64Url(rt) : "";
   const base = origin ? `${origin.replace(/\/+$/, "")}/` : "/";
