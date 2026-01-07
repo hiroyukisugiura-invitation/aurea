@@ -1743,21 +1743,26 @@ btnNewChat?.addEventListener("click", (e) => {
 
       const name = (saasCard.querySelector(".saas-name")?.textContent || "").trim();
 
+      const goConnect = (path) => {
+        const rt = encodeURIComponent(window.location.origin);
+        window.location.href = `${path}?returnTo=${rt}`;
+      };
+
       if (name === "Google") {
         e.preventDefault();
-        window.location.href = "/api/google/connect";
+        goConnect("/api/google/connect");
         return;
       }
 
       if (name === "Gmail") {
         e.preventDefault();
-        window.location.href = "/api/gmail/connect";
+        goConnect("/api/gmail/connect");
         return;
       }
 
       if (name === "Google Drive") {
         e.preventDefault();
-        window.location.href = "/api/drive/connect";
+        goConnect("/api/drive/connect");
         return;
       }
 
@@ -2561,22 +2566,29 @@ btnNewChat?.addEventListener("click", (e) => {
     const connect = params.get("connect");
     const stateParam = params.get("state"); // e.g. "svc=google"
 
+    const persistEverywhere = () => {
+      try {
+        // save() は選択中の保存先に書く
+        save(state);
+
+        // 念のため両方へも書く（cloud/localズレ対策）
+        localStorage.setItem("aurea_main_v1_cloud", JSON.stringify(state));
+        localStorage.setItem("aurea_main_v1_local", JSON.stringify(state));
+      } catch {}
+    };
+
     if (connect === "ok" && stateParam) {
       const m = stateParam.match(/^svc=(.+)$/);
       const svc = m ? m[1] : null;
 
-      if (svc === "google") {
-        state.apps.Google = true;
-      }
-      if (svc === "gmail") {
-        state.apps.Gmail = true;
-      }
-      if (svc === "drive") {
-        state.apps["Google Drive"] = true;
-      }
+      if (svc === "google") state.apps.Google = true;
+      if (svc === "gmail") state.apps.Gmail = true;
+      if (svc === "drive") state.apps["Google Drive"] = true;
 
-      // 保存 & UI反映
-      save(state);
+      persistEverywhere();
+
+      // UI反映（apps-grid が空の場合があるので先に生成）
+      try { ensureAppsGrid(); } catch {}
       syncSettingsUi();
 
       // クエリを消す（履歴汚染防止）
@@ -2585,6 +2597,8 @@ btnNewChat?.addEventListener("click", (e) => {
       setTimeout(() => {
         alert("Google アカウントの連携が完了しました");
       }, 0);
+
+      return;
     }
 
     if (connect === "error") {

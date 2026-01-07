@@ -34,12 +34,15 @@ const buildGoogleAuthUrl = ({ scope, state }) => {
   return u.toString();
 };
 
+const toB64Url = (s) => {
+  try { return Buffer.from(String(s || ""), "utf8").toString("base64url"); } catch { return ""; }
+};
+const fromB64Url = (s) => {
+  try { return Buffer.from(String(s || ""), "base64url").toString("utf8"); } catch { return ""; }
+};
+
 const connectGoogle = (service) => (req, res) => {
-  const baseScopes = [
-    "openid",
-    "email",
-    "profile"
-  ];
+  const baseScopes = ["openid", "email", "profile"];
 
   const svcScopes =
     service === "gmail"
@@ -48,13 +51,17 @@ const connectGoogle = (service) => (req, res) => {
         ? ["https://www.googleapis.com/auth/drive.readonly"]
         : [];
 
+  // ★ 戻り先（Codespaces / 本番どちらでも）
+  // UI側から ?returnTo=<origin> を渡す
+  const returnTo = String(req.query.returnTo || "").trim();
+  const rt = returnTo ? toB64Url(returnTo) : "";
+
   const scope = [...baseScopes, ...svcScopes].join(" ");
   const url = buildGoogleAuthUrl({
     scope,
-    state: `svc=${service}`
+    state: `svc=${service}${rt ? `|rt=${rt}` : ""}`
   });
 
-  // env 未設定なら、デバッグ用に 200 を返す（UIは壊さない）
   if (!url) {
     res.status(200).send(`Google OAuth env missing. svc=${service}`);
     return;
@@ -68,15 +75,32 @@ const oauthCallback = (req, res) => {
   const state = String(req.query.state || "");
   const err = String(req.query.error || "");
 
+  // state から svc / rt を取り出す
+  let svc = "";
+  let rt = "";
+  try {
+    const parts = state.split("|").map(s => s.trim()).filter(Boolean);
+    for (const p of parts) {
+      if (p.startsWith("svc=")) svc = p.slice(4);
+      if (p.startsWith("rt=")) rt = p.slice(3);
+    }
+  } catch {}
+
+  const origin = rt ? fromB64Url(rt) : "";
+  const base = origin || "/";
+
   if (err) {
-    // v1: 失敗もアプリへ戻す（UIだけ先に整える）
-    res.redirect(302, `/?connect=error&error=${encodeURIComponent(err)}&state=${encodeURIComponent(state)}`);
+    res.redirect(
+      302,
+      `${base}?connect=error&error=${encodeURIComponent(err)}&state=${encodeURIComponent(state)}`
+    );
     return;
   }
 
-  // v1: token交換は次フェーズ。code を一旦持って帰るだけ。
-  // ※本番では code をフロントに渡さない（次フェーズでサーバ保存に切替）
-  res.redirect(302, `/?connect=ok&state=${encodeURIComponent(state)}&code=${encodeURIComponent(code)}`);
+  res.redirect(
+    302,
+    `${base}?connect=ok&state=${encodeURIComponent(state)}&code=${encodeURIComponent(code)}`
+  );
 };
 
 app.get("/google/connect", connectGoogle("google"));
