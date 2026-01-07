@@ -45,6 +45,72 @@ body.theme-light{
   background:radial-gradient(1200px 800px at 50% 30%, rgba(0,0,0,.03), transparent 60%), var(--bg);
 }
 
+/* light: sidebar/search/chat list contrast */
+body.theme-light .sb-search input{
+  border:1px solid var(--line);
+  background:rgba(0,0,0,.03);
+  color:var(--text);
+}
+body.theme-light .sb-search input::placeholder{
+  color:var(--muted);
+}
+
+body.theme-light .pj-subhead{
+  color:var(--muted);
+}
+body.theme-light .pj-thread{
+  color:var(--text);
+}
+body.theme-light .pj-thread:hover{ background:var(--soft); }
+body.theme-light .pj-thread[data-active="1"]{ background:var(--hover); }
+body.theme-light .pj-thread .t{
+  color:var(--text);
+}
+
+body.theme-light .sb-dots{
+  color:rgba(0,0,0,.55);
+}
+
+/* light: popups (sidebar dots/user/+ menu) */
+body.theme-light .sb-pop,
+body.theme-light .user-pop,
+body.theme-light .plus-pop{
+  background:rgba(255,255,255,.96);
+  border:1px solid var(--line);
+  color:var(--text);
+}
+body.theme-light .sb-act,
+body.theme-light .user-pop a,
+body.theme-light .plus-pop a{
+  color:var(--text);
+}
+body.theme-light .sb-act:hover,
+body.theme-light .user-pop a:hover,
+body.theme-light .plus-pop a:hover{
+  background:var(--soft);
+}
+
+/* light: topbar share icon (avoid white-on-white) */
+body.theme-light .icon-white{
+  color:var(--text);
+}
+body.theme-light .icon-btn:hover{
+  border-color:var(--line);
+}
+
+/* light: ask bar + note */
+body.theme-light .ask{
+  background:rgba(255,255,255,.90);
+  border:1px solid var(--line);
+}
+body.theme-light .ask .mini:hover{
+  background:var(--soft);
+  border-color:var(--line);
+}
+body.theme-light .ask-note{
+  color:rgba(0,0,0,.55);
+}
+
 /* ================= LAYOUT ================= */
 .app{
   display:grid;
@@ -807,13 +873,6 @@ body.project-open .project-modal{ display:flex; }
 }
 
 /* ===== Settings iframe modal ===== */
-.settings-overlay{
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.45);
-  z-index: 9998;
-}
-
 .settings-frame{
   position: fixed;
   inset: 0;
@@ -824,8 +883,7 @@ body.project-open .project-modal{ display:flex; }
   padding: 28px;
 }
 
-.settings-frame[hidden],
-.settings-overlay[hidden]{
+.settings-frame[hidden]{
   display: none !important;
 }
 
@@ -861,13 +919,6 @@ body.project-open .project-modal{ display:flex; }
    - scoped to .settings-modal only
 =============================== */
 
-.settings-overlay{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.35);
-  z-index:9998;
-}
-
 .settings-modal{
   position:fixed;
   inset:0;
@@ -876,6 +927,7 @@ body.project-open .project-modal{ display:flex; }
   align-items:center;
   justify-content:center;
   padding:18px;
+  pointer-events:auto;
 
   /* settings.html の :root 相当（ページ全体を汚染しない） */
   --bg:#0e0f10;
@@ -903,9 +955,9 @@ body.project-open .project-modal{ display:flex; }
   color:var(--text);
 }
 
-.settings-modal[hidden],
-.settings-overlay[hidden]{
+.settings-modal[hidden]{
   display:none !important;
+  pointer-events:none !important;
 }
 
 /* index側の×（右上固定） */
@@ -949,7 +1001,8 @@ body.project-open .project-modal{ display:flex; }
   align-items:center;
   justify-content:center;
   padding:18px;
-  background:transparent; /* overlay自体は settings-overlay が担当 */
+  background:transparent;
+  pointer-events:auto;
 }
 
 .settings-modal > .overlay > .modal{
@@ -1064,7 +1117,7 @@ body.project-open .project-modal{ display:flex; }
 
 .settings-modal .panel{
   display:none;
-  height:100%;
+  height:auto;
   min-height:0;
   flex:1 1 auto;
   flex-direction:column;
@@ -1101,7 +1154,7 @@ body.project-open .project-modal{ display:flex; }
 }
 .settings-modal .content-bd{
   padding:14px 18px 18px;
-  overflow:auto;
+  overflow:visible;
   min-height:0;
   flex:1 1 auto;
   display:flex;

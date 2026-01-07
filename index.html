@@ -15,28 +15,28 @@
     <!-- SIDEBAR -->
     <aside class="sidebar" aria-label="左カラム">
 <div class="sb-top">
-        <a class="sb-item" href="#" aria-label="新しいチャット">
+        <a class="sb-item" href="#" aria-label="新しいチャット" data-nav="newChat" data-i18n-aria="newChat">
           <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 5v14"></path>
             <path d="M5 12h14"></path>
           </svg>
-          <span class="label">新しいチャット</span>
+<span class="label" data-i18n="newChat">新しいチャット</span>
         </a>
 
-        <a class="sb-item" href="#images" aria-label="ライブラリ" data-nav="images">
+        <a class="sb-item" href="#images" aria-label="ライブラリ" data-nav="images" data-i18n-aria="library">
           <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <rect x="4" y="5" width="16" height="14" rx="2"></rect>
             <path d="M8 13l2-2 3 3 2-2 3 3"></path>
             <path d="M9 9h.01"></path>
           </svg>
-          <span class="label">ライブラリ</span>
+<span class="label" data-i18n="library">ライブラリ</span>
         </a>
 
         <div class="sb-sep"></div>
 
-        <details class="sb-group">
+        <details class="sb-group" data-group="projects">
           <summary aria-label="プロジェクト">
-            <span>プロジェクト</span>
+            <span data-i18n="projects">プロジェクト</span>
             <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <path d="M6 9l6 6 6-6"></path>
             </svg>
@@ -48,7 +48,7 @@
                   <path d="M12 5v14"></path>
                   <path d="M5 12h14"></path>
                 </svg>
-                <span>PJ 新規作成</span>
+                <span data-i18n="createProject">PJ 新規作成</span>
               </div>
             </a>
 
@@ -57,8 +57,8 @@
               <details class="sb-more">
                 <summary class="sb-dots" aria-label="メニュー">•••</summary>
                 <div class="sb-pop" role="menu" aria-label="メニュー">
-                  <button type="button" class="sb-act" role="menuitem">名前を変更する</button>
-                  <button type="button" class="sb-act danger" role="menuitem">削除する</button>
+                  <button type="button" class="sb-act" role="menuitem" data-i18n="menuRename">名前を変更する</button>
+                  <button type="button" class="sb-act danger" role="menuitem" data-i18n="menuDelete">削除する</button>
                 </div>
               </details>
             </div>
@@ -68,17 +68,17 @@
               <details class="sb-more">
                 <summary class="sb-dots" aria-label="メニュー">•••</summary>
                 <div class="sb-pop" role="menu" aria-label="メニュー">
-                  <button type="button" class="sb-act" role="menuitem">名前を変更する</button>
-                  <button type="button" class="sb-act danger" role="menuitem">削除する</button>
+                  <button type="button" class="sb-act" role="menuitem" data-i18n="menuRename">名前を変更する</button>
+                  <button type="button" class="sb-act danger" role="menuitem" data-i18n="menuDelete">削除する</button>
                 </div>
               </details>
             </div>
           </div>
         </details>
 
-        <details class="sb-group">
+        <details class="sb-group" data-group="chats">
           <summary aria-label="チャット">
-            <span>チャット</span>
+            <span data-i18n="chats">チャット</span>
             <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <path d="M6 9l6 6 6-6"></path>
             </svg>
@@ -89,19 +89,8 @@
               <details class="sb-more">
                 <summary class="sb-dots" aria-label="メニュー">•••</summary>
                 <div class="sb-pop" role="menu" aria-label="メニュー">
-                  <button type="button" class="sb-act" role="menuitem">名前を変更する</button>
-                  <button type="button" class="sb-act danger" role="menuitem">削除する</button>
-                </div>
-              </details>
-            </div>
-
-            <div class="sb-row" role="listitem">
-              <a class="sb-link" href="#" aria-label="GPT解析速度遅延の原因">GPT解析速度遅延の原因</a>
-              <details class="sb-more">
-                <summary class="sb-dots" aria-label="メニュー">•••</summary>
-                <div class="sb-pop" role="menu" aria-label="メニュー">
-                  <button type="button" class="sb-act" role="menuitem">名前を変更する</button>
-                  <button type="button" class="sb-act danger" role="menuitem">削除する</button>
+                  <button type="button" class="sb-act" role="menuitem" data-i18n="menuRename">名前を変更する</button>
+                  <button type="button" class="sb-act danger" role="menuitem" data-i18n="menuDelete">削除する</button>
                 </div>
               </details>
             </div>
@@ -115,15 +104,15 @@
             <summary class="user-card" aria-label="ユーザーメニュー">
               <div class="avatar">CS</div>
               <div class="user-meta">
-                <div class="name">Cocoro Sugiura</div>
+                <div class="name">user name</div>
                 <div class="plan">Pro</div>
               </div>
             </summary>
 
             <div class="user-pop" role="menu" aria-label="ユーザーメニュー内容">
               <div class="uhead">
-                <div class="n">Cocoro Sugiura</div>
-                <div class="m">hiroyuki.sugiura@invitation.co</div>
+                <div class="n">user name</div>
+                <div class="m">usermail@dmain.com</div>
               </div>
 
               <a id="btnOpenSettings" data-action="open-settings" href="#" role="menuitem" aria-label="設定">
@@ -131,7 +120,7 @@
                   <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"></path>
                   <path d="M19.4 15a7.9 7.9 0 0 0 .1-1 7.9 7.9 0 0 0-.1-1l2-1.5-2-3.4-2.4 1a8.4 8.4 0 0 0-1.7-1l-.3-2.6H9l-.3 2.6a8.4 8.4 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.5a7.9 7.9 0 0 0-.1 1 7.9 7.9 0 0 0 .1 1l-2 1.5 2 3.4 2.4-1a8.4 8.4 0 0 0 1.7 1l.3 2.6h6l.3-2.6a8.4 8.4 0 0 0 1.7-1l2.4 1 2-3.4-2-1.5z"></path>
                 </svg>
-                設定
+                <span data-i18n="settings">設定</span>
               </a>
 
               <a id="btnLogout" data-action="logout" href="#" role="menuitem" aria-label="ログアウト">
@@ -140,7 +129,7 @@
                   <path d="M15 12H3"></path>
                   <path d="M21 21V3"></path>
                 </svg>
-                ログアウト
+                <span data-i18n="logout">ログアウト</span>
               </a>
             </div>
           </details>
@@ -154,7 +143,7 @@
       <div class="topbar">
         <div style="flex:1"></div>
 
-        <button class="icon-btn icon-white" type="button" aria-label="シェア">
+<button class="icon-btn icon-white" type="button" aria-label="シェア" data-i18n-aria="share">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 16V4"></path>
             <path d="M8 8l4-4 4 4"></path>
@@ -183,7 +172,7 @@
         <!-- VIEW: IMAGES -->
         <section class="view view-images" id="viewImages" data-view="images" aria-label="保存画像" hidden>
           <div class="images-head">
-            <div class="images-title">保存画像</div>
+            <div class="images-title" data-i18n="images">保存画像</div>
           </div>
 
           <div class="images-grid" id="imagesGrid" aria-label="保存画像グリッド">
@@ -198,81 +187,80 @@
           <div class="left">
             <div class="plus-menu">
               <details>
-                <summary class="mini" aria-label="オプション">
+                <summary class="mini" aria-label="オプション" data-i18n-aria="options">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M12 5v14"></path><path d="M5 12h14"></path>
                   </svg>
                 </summary>
                 <div class="plus-pop" role="menu" aria-label="オプション一覧">
-                  <a href="#" role="menuitem" aria-label="写真とファイルを追加">
+                  <a href="#" role="menuitem" aria-label="写真とファイルを追加" data-i18n-aria="addPhotoFile" data-action="add-file">
                     <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M14 3h7v7"></path><path d="M10 14L21 3"></path><rect x="3" y="7" width="14" height="14" rx="2"></rect>
                     </svg>
-                    写真とファイルを追加
+                    <span data-i18n="addPhotoFile">写真とファイルを追加</span>
                   </a>
-                  <a href="#" role="menuitem" aria-label="画像を作成する">
+                  <a href="#" role="menuitem" aria-label="画像を作成する" data-i18n-aria="createImage" data-action="create-image">
                     <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M12 2l3 7 7 3-7 3-3 7-3-7-7-3 7-3 3-7z"></path>
                     </svg>
-                    画像を作成する
+                    <span data-i18n="createImage">画像を作成する</span>
                   </a>
                 </div>
               </details>
             </div>
           </div>
 
-          <textarea class="in" aria-label="入力" rows="1"></textarea>
+          <textarea class="in" aria-label="入力" rows="1" data-i18n-aria="input"></textarea>
 
           <div class="right">
-            <button class="mini icon-white" type="button" aria-label="マイク（音声入力）" title="マイク（音声入力）" data-action="mic">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 1a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V4a3 3 0 0 1 3-3z"></path>
+            <button class="mini icon-white" type="button" aria-label="マイク（音声入力）" data-i18n-aria="mic" title="" data-action="mic">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 14a3 3 0 0 0 3-3V7a3 3 0 0 0-6 0v4a3 3 0 0 0 3 3z"></path>
                 <path d="M19 11a7 7 0 0 1-14 0"></path>
-                <path d="M12 18v4"></path>
+                <path d="M12 18v3"></path>
+                <path d="M8 21h8"></path>
               </svg>
             </button>
 
-            <button class="mini icon-white" type="button" aria-label="音声モードを使用する" title="音声モードを使用する" data-action="voice">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M4 12h2"></path>
-                <path d="M8 8v8"></path>
-                <path d="M12 6v12"></path>
-                <path d="M16 8v8"></path>
-                <path d="M20 12h2"></path>
+            <button class="mini icon-white" type="button" aria-label="音声モードを使用する" data-i18n-aria="voice" title="" data-action="voice">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 3v18"></path>
+                <path d="M19 8v8"></path>
+                <path d="M5 8v8"></path>
+                <path d="M16 6v12"></path>
+                <path d="M8 6v12"></path>
               </svg>
             </button>
 
-            <!-- GPT-like send (show only when text exists) -->
-            <button class="mini icon-white" type="button" aria-label="送信" title="送信" data-action="send" style="display:none">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 5l0 14"></path>
-                <path d="M6 11l6-6 6 6"></path>
+            <button class="mini icon-white" type="button" aria-label="送信" data-i18n-aria="send" title="" data-action="send" style="display:none">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M22 2L11 13"></path>
+                <path d="M22 2l-7 20-4-9-9-4 20-7z"></path>
               </svg>
             </button>
 
-            <button class="mini icon-white" type="button" aria-label="停止" title="停止" data-action="stop" style="display:none">
-              <svg viewBox="0 0 24 24" fill="currentColor">
+            <button class="mini icon-white" type="button" aria-label="停止" data-i18n-aria="stop" title="" data-action="stop" style="display:none">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <rect x="7" y="7" width="10" height="10" rx="2"></rect>
               </svg>
             </button>
           </div>
         </div>
 
-        <div class="ask-note" aria-label="注意書き">
+        <div class="ask-note" aria-label="注意書き" data-i18n="askNote">
           AUREA の回答は"複数のAI検索情報"を集約/解析/判断/要約をしていますが、必ずしも正確とは限りませんので、重要な情報は更に確認をしてください。
         </div>
       </div>
-
     </main>
   </div>
 
   <!-- CREATE PROJECT MODAL (UI only) -->
   <div class="project-modal" aria-hidden="true">
-    <div class="project-card" role="dialog" aria-label="プロジェクトを作成する">
+    <div class="project-card" role="dialog" aria-label="プロジェクトを作成する" data-i18n-aria="createProject">
       <div class="phd">
-        <div class="pttl">プロジェクトを作成する</div>
+        <div class="pttl" data-i18n="createProject">プロジェクトを作成する</div>
         <div class="pactions">
-          <button class="picon" type="button" aria-label="設定">
+          <button class="picon" type="button" aria-label="設定" data-i18n-aria="settings">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"></path>
               <path d="M19.4 15a7.9 7.9 0 0 0 .1-1 7.9 7.9 0 0 0-.1-1l2-1.5-2-3.4-2.4 1a8.4 8.4 0 0 0-1.7-1l-.3-2.6H9l-.3 2.6a8.4 8.4 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.5a7.9 7.9 0 0 0-.1 1 7.9 7.9 0 0 0 .1 1l-2 1.5 2 3.4 2.4-1a8.4 8.4 0 0 0 1.7 1l.3 2.6h6l.3-2.6a8.4 8.4 0 0 0 1.7-1l2.4 1 2-3.4-2-1.5z"></path>
@@ -287,15 +275,16 @@
       </div>
 
       <div class="pbd">
-        <input class="pname" type="text" placeholder="プロジェクト名" aria-label="プロジェクト名" />
-        <button class="pcreate" type="button" disabled>プロジェクトを作成する</button>
+        <input class="pname" type="text" placeholder="プロジェクト名" aria-label="プロジェクト名"
+               data-i18n-aria="projectName" data-i18n-placeholder="projectName" />
+        <button class="pcreate" type="button" disabled data-i18n="createProject">
+          プロジェクトを作成する
+        </button>
       </div>
     </div>
   </div>
 
   <!-- SETTINGS MODAL (embedded) -->
-  <div id="settingsOverlay" class="settings-overlay" hidden></div>
-
   <div id="settingsModal" class="settings-modal" hidden role="dialog" aria-modal="true" aria-label="設定">
 
     <!-- settings.html の body 中身だけ（doctype/html/head/style/script は削除済み） -->
@@ -305,40 +294,40 @@
     <input class="tab-input" type="radio" name="tab" id="tab-trainer">
     <input class="tab-input" type="radio" name="tab" id="tab-account">
 
-    <div class="overlay" aria-hidden="false">
+    <div class="overlay">
       <div class="modal" role="dialog" aria-label="設定">
-      <button class="close" type="button" aria-label="閉じる">×</button>
+      <button id="settingsClose" class="close" type="button" aria-label="閉じる">×</button>
 
         <!-- Left nav -->
         <aside class="nav" aria-label="設定ナビ">
           <div class="nav-hd">
-            <div class="nav-title">設定</div>
+            <div class="nav-title" data-i18n="settings">設定</div>
           </div>
 
           <div class="nav-list" role="list">
             <label class="nav-item" for="tab-general" role="listitem">
               <span class="nav-ic"><i class="fa-solid fa-sliders"></i></span>
-              <span class="nav-txt">一般</span>
+              <span class="nav-txt" data-i18n="general">一般</span>
             </label>
 
             <label class="nav-item" for="tab-apps" role="listitem">
               <span class="nav-ic"><i class="fa-solid fa-plug-circle-bolt"></i></span>
-              <span class="nav-txt">アプリ</span>
+              <span class="nav-txt" data-i18n="apps">アプリ</span>
             </label>
 
             <label class="nav-item" for="tab-data" role="listitem">
               <span class="nav-ic"><i class="fa-solid fa-database"></i></span>
-              <span class="nav-txt">データ</span>
+              <span class="nav-txt" data-i18n="data">データ</span>
             </label>
 
             <label class="nav-item" for="tab-trainer" role="listitem">
               <span class="nav-ic"><i class="fa-solid fa-layer-group"></i></span>
-              <span class="nav-txt">AUREA Data Trainer</span>
+              <span class="nav-txt" data-i18n="trainer">AUREA Data Trainer</span>
             </label>
 
             <label class="nav-item" for="tab-account" role="listitem">
               <span class="nav-ic"><i class="fa-regular fa-circle-user"></i></span>
-              <span class="nav-txt">アカウント・セキュリティ</span>
+              <span class="nav-txt" data-i18n="accountSecurity">アカウント・セキュリティ</span>
             </label>
           </div>
         </aside>
@@ -350,8 +339,8 @@
           <div class="panel panel-general">
             <header class="content-hd">
               <div style="min-width:0">
-                <div class="content-title">一般</div>
-                <div class="sec-desc">
+                <div class="content-title" data-i18n="general">一般</div>
+                <div class="sec-desc" data-i18n="generalDesc">
                   端末の基本的な設定
                 </div>
               </div>
@@ -361,62 +350,42 @@
               <div class="section" aria-label="一般設定">
                 <div class="row">
                   <div class="l">
-                    <div class="k">テーマ</div>
+                    <div class="k" data-i18n="theme">テーマ</div>
                   </div>
-                  <select class="select" aria-label="テーマ">
-                    <option>システム</option>
-                    <option>ライト</option>
-                    <option selected>ダーク</option>
+                  <select class="select" id="settingsTheme" aria-label="テーマ" data-i18n-aria="theme">
+                    <option value="system" data-i18n="themeSystem">システム</option>
+                    <option value="light" data-i18n="themeLight">ライト</option>
+                    <option value="dark" data-i18n="themeDark" selected>ダーク</option>
                   </select>
                 </div>
 
                 <div class="row">
                   <div class="l">
-                    <div class="k">言語</div>
+                    <div class="k" data-i18n="language">言語</div>
                   </div>
-                  <select class="select" aria-label="言語">
-                    <option selected>日本語</option>
-                    <option>English (US)</option>
-                    <option>English (UK)</option>
-                    <option>Español (ES)</option>
-                    <option>Español (LATAM)</option>
-                    <option>Français</option>
-                    <option>Deutsch</option>
-                    <option>Italiano</option>
-                    <option>Português (BR)</option>
-                    <option>Português (PT)</option>
-                    <option>Nederlands</option>
-                    <option>Svenska</option>
-                    <option>Norsk</option>
-                    <option>Dansk</option>
-                    <option>Suomi</option>
-                    <option>Polski</option>
-                    <option>Čeština</option>
-                    <option>Magyar</option>
-                    <option>Română</option>
-                    <option>Türkçe</option>
-                    <option>Українська</option>
-                    <option>Русский</option>
-                    <option>العربية</option>
-                    <option>עברית</option>
-                    <option>हिन्दी</option>
-                    <option>ภาษาไทย</option>
-                    <option>Tiếng Việt</option>
-                    <option>Bahasa Indonesia</option>
-                    <option>Filipino</option>
-                    <option>한국어</option>
-                    <option>中文（简体）</option>
-                    <option>中文（繁體）</option>
+                  <select class="select" id="settingsLang" aria-label="言語" data-i18n-aria="language">
+                    <option value="ja" data-i18n="langJa" selected>日本語</option>
+                    <option value="en" data-i18n="langEn">English (US)</option>
                   </select>
                 </div>
 
                 <div class="row">
                   <div class="l">
-                    <div class="k">AUREAへの送信方法</div>
+                    <div class="k" data-i18n="sendMode">AUREAへの送信方法</div>
                   </div>
-                  <select class="select" aria-label="AUREAへの送信方法">
-                    <option selected>⌘ + Enterで送信（Enterは改行）</option>
-                    <option>Enterで送信（Shift + Enterで改行）</option>
+                  <select class="select" id="settingsSendMode" aria-label="AUREAへの送信方法" data-i18n-aria="sendMode">
+                    <option value="cmdEnter" data-i18n="sendCmdEnter" selected>⌘ + Enterで送信（Enterは改行）</option>
+                    <option value="enter" data-i18n="sendEnter">Enterで送信（Shift + Enterで改行）</option>
+                  </select>
+                </div>
+
+                <div class="row" style="display:none">
+                  <div class="l">
+                    <div class="k" data-i18n="dataStorage">データ保存</div>
+                  </div>
+                  <select class="select" id="settingsDataStorage" aria-label="データ保存" data-i18n-aria="dataStorage">
+                    <option value="cloud" selected>クラウド</option>
+                    <option value="local">端末内</option>
                   </select>
                 </div>
               </div>
@@ -427,124 +396,25 @@
           <div class="panel panel-apps">
             <header class="content-hd">
               <div style="min-width:0">
-                <div class="content-title">アプリ</div>
-                <div class="sec-desc">
+                <div class="content-title" data-i18n="apps">アプリ</div>
+                <div class="sec-desc" data-i18n="appsDesc">
                   各種SaaSと連携、任意でAPI接続が設定可能
                 </div>
               </div>
             </header>
 
             <div class="content-bd">
-              <div class="section" aria-label="">
+              <div class="section">
                 <div class="apps-header">
                   <div style="min-width:0"></div>
                   <button class="btn" type="button">
                     <i class="fa-solid fa-plus"></i>
-                    + SaaS 追加
+                    <span data-i18n="addSaas">SaaS 追加</span>
                   </button>
                 </div>
 
-                <div class="apps-grid" aria-label="SaaS一覧">
-                  <div class="saas">
-                    <div class="saas-top">
-                      <div class="brand b-google" aria-hidden="true"><i class="fa-brands fa-google"></i></div>
-                    </div>
-                    <div>
-                      <div class="saas-name">Google</div>
-                      <button class="status-btn off" type="button">未接続</button>
-                    </div>
-                  </div>
-
-                  <div class="saas">
-                    <div class="saas-top">
-                      <div class="brand b-gmail" aria-hidden="true"><i class="fa-solid fa-envelope"></i></div>
-                    </div>
-                    <div>
-                      <div class="saas-name">Gmail</div>
-                      <button class="status-btn off" type="button">未接続</button>
-                    </div>
-                  </div>
-
-                  <div class="saas">
-                    <div class="saas-top">
-                      <div class="brand b-drive" aria-hidden="true"><i class="fa-brands fa-google-drive"></i></div>
-                    </div>
-                    <div>
-                      <div class="saas-name">Google Drive</div>
-                      <button class="status-btn on" type="button">接続</button>
-                    </div>
-                  </div>
-
-                  <div class="saas">
-                    <div class="saas-top">
-                      <div class="brand b-github" aria-hidden="true"><i class="fa-brands fa-github"></i></div>
-                    </div>
-                    <div>
-                      <div class="saas-name">GitHub</div>
-                      <button class="status-btn off" type="button">未接続</button>
-                    </div>
-                  </div>
-
-                  <div class="saas">
-                    <div class="saas-top">
-                      <div class="brand b-notion" aria-hidden="true"><i class="fa-brands fa-notion"></i></div>
-                    </div>
-                    <div>
-                      <div class="saas-name">Notion</div>
-                      <button class="status-btn off" type="button">未接続</button>
-                    </div>
-                  </div>
-
-                  <div class="saas">
-                    <div class="saas-top">
-                      <div class="brand b-slack" aria-hidden="true"><i class="fa-brands fa-slack"></i></div>
-                    </div>
-                    <div>
-                      <div class="saas-name">Slack</div>
-                      <button class="status-btn off" type="button">未接続</button>
-                    </div>
-                  </div>
-
-                  <div class="saas">
-                    <div class="saas-top">
-                      <div class="brand b-dropbox" aria-hidden="true"><i class="fa-brands fa-dropbox"></i></div>
-                    </div>
-                    <div>
-                      <div class="saas-name">Dropbox</div>
-                      <button class="status-btn off" type="button">未接続</button>
-                    </div>
-                  </div>
-
-                  <div class="saas">
-                    <div class="saas-top">
-                      <div class="brand b-jira" aria-hidden="true"><i class="fa-brands fa-jira"></i></div>
-                    </div>
-                    <div>
-                      <div class="saas-name">Jira</div>
-                      <button class="status-btn off" type="button">未接続</button>
-                    </div>
-                  </div>
-
-                  <div class="saas">
-                    <div class="saas-top">
-                      <div class="brand b-salesforce" aria-hidden="true"><i class="fa-brands fa-salesforce"></i></div>
-                    </div>
-                    <div>
-                      <div class="saas-name">Salesforce</div>
-                      <button class="status-btn off" type="button">未接続</button>
-                    </div>
-                  </div>
-
-                  <div class="saas">
-                    <div class="saas-top">
-                      <div class="brand b-zoom" aria-hidden="true"><i class="fa-brands fa-zoom"></i></div>
-                    </div>
-                    <div>
-                      <div class="saas-name">Zoom</div>
-                      <button class="status-btn off" type="button">未接続</button>
-                    </div>
-                  </div>
-                </div>
+                <!-- ★ SaaS 一覧描画先（必須） -->
+                <div class="apps-grid"></div>
               </div>
             </div>
           </div>
@@ -553,62 +423,31 @@
           <div class="panel panel-data">
             <header class="content-hd">
               <div style="min-width:0">
-                <div class="content-title">データ</div>
-                <div class="sec-desc">
+                <div class="content-title" data-i18n="data">データ</div>
+                <div class="sec-desc" data-i18n="dataDesc">
                   データ管理や保存先について
                 </div>
               </div>
             </header>
 
             <div class="content-bd">
-              <div class="section" aria-label="保存設定">
+              <div class="section">
                 <div class="row">
                   <div class="l">
-                    <div class="k">会話とデータの保存先</div>
-                    <div class="v">現在：クラウド</div>
+                    <div class="k" data-i18n="dataStorage">会話とデータの保存先</div>
+                    <div class="v" data-i18n="dataNowCloud">現在：クラウド</div>
                   </div>
-                  <select class="select" aria-label="会話とデータの保存先">
-                    <option selected>クラウド</option>
-                    <option>端末内</option>
-                  </select>
                 </div>
               </div>
 
-              <div class="section" aria-label="削除">
-                <div class="row" style="border-top:0;padding-top:0">
+              <div class="section">
+                <div class="row">
                   <div class="l">
-                    <div class="k">すべてのチャットを削除する</div>
+                    <div class="k" data-i18n="deleteAllChats">すべてのチャットを削除する</div>
                   </div>
                   <button class="btn danger" type="button">
                     <i class="fa-solid fa-trash"></i>
-                    削除
-                  </button>
-                </div>
-              </div>
-
-              <div class="section" aria-label="ナレッジベース">
-                <div class="sec-title">ナレッジベース</div>
-                <div class="sec-desc">
-                  Google Drive など、ユーザー・企業のストレージの保存先設定
-                  を参照します<br>AUREA によるファイル保存は一切せず、読み取りと検索のみを行っています
-                </div>
-
-                <div class="row" style="margin-top:10px;border-top:0;padding-top:0">
-                  <div class="l">
-                    <div class="k">クラウドストレージ</div>
-                    <div class="v">未接続</div>
-                  </div>
-                </div>
-
-                <div class="row" style="border-top:0;padding-top:0">
-                  <button class="btn secondary" type="button">
-                    クラウドストレージと接続する（ Google Drive ）
-                  </button>
-                </div>
-
-                <div class="row" style="border-top:0;padding-top:0">
-                  <button class="btn secondary" type="button">
-                    ドキュメントを一時アップロード（ AUREAには保存されません ）
+                    <span data-i18n="delete">削除</span>
                   </button>
                 </div>
               </div>
@@ -619,8 +458,8 @@
           <div class="panel panel-trainer">
             <header class="content-hd">
               <div style="min-width:0">
-                <div class="content-title">AUREA Data Trainer , for Enterprise</div>
-                <div class="sec-desc">
+                <div class="content-title" data-i18n="trainer">AUREA Data Trainer</div>
+                <div class="sec-desc" data-i18n="trainerDesc">
                   独自に社内AIを育てて業務効率化へ
                 </div>
               </div>
@@ -628,29 +467,9 @@
 
             <div class="content-bd">
               <div class="section">
-                <div class="sec-title">AUREAを育てる（AET）</div>
-                <div class="sec-desc">
+                <div class="sec-title" data-i18n="trainerSection">AUREAを育てる（AET）</div>
+                <div class="sec-desc" data-i18n="trainerSectionDesc">
                   「こんな質問にはこれ」といったケースを登録し、社内AIの回答精度を育てます
-                </div>
-
-                <div class="row" style="margin-top:14px">
-                  <div class="l">
-                    <div class="k">対象プラン</div>
-                    <div class="v">Enterprise 専用機能</div>
-                  </div>
-                </div>
-
-                <div class="row">
-                  <div class="l">
-                    <div class="k">ステータス</div>
-                    <div class="v">Coming Soon</div>
-                  </div>
-                </div>
-
-                <div class="row" style="margin-top:10px">
-                  <button class="btn secondary" type="button" disabled>
-                    ケースを追加
-                  </button>
                 </div>
               </div>
             </div>
@@ -660,8 +479,8 @@
           <div class="panel panel-account">
             <header class="content-hd">
               <div style="min-width:0">
-                <div class="content-title">アカウント・セキュリティ</div>
-                <div class="sec-desc">
+                <div class="content-title" data-i18n="accountSecurity">アカウント・セキュリティ</div>
+                <div class="sec-desc" data-i18n="accountDesc">
                   利用ユーザー情報とセキュリティ詳細
                 </div>
               </div>
@@ -671,29 +490,29 @@
               <div class="section" aria-label="">
                 <div class="row">
                   <div class="l">
-                    <div class="k">表示名</div>
+                    <div class="k" data-i18n="displayName">表示名</div>
                   </div>
-                  <input id="displayName" class="input" type="text" value="Cocoro Sugiura" />
+                  <input id="displayName" class="input" type="text" value="user name" />
                 </div>
 
                 <div class="row">
                   <div class="l">
-                    <div class="k">ユーザー名</div>
-                    <div class="v">@handle（任意）</div>
+                    <div class="k" data-i18n="userName">ユーザー名</div>
+                    <div class="v" data-i18n="userHandleOptional">@handle（任意）</div>
                   </div>
-                  <input id="userName" class="input" type="text" value="@cocoro" />
+                  <input id="userName" class="input" type="text" value="@username" />
                 </div>
               </div>
 
               <div class="section" aria-label="プラン">
                 <div class="row">
                   <div class="l">
-                    <div class="k">現在のプラン</div>
+                    <div class="k" data-i18n="currentPlan">現在のプラン</div>
                     <div class="v">Pro</div>
                   </div>
                   <button class="btn" type="button" id="btnBilling">
                     <i class="fa-regular fa-credit-card"></i>
-                    請求情報
+                    <span data-i18n="billing">請求情報</span>
                   </button>
                 </div>
               </div>
@@ -701,12 +520,12 @@
               <div class="section" aria-label="サインイン">
                 <div class="row" style="border-top:0;padding-top:0">
                   <div class="l">
-                    <div class="k">登録メールアドレス</div>
+                    <div class="k" data-i18n="emailAddress">登録メールアドレス</div>
                     <div class="v">hiroyuki.sugiura@invitation.co</div>
                   </div>
                   <button class="btn secondary" type="button" id="btnChangeEmail">
                     <i class="fa-solid fa-pen"></i>
-                    変更
+                    <span data-i18n="change">変更</span>
                   </button>
                 </div>
               </div>
@@ -714,23 +533,23 @@
               <div class="section" aria-label="信頼できるデバイス">
                 <div class="row" style="border-top:0;padding-top:0">
                   <div class="l">
-                    <div class="k">信頼できるデバイス</div>
+                    <div class="k" data-i18n="trustedDevices">信頼できるデバイス</div>
                     <div class="v">MacBook Pro ・ Japan ・ Chrome</div>
                   </div>
                   <button class="btn danger" type="button" id="btnRevokeDevice">
                     <i class="fa-solid fa-link-slash"></i>
-                    この端末を解除
+                    <span data-i18n="revokeDevice">この端末を解除</span>
                   </button>
                 </div>
               </div>
 
               <div class="section" aria-label="規約・規定">
                 <div class="reg-wrap" aria-label="規約・規定タブ">
-                  <div class="reg-head">規約・規定</div>
+                  <div class="reg-head" data-i18n="regulations">規約・規定</div>
                   <div class="reg-tabs" role="tablist" aria-label="規約・規定">
-                    <button class="reg-tab" type="button" role="tab" aria-selected="true">特定商取引法</button>
-                    <button class="reg-tab" type="button" role="tab" aria-selected="false">利用規約</button>
-                    <button class="reg-tab" type="button" role="tab" aria-selected="false">プライバシー</button>
+                    <button class="reg-tab" type="button" role="tab" aria-selected="true" data-i18n="tokusho">特定商取引法</button>
+                    <button class="reg-tab" type="button" role="tab" aria-selected="false" data-i18n="terms">利用規約</button>
+                    <button class="reg-tab" type="button" role="tab" aria-selected="false" data-i18n="privacy">プライバシー</button>
                   </div>
                   <div class="reg-body" aria-label="規約・規定本文">
                     <div class="reg-panel" data-reg-panel="tokusho">
@@ -751,14 +570,13 @@
               <div class="section" aria-label="AI Stack">
                 <div class="row" style="border-top:0;padding-top:0">
                   <div class="l">
-                    <div class="k">AI Stack</div>
-                    <div class="v">展開中のAI / 最新Ver, / 稼働条件</div>
+                    <div class="k" data-i18n="aiStack">AI Stack</div>
+                    <div class="v" data-i18n="aiStackDesc">展開中のAI / 最新Ver, / 稼働条件</div>
                   </div>
                   <button class="btn secondary" type="button" id="btnOpenAiStackPopup">
-                    一覧表
+                    <span data-i18n="listTable">一覧表</span>
                   </button>
                 </div>
-              </div>
 
                 <div class="overlay" id="aiStackOverlay" style="display:none">
                   <div class="modal" style="width:min(610px, calc(100% - 24px));height:auto">
@@ -768,7 +586,7 @@
 
                     <div class="content" style="height:auto">
                       <header class="content-hd">
-                        <div class="content-title">AI Stack</div>
+                        <div class="content-title" data-i18n="aiStack">AI Stack</div>
                       </header>
 
                       <div class="content-bd">
@@ -776,8 +594,8 @@
                           <div class="table__head">
                             <div class="table__row table__row--head">
                               <div class="table__cell">AI</div>
-                              <div class="table__cell">Ver,</div>
-                              <div class="table__cell">稼働条件</div>
+                              <div class="table__cell" data-i18n="ver">Ver,</div>
+                              <div class="table__cell" data-i18n="condition">稼働条件</div>
                             </div>
                           </div>
                           <div class="table__body" id="aiStackPopupBody"></div>
@@ -786,12 +604,16 @@
                     </div>
                   </div>
                 </div>
-             </div>
+              </div>
+            </div>
+          </div>
+
         </section>
       </div>
     </div>
   </div>
 
-  <script src="/assets/js/layout.js" defer></script>
+<script src="/assets/js/i18n.js" defer></script>
+<script src="/assets/js/layout.js" defer></script>
 </body>
 </html>
