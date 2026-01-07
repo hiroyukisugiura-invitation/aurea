@@ -1,89 +1,349 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Welcome to Firebase Hosting</title>
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AUREA</title>
+  <link rel="stylesheet" href="/assets/css/base.css">
+  <link rel="stylesheet" href="/assets/css/layout.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
 
-    <!-- update the version number as needed -->
-    <script defer src="/__/firebase/12.7.0/firebase-app-compat.js"></script>
-    <!-- include only the Firebase features as you need -->
-    <script defer src="/__/firebase/12.7.0/firebase-auth-compat.js"></script>
-    <script defer src="/__/firebase/12.7.0/firebase-database-compat.js"></script>
-    <script defer src="/__/firebase/12.7.0/firebase-firestore-compat.js"></script>
-    <script defer src="/__/firebase/12.7.0/firebase-functions-compat.js"></script>
-    <script defer src="/__/firebase/12.7.0/firebase-messaging-compat.js"></script>
-    <script defer src="/__/firebase/12.7.0/firebase-storage-compat.js"></script>
-    <script defer src="/__/firebase/12.7.0/firebase-analytics-compat.js"></script>
-    <script defer src="/__/firebase/12.7.0/firebase-remote-config-compat.js"></script>
-    <script defer src="/__/firebase/12.7.0/firebase-performance-compat.js"></script>
-    <!-- 
-      initialize the SDK after all desired features are loaded, set useEmulator to false
-      to avoid connecting the SDK to running emulators.
-    -->
-    <script defer src="/__/firebase/init.js?useEmulator=true"></script>
+<body class="">
+  <div class="app">
 
-    <style media="screen">
-      body { background: #ECEFF1; color: rgba(0,0,0,0.87); font-family: Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
-      #message { background: white; max-width: 360px; margin: 100px auto 16px; padding: 32px 24px; border-radius: 3px; }
-      #message h2 { color: #ffa100; font-weight: bold; font-size: 16px; margin: 0 0 8px; }
-      #message h1 { font-size: 22px; font-weight: 300; color: rgba(0,0,0,0.6); margin: 0 0 16px;}
-      #message p { line-height: 140%; margin: 16px 0 24px; font-size: 14px; }
-      #message a { display: block; text-align: center; background: #039be5; text-transform: uppercase; text-decoration: none; color: white; padding: 16px; border-radius: 4px; }
-      #message, #message a { box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24); }
-      #load { color: rgba(0,0,0,0.4); text-align: center; font-size: 13px; }
-      @media (max-width: 600px) {
-        body, #message { margin-top: 0; background: white; box-shadow: none; }
-        body { border-top: 16px solid #ffa100; }
-      }
-    </style>
-  </head>
-  <body>
-    <div id="message">
-      <h2>Welcome</h2>
-      <h1>Firebase Hosting Setup Complete</h1>
-      <p>You're seeing this because you've successfully setup Firebase Hosting. Now it's time to go build something extraordinary!</p>
-      <a target="_blank" href="https://firebase.google.com/docs/hosting/">Open Hosting Documentation</a>
+    <!-- SIDEBAR -->
+    <aside class="sidebar" aria-label="左カラム">
+<div class="sb-top">
+        <a class="sb-item" href="#" aria-label="新しいチャット" data-nav="newChat" data-i18n-aria="newChat">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5v14"></path>
+            <path d="M5 12h14"></path>
+          </svg>
+<span class="label" data-i18n="newChat">新しいチャット</span>
+        </a>
+
+        <a class="sb-item" href="#images" aria-label="ライブラリ" data-nav="images" data-i18n-aria="library">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="5" width="16" height="14" rx="2"></rect>
+            <path d="M8 13l2-2 3 3 2-2 3 3"></path>
+            <path d="M9 9h.01"></path>
+          </svg>
+<span class="label" data-i18n="library">ライブラリ</span>
+        </a>
+
+        <div class="sb-sep"></div>
+
+        <details class="sb-group" data-group="projects">
+          <summary aria-label="プロジェクト">
+            <span data-i18n="projects">プロジェクト</span>
+            <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 9l6 6 6-6"></path>
+            </svg>
+          </summary>
+          <div class="group-body" role="list">
+            <a class="sb-chat sb-create-project" href="#" role="listitem" aria-label="PJ 新規作成">
+              <div class="t" style="display:flex;align-items:center;gap:10px">
+                <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;opacity:.9;flex:0 0 auto">
+                  <path d="M12 5v14"></path>
+                  <path d="M5 12h14"></path>
+                </svg>
+                <span data-i18n="createProject">PJ 新規作成</span>
+              </div>
+            </a>
+
+            <div class="sb-row" role="listitem">
+              <a class="sb-link" href="#" aria-label="AI Earth">AI Earth</a>
+              <details class="sb-more">
+                <summary class="sb-dots" aria-label="メニュー">•••</summary>
+                <div class="sb-pop" role="menu" aria-label="メニュー">
+                  <button type="button" class="sb-act" role="menuitem" data-i18n="menuRename">名前を変更する</button>
+                  <button type="button" class="sb-act danger" role="menuitem" data-i18n="menuDelete">削除する</button>
+                </div>
+              </details>
+            </div>
+
+            <div class="sb-row" role="listitem">
+              <a class="sb-link" href="#" aria-label="Sound Factory">Sound Factory</a>
+              <details class="sb-more">
+                <summary class="sb-dots" aria-label="メニュー">•••</summary>
+                <div class="sb-pop" role="menu" aria-label="メニュー">
+                  <button type="button" class="sb-act" role="menuitem" data-i18n="menuRename">名前を変更する</button>
+                  <button type="button" class="sb-act danger" role="menuitem" data-i18n="menuDelete">削除する</button>
+                </div>
+              </details>
+            </div>
+          </div>
+        </details>
+
+        <details class="sb-group" data-group="chats">
+          <summary aria-label="チャット">
+            <span data-i18n="chats">チャット</span>
+            <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 9l6 6 6-6"></path>
+            </svg>
+          </summary>
+          <div class="group-body" role="list">
+            <div class="sb-row" role="listitem">
+              <a class="sb-link" href="#" aria-label="オーリアの由来">オーリアの由来</a>
+              <details class="sb-more">
+                <summary class="sb-dots" aria-label="メニュー">•••</summary>
+                <div class="sb-pop" role="menu" aria-label="メニュー">
+                  <button type="button" class="sb-act" role="menuitem" data-i18n="menuRename">名前を変更する</button>
+                  <button type="button" class="sb-act danger" role="menuitem" data-i18n="menuDelete">削除する</button>
+                </div>
+              </details>
+            </div>
+          </div>
+        </details>
+      </div>
+
+      <div class="sb-bottom">
+        <div class="user-menu">
+          <details>
+            <summary class="user-card" aria-label="ユーザーメニュー">
+              <div class="avatar">CS</div>
+              <div class="user-meta">
+                <div class="name">user name</div>
+                <div class="plan">Pro</div>
+              </div>
+            </summary>
+
+            <div class="user-pop" role="menu" aria-label="ユーザーメニュー内容">
+              <div class="uhead">
+                <div class="n">user name</div>
+                <div class="m">usermail@dmain.com</div>
+              </div>
+
+              <a id="btnOpenSettings" data-action="open-settings" href="#" role="menuitem" aria-label="設定">
+                <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"></path>
+                  <path d="M19.4 15a7.9 7.9 0 0 0 .1-1 7.9 7.9 0 0 0-.1-1l2-1.5-2-3.4-2.4 1a8.4 8.4 0 0 0-1.7-1l-.3-2.6H9l-.3 2.6a8.4 8.4 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.5a7.9 7.9 0 0 0-.1 1 7.9 7.9 0 0 0 .1 1l-2 1.5 2 3.4 2.4-1a8.4 8.4 0 0 0 1.7 1l.3 2.6h6l.3-2.6a8.4 8.4 0 0 0 1.7-1l2.4 1 2-3.4-2-1.5z"></path>
+                </svg>
+                <span data-i18n="settings">設定</span>
+              </a>
+
+              <a id="btnLogout" data-action="logout" href="#" role="menuitem" aria-label="ログアウト">
+                <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M10 17l5-5-5-5"></path>
+                  <path d="M15 12H3"></path>
+                  <path d="M21 21V3"></path>
+                </svg>
+                <span data-i18n="logout">ログアウト</span>
+              </a>
+            </div>
+          </details>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main" aria-label="メインボード">
+
+      <div class="topbar">
+        <div style="flex:1"></div>
+
+<button class="icon-btn icon-white" type="button" aria-label="シェア" data-i18n-aria="share">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 16V4"></path>
+            <path d="M8 8l4-4 4 4"></path>
+            <path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"></path>
+          </svg>
+        </button>
+      </div>
+
+      <div class="brand-rail" aria-hidden="true">
+        <div class="brand-stack">
+          <div class="brand-logo-wrap">
+            <img class="brand-logo" src="/assets/img/brand/aurea_logo_l_wh.png" alt="AUREA" />
+          </div>
+        </div>
+      </div>
+
+      <div class="board" aria-label="メインコンテンツ">
+
+        <!-- VIEW: CHAT -->
+        <section class="view view-chat" id="viewChat" data-view="chat" aria-label="会話エリア">
+          <div class="chat" aria-label="会話">
+            <!-- （UIのみ） -->
+          </div>
+        </section>
+
+        <!-- VIEW: IMAGES -->
+        <section class="view view-images" id="viewImages" data-view="images" aria-label="保存画像" hidden>
+          <div class="images-head">
+            <div class="images-title" data-i18n="images">保存画像</div>
+          </div>
+
+          <div class="images-grid" id="imagesGrid" aria-label="保存画像グリッド">
+            <!-- JSでカード描画 -->
+          </div>
+        </section>
+      </div>
+
+      <!-- ASK -->
+      <div class="ask-wrap" aria-label="Askバー領域">
+        <div class="ask" role="group" aria-label="Askバー">
+          <div class="left">
+            <div class="plus-menu">
+              <details>
+                <summary class="mini" aria-label="オプション" data-i18n-aria="options">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 5v14"></path><path d="M5 12h14"></path>
+                  </svg>
+                </summary>
+                <div class="plus-pop" role="menu" aria-label="オプション一覧">
+                  <a href="#" role="menuitem" aria-label="写真とファイルを追加" data-i18n-aria="addPhotoFile" data-action="add-file">
+                    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M14 3h7v7"></path><path d="M10 14L21 3"></path><rect x="3" y="7" width="14" height="14" rx="2"></rect>
+                    </svg>
+                    <span data-i18n="addPhotoFile">写真とファイルを追加</span>
+                  </a>
+                  <a href="#" role="menuitem" aria-label="画像を作成する" data-i18n-aria="createImage" data-action="create-image">
+                    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 2l3 7 7 3-7 3-3 7-3-7-7-3 7-3 3-7z"></path>
+                    </svg>
+                    <span data-i18n="createImage">画像を作成する</span>
+                  </a>
+                </div>
+              </details>
+            </div>
+          </div>
+
+          <textarea class="in" aria-label="入力" rows="1" data-i18n-aria="input"></textarea>
+
+          <div class="right">
+            <button class="mini icon-white" type="button" aria-label="マイク（音声入力）" data-i18n-aria="mic" title="" data-action="mic">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 14a3 3 0 0 0 3-3V7a3 3 0 0 0-6 0v4a3 3 0 0 0 3 3z"></path>
+                <path d="M19 11a7 7 0 0 1-14 0"></path>
+                <path d="M12 18v3"></path>
+                <path d="M8 21h8"></path>
+              </svg>
+            </button>
+
+            <button class="mini icon-white" type="button" aria-label="音声モードを使用する" data-i18n-aria="voice" title="" data-action="voice">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 3v18"></path>
+                <path d="M19 8v8"></path>
+                <path d="M5 8v8"></path>
+                <path d="M16 6v12"></path>
+                <path d="M8 6v12"></path>
+              </svg>
+            </button>
+
+            <button class="mini icon-white" type="button" aria-label="送信" data-i18n-aria="send" title="" data-action="send" style="display:none">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M22 2L11 13"></path>
+                <path d="M22 2l-7 20-4-9-9-4 20-7z"></path>
+              </svg>
+            </button>
+
+            <button class="mini icon-white" type="button" aria-label="停止" data-i18n-aria="stop" title="" data-action="stop" style="display:none">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="7" y="7" width="10" height="10" rx="2"></rect>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="ask-note" aria-label="注意書き" data-i18n="askNote">
+          AUREA の回答は"複数のAI検索情報"を集約/解析/判断/要約をしていますが、必ずしも正確とは限りませんので、重要な情報は更に確認をしてください。
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- CREATE PROJECT MODAL (UI only) -->
+  <div class="project-modal" aria-hidden="true">
+    <div class="project-card" role="dialog" aria-label="プロジェクトを作成する" data-i18n-aria="createProject">
+      <div class="phd">
+        <div class="pttl" data-i18n="createProject">プロジェクトを作成する</div>
+        <div class="pactions">
+          <button class="picon" type="button" aria-label="設定" data-i18n-aria="settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"></path>
+              <path d="M19.4 15a7.9 7.9 0 0 0 .1-1 7.9 7.9 0 0 0-.1-1l2-1.5-2-3.4-2.4 1a8.4 8.4 0 0 0-1.7-1l-.3-2.6H9l-.3 2.6a8.4 8.4 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.5a7.9 7.9 0 0 0-.1 1 7.9 7.9 0 0 0 .1 1l-2 1.5 2 3.4 2.4-1a8.4 8.4 0 0 0 1.7 1l.3 2.6h6l.3-2.6a8.4 8.4 0 0 0 1.7-1l2.4 1 2-3.4-2-1.5z"></path>
+            </svg>
+          </button>
+          <button class="picon" type="button" aria-label="閉じる">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 6L6 18"></path><path d="M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="pbd">
+        <input class="pname" type="text" placeholder="プロジェクト名" aria-label="プロジェクト名"
+               data-i18n-aria="projectName" data-i18n-placeholder="projectName" />
+        <button class="pcreate" type="button" disabled data-i18n="createProject">
+          プロジェクトを作成する
+        </button>
+      </div>
     </div>
-    <p id="load">Firebase SDK Loading&hellip;</p>
+  </div>
 
-    <script>
-      document.addEventListener('DOMContentLoaded', function() {
-        const loadEl = document.querySelector('#load');
-        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
-        // // The Firebase SDK is initialized and available here!
-        //
-        // firebase.auth().onAuthStateChanged(user => { });
-        // firebase.database().ref('/path/to/ref').on('value', snapshot => { });
-        // firebase.firestore().doc('/foo/bar').get().then(() => { });
-        // firebase.functions().httpsCallable('yourFunction')().then(() => { });
-        // firebase.messaging().requestPermission().then(() => { });
-        // firebase.storage().ref('/path/to/ref').getDownloadURL().then(() => { });
-        // firebase.analytics(); // call to activate
-        // firebase.analytics().logEvent('tutorial_completed');
-        // firebase.performance(); // call to activate
-        //
-        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
+  <!-- SETTINGS MODAL (embedded) -->
+  <div id="settingsModal" class="settings-modal" hidden role="dialog" aria-modal="true" aria-label="設定">
 
-        try {
-          let app = firebase.app();
-          let features = [
-            'auth', 
-            'database', 
-            'firestore',
-            'functions',
-            'messaging', 
-            'storage', 
-            'analytics', 
-            'remoteConfig',
-            'performance',
-          ].filter(feature => typeof app[feature] === 'function');
-          loadEl.textContent = `Firebase SDK loaded with ${features.join(', ')}`;
-        } catch (e) {
-          console.error(e);
-          loadEl.textContent = 'Error loading the Firebase SDK, check the console.';
-        }
-      });
-    </script>
-  </body>
-</html>
+    <!-- settings.html の body 中身だけ（doctype/html/head/style/script は削除済み） -->
+    <input class="tab-input" type="radio" name="tab" id="tab-general" checked>
+    <input class="tab-input" type="radio" name="tab" id="tab-apps">
+    <input class="tab-input" type="radio" name="tab" id="tab-data">
+    <input class="tab-input" type="radio" name="tab" id="tab-trainer">
+    <input class="tab-input" type="radio" name="tab" id="tab-account">
+
+    <div class="overlay">
+      <div class="modal" role="dialog" aria-label="設定">
+      <button id="settingsClose" class="close" type="button" aria-label="閉じる">×</button>
+
+        <!-- Left nav -->
+        <aside class="nav" aria-label="設定ナビ">
+          <div class="nav-hd">
+            <div class="nav-title" data-i18n="settings">設定</div>
+          </div>
+
+          <div class="nav-list" role="list">
+            <label class="nav-item" for="tab-general" role="listitem">
+              <span class="nav-ic"><i class="fa-solid fa-sliders"></i></span>
+              <span class="nav-txt" data-i18n="general">一般</span>
+            </label>
+
+            <label class="nav-item" for="tab-apps" role="listitem">
+              <span class="nav-ic"><i class="fa-solid fa-plug-circle-bolt"></i></span>
+              <span class="nav-txt" data-i18n="apps">アプリ</span>
+            </label>
+
+            <label class="nav-item" for="tab-data" role="listitem">
+              <span class="nav-ic"><i class="fa-solid fa-database"></i></span>
+              <span class="nav-txt" data-i18n="data">データ</span>
+            </label>
+
+            <label class="nav-item" for="tab-trainer" role="listitem">
+              <span class="nav-ic"><i class="fa-solid fa-layer-group"></i></span>
+              <span class="nav-txt" data-i18n="trainer">AUREA Data Trainer</span>
+            </label>
+
+            <label class="nav-item" for="tab-account" role="listitem">
+              <span class="nav-ic"><i class="fa-regular fa-circle-user"></i></span>
+              <span class="nav-txt" data-i18n="accountSecurity">アカウント・セキュリティ</span>
+            </label>
+          </div>
+        </aside>
+
+        <!-- Right content -->
+        <section class="content" aria-label="設定内容">
+
+          <!-- ===== General ===== -->
+          <div class="panel panel-general">
+            <header class="content-hd">
+              <div style="min-width:0">
+                <div class="content-title" data-i18n="general">一般</div>
+                <div class="sec-desc" data-i18n="generalDesc">
+                  端末の基本的な設定
+                </div>
+              </div>
+            </header>
+
+          ...（以下省略されていたらそのまま続けて貼る）...
