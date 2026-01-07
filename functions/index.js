@@ -51,7 +51,7 @@ const connectGoogle = (service) => (req, res) => {
         ? ["https://www.googleapis.com/auth/drive.readonly"]
         : [];
 
-  // UI から ?returnTo=<origin> を受け取る（Codespaces / 本番両対応）
+  // UI から ?returnTo=<origin/> を受け取る（Codespaces / 本番両対応）
   const returnTo = String(req.query.returnTo || "").trim();
   const rt = returnTo ? toB64Url(returnTo) : "";
 
@@ -74,7 +74,7 @@ const oauthCallback = (req, res) => {
   const state = String(req.query.state || "");
   const err = String(req.query.error || "");
 
-  // state から svc / rt を取り出す
+  // state から rt を取り出す
   let rt = "";
   try {
     const parts = state.split("|").map(s => s.trim()).filter(Boolean);
