@@ -134,6 +134,35 @@
   // IMPORTANT: reload should not start in images
   state.view = "chat";
 
+  /* ===== i18n (v1) ===== */
+  const tr = (key) => {
+    return (window.AUREA_I18N && typeof window.AUREA_I18N.tr === "function")
+      ? window.AUREA_I18N.tr(state, key)
+      : key;
+  };
+
+  function applyI18nAttrs() {
+    document.querySelectorAll("[data-i18n]").forEach(el => {
+      const key = el.getAttribute("data-i18n");
+      el.textContent = tr(key);
+    });
+
+    document.querySelectorAll("[data-i18n-aria]").forEach(el => {
+      const key = el.getAttribute("data-i18n-aria");
+      el.setAttribute("aria-label", tr(key));
+    });
+
+    document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
+      const key = el.getAttribute("data-i18n-placeholder");
+      el.setAttribute("placeholder", tr(key));
+    });
+
+    document.querySelectorAll("[data-i18n-title]").forEach(el => {
+      const key = el.getAttribute("data-i18n-title");
+      el.setAttribute("title", tr(key));
+    });
+  }
+
   /* ================= elements ================= */
   const body = document.body;
 
@@ -2004,33 +2033,6 @@ btnNewChat?.addEventListener("click", (e) => {
   if (!Array.isArray(state.customApps)) state.customApps = [];
 
   /* ===== i18n (v1) ===== */
-  const tr = (key) => {
-    return (window.AUREA_I18N && typeof window.AUREA_I18N.tr === "function")
-      ? window.AUREA_I18N.tr(state, key)
-      : key;
-  };
-
-  function applyI18nAttrs() {
-    document.querySelectorAll("[data-i18n]").forEach(el => {
-      const key = el.getAttribute("data-i18n");
-      el.textContent = tr(key);
-    });
-
-    document.querySelectorAll("[data-i18n-aria]").forEach(el => {
-      const key = el.getAttribute("data-i18n-aria");
-      el.setAttribute("aria-label", tr(key));
-    });
-
-    document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
-      const key = el.getAttribute("data-i18n-placeholder");
-      el.setAttribute("placeholder", tr(key));
-    });
-
-    document.querySelectorAll("[data-i18n-title]").forEach(el => {
-      const key = el.getAttribute("data-i18n-title");
-      el.setAttribute("title", tr(key));
-    });
-  }
 
   // Apps connectors click (bind once)
   let appsClickBound = false;
