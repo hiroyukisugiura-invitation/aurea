@@ -15,4 +15,4 @@ app.get("/drive/connect", (req, res) => {
   res.send("Drive connect endpoint (AUREA)");
 });
 
-exports.api = functions.runWith({region:"us-central1"}).https.onRequest(app);
+exports.api = functions.runWith({region: "us-central1"}).https.onRequest(app);
