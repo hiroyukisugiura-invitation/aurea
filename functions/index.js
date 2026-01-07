@@ -1,4 +1,4 @@
-const functions = require("firebase-functions");
+const functions = require("firebase-functions/v1");
 const express = require("express");
 
 const app = express();
@@ -15,4 +15,4 @@ app.get("/drive/connect", (req, res) => {
   res.send("Drive connect endpoint (AUREA)");
 });
 
-exports.api = functions.runWith({region: "us-central1"}).https.onRequest(app);
+exports.api = functions.region("us-central1").https.onRequest(app);
