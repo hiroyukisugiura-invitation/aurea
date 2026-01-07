@@ -18,7 +18,14 @@ jobs:
 
       - run: npm install -g firebase-tools
 
+      - name: Auth with Service Account
+        run: |
+          echo '${{ secrets.GCP_SA_AUREA_2026 }}' > "${{ runner.temp }}/gcp-sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=${{ runner.temp }}/gcp-sa.json" >> $GITHUB_ENV
+
+      - name: Verify Auth
+        run: firebase projects:list
+
       - name: Deploy
-        env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         run: firebase deploy --project aurea-2026 --only functions,hosting
+
