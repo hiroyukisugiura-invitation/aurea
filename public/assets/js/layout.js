@@ -174,6 +174,13 @@
     || $(".user-pop a[data-action='logout']")
     || $(".user-pop a[aria-label='ログアウト']");
 
+  // settings open（本番で # 遷移させない）
+  linkSettings?.addEventListener("click", (e) => {
+    e.preventDefault();
+    closeDetails(userMenuDetails);
+    openSettings();
+  }, true);
+
   /* ================= settings (embedded modal) ================= */
   const settingsModal = document.getElementById("settingsModal");
   const settingsClose = document.querySelector(".settings-modal .close");
@@ -338,8 +345,6 @@
     // data-i18n / data-i18n-aria 全反映（HTML属性ベース）
     applyI18nAttrs();
   };
-
-let suppressSettingsBackdropOnce = false;
 
 let suppressSettingsBackdropOnce = false;
 
@@ -1587,7 +1592,6 @@ btnNewChat?.addEventListener("click", (e) => {
   };
 
   document.addEventListener("pointerdown", openSettingsIfTriggered, true);
-  document.addEventListener("click", openSettingsIfTriggered, true);
 
   // settings close
   settingsClose?.addEventListener("click", (e) => {
