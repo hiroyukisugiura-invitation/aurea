@@ -1559,8 +1559,13 @@ btnNewChat?.addEventListener("click", (e) => {
     await copyText(url);
   });
 
-  // settings open
-  linkSettings?.addEventListener("click", (e) => {
+  // settings open（本番でも確実に拾う：イベント委譲）
+  document.addEventListener("click", (e) => {
+    const t = e.target;
+
+    const a = t.closest("[data-action='open-settings'], #btnOpenSettings, .user-pop a[aria-label='設定']");
+    if (!a) return;
+
     e.preventDefault();
     closeDetails(userMenuDetails);
     openSettings();
