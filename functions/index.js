@@ -15,4 +15,8 @@ app.get("/drive/connect", (req, res) => {
   res.send("Drive connect endpoint (AUREA)");
 });
 
-exports.api = functions.region("us-central1").https.onRequest(app);
+exports.api = functions
+  .runWith({memory: "256MB"})
+  .region("us-central1")
+  .https.onRequest(app);
+
