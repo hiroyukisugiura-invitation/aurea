@@ -339,9 +339,13 @@
     applyI18nAttrs();
   };
 
+let suppressSettingsBackdropOnce = false;
+
 const openSettings = () => {
   const tabGeneral = document.getElementById("tab-general");
   if (tabGeneral) tabGeneral.checked = true;
+
+  suppressSettingsBackdropOnce = true;
 
   settingsModal?.removeAttribute("hidden");
   settingsModal?.classList.add("is-open");
@@ -1681,29 +1685,32 @@ btnNewChat?.addEventListener("click", (e) => {
   voiceBtn?.addEventListener("click", (e) => { e.preventDefault(); });
 
 /* ================= global close rules ================= */
-  document.addEventListener("pointerdown", (e) => {
-    const t = e.target;
+document.addEventListener("pointerdown", (e) => {
+  const t = e.target;
 
-    // settings: 背景（overlay）を直接タップした時だけ閉じる
-    // ※ radio(tab-input) や select option がモーダル外判定になって誤閉じするのを防止
-    if (settingsModal && !settingsModal.hasAttribute("hidden")) {
-      const overlay = settingsModal.querySelector(":scope > .overlay");
-      if (overlay && t === overlay) {
-        closeSettings();
-        return;
-      }
+  // settings: 背景（overlay）を直接タップした時だけ閉じる
+  if (settingsModal && !settingsModal.hasAttribute("hidden")) {
+    if (suppressSettingsBackdropOnce) {
+      suppressSettingsBackdropOnce = false;
+      return;
     }
 
-    if (userMenuDetails?.hasAttribute("open") && !isInside(userMenuDetails, t)) closeDetails(userMenuDetails);
-    if (plusDetails?.hasAttribute("open") && !isInside(plusDetails, t)) closeDetails(plusDetails);
-    $$(".sb-more[open]").forEach(d => { if (!isInside(d, t)) closeDetails(d); });
-
-    // project backdrop close
-    if (body.classList.contains("project-open") && projectModal) {
-      const card = $(".project-modal .project-card");
-      if (isInside(projectModal, t) && !isInside(card, t)) closeProjectModal();
+    const overlay = settingsModal.querySelector(":scope > .overlay");
+    if (overlay && t === overlay) {
+      closeSettings();
+      return;
     }
-  });
+  }
+
+  if (userMenuDetails?.hasAttribute("open") && !isInside(userMenuDetails, t)) closeDetails(userMenuDetails);
+  if (plusDetails?.hasAttribute("open") && !isInside(plusDetails, t)) closeDetails(plusDetails);
+  $$(".sb-more[open]").forEach(d => { if (!isInside(d, t)) closeDetails(d); });
+
+  if (body.classList.contains("project-open") && projectModal) {
+    const card = $(".project-modal .project-card");
+    if (isInside(projectModal, t) && !isInside(card, t)) closeProjectModal();
+  }
+});
 
   document.addEventListener("toggle", (e) => {
     const d = e.target;
