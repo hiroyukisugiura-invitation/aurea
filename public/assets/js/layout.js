@@ -12,7 +12,14 @@
 (() => {
   "use strict";
 
+  // build stamp (prod verification)
+  const AUREA_LAYOUT_BUILD = "2026-01-08T00:00+09:00";
+  window.AUREA_LAYOUT_BUILD = AUREA_LAYOUT_BUILD;
+  try { document.documentElement.setAttribute("data-aurea-layout-build", AUREA_LAYOUT_BUILD); } catch {}
+  try { console.info("[AUREA] layout.js loaded:", AUREA_LAYOUT_BUILD); } catch {}
+
   /* ================= helpers ================= */
+
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
   const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
