@@ -341,6 +341,8 @@
 
 let suppressSettingsBackdropOnce = false;
 
+let suppressSettingsBackdropOnce = false;
+
 const openSettings = () => {
   const tabGeneral = document.getElementById("tab-general");
   if (tabGeneral) tabGeneral.checked = true;
@@ -1563,17 +1565,29 @@ btnNewChat?.addEventListener("click", (e) => {
     await copyText(url);
   });
 
-  // settings open（本番でも確実に拾う：イベント委譲）
-  document.addEventListener("click", (e) => {
-    const t = e.target;
+  // settings open（composedPath で確実に拾う）
+  const isSettingsTrigger = (node) => {
+    if (!(node instanceof Element)) return false;
+    return !!node.closest("[data-action='open-settings'], #btnOpenSettings, .user-pop a[aria-label='設定']");
+  };
 
-    const a = t.closest("[data-action='open-settings'], #btnOpenSettings, .user-pop a[aria-label='設定']");
-    if (!a) return;
+  const openSettingsIfTriggered = (e) => {
+    const path = (typeof e.composedPath === "function") ? e.composedPath() : [];
+    const hit = path.find(isSettingsTrigger);
+
+    // composedPath が無い/空の環境フォールバック
+    const t = hit || ((e.target instanceof Element) ? e.target : (e.target && e.target.parentElement));
+    if (!t || !isSettingsTrigger(t)) return;
 
     e.preventDefault();
+    e.stopPropagation();
+
     closeDetails(userMenuDetails);
     openSettings();
-  });
+  };
+
+  document.addEventListener("pointerdown", openSettingsIfTriggered, true);
+  document.addEventListener("click", openSettingsIfTriggered, true);
 
   // settings close
   settingsClose?.addEventListener("click", (e) => {
@@ -1685,32 +1699,34 @@ btnNewChat?.addEventListener("click", (e) => {
   voiceBtn?.addEventListener("click", (e) => { e.preventDefault(); });
 
 /* ================= global close rules ================= */
-document.addEventListener("pointerdown", (e) => {
-  const t = e.target;
+  document.addEventListener("pointerdown", (e) => {
+    const t = e.target;
 
-  // settings: 背景（overlay）を直接タップした時だけ閉じる
-  if (settingsModal && !settingsModal.hasAttribute("hidden")) {
-    if (suppressSettingsBackdropOnce) {
-      suppressSettingsBackdropOnce = false;
-      return;
+    // settings: 背景（overlay）を直接タップした時だけ閉じる
+    // ※ radio(tab-input) や select option がモーダル外判定になって誤閉じするのを防止
+    if (settingsModal && !settingsModal.hasAttribute("hidden")) {
+      if (suppressSettingsBackdropOnce) {
+        suppressSettingsBackdropOnce = false;
+        return;
+      }
+
+      const overlay = settingsModal.querySelector(":scope > .overlay");
+      if (overlay && t === overlay) {
+        closeSettings();
+        return;
+      }
     }
 
-    const overlay = settingsModal.querySelector(":scope > .overlay");
-    if (overlay && t === overlay) {
-      closeSettings();
-      return;
+    if (userMenuDetails?.hasAttribute("open") && !isInside(userMenuDetails, t)) closeDetails(userMenuDetails);
+    if (plusDetails?.hasAttribute("open") && !isInside(plusDetails, t)) closeDetails(plusDetails);
+    $$(".sb-more[open]").forEach(d => { if (!isInside(d, t)) closeDetails(d); });
+
+    // project backdrop close
+    if (body.classList.contains("project-open") && projectModal) {
+      const card = $(".project-modal .project-card");
+      if (isInside(projectModal, t) && !isInside(card, t)) closeProjectModal();
     }
-  }
-
-  if (userMenuDetails?.hasAttribute("open") && !isInside(userMenuDetails, t)) closeDetails(userMenuDetails);
-  if (plusDetails?.hasAttribute("open") && !isInside(plusDetails, t)) closeDetails(plusDetails);
-  $$(".sb-more[open]").forEach(d => { if (!isInside(d, t)) closeDetails(d); });
-
-  if (body.classList.contains("project-open") && projectModal) {
-    const card = $(".project-modal .project-card");
-    if (isInside(projectModal, t) && !isInside(card, t)) closeProjectModal();
-  }
-});
+  });
 
   document.addEventListener("toggle", (e) => {
     const d = e.target;
