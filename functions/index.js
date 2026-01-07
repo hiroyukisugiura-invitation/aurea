@@ -64,17 +64,19 @@ const connectGoogle = (service) => (req, res) => {
 };
 
 const oauthCallback = (req, res) => {
-  // v1: callback到達確認のみ（token交換/保存は次フェーズ）
   const code = String(req.query.code || "");
   const state = String(req.query.state || "");
   const err = String(req.query.error || "");
 
   if (err) {
-    res.status(400).send(`OAuth error: ${err}`);
+    // v1: 失敗もアプリへ戻す（UIだけ先に整える）
+    res.redirect(302, `/?connect=error&error=${encodeURIComponent(err)}&state=${encodeURIComponent(state)}`);
     return;
   }
 
-  res.status(200).send(`OAuth callback reached. code=${code ? "YES" : "NO"} state=${state}`);
+  // v1: token交換は次フェーズ。code を一旦持って帰るだけ。
+  // ※本番では code をフロントに渡さない（次フェーズでサーバ保存に切替）
+  res.redirect(302, `/?connect=ok&state=${encodeURIComponent(state)}&code=${encodeURIComponent(code)}`);
 };
 
 app.get("/google/connect", connectGoogle("google"));
