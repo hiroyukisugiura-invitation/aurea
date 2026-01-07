@@ -2555,14 +2555,14 @@ btnNewChat?.addEventListener("click", (e) => {
   // sidebar search（render 後に必ず mount）
   mountSidebarSearch();
 
-    /* ================= OAuth return (v1) ================= */
+  /* ================= OAuth return (v1) ================= */
   (() => {
     const params = new URLSearchParams(window.location.search);
     const connect = params.get("connect");
-    const state = params.get("state"); // e.g. "svc=google"
+    const stateParam = params.get("state"); // e.g. "svc=google"
 
-    if (connect === "ok" && state) {
-      const m = state.match(/^svc=(.+)$/);
+    if (connect === "ok" && stateParam) {
+      const m = stateParam.match(/^svc=(.+)$/);
       const svc = m ? m[1] : null;
 
       if (svc === "google") {
@@ -2582,7 +2582,6 @@ btnNewChat?.addEventListener("click", (e) => {
       // クエリを消す（履歴汚染防止）
       history.replaceState({}, document.title, "/");
 
-      // 最低限の通知（後でトーストに差し替え可）
       setTimeout(() => {
         alert("Google アカウントの連携が完了しました");
       }, 0);
