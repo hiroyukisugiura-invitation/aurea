@@ -1,22 +1,19 @@
-const functions = require("firebase-functions/v1");
+const { onRequest } = require("firebase-functions/v2/https");
 const express = require("express");
 
 const app = express();
 
-app.get("/google/connect", (req, res) => {
-  res.send("Google connect endpoint (AUREA)");
-});
+const ok = (label) => (req, res) => {
+  res.status(200).send(`${label} connect endpoint (AUREA)`);
+};
 
-app.get("/gmail/connect", (req, res) => {
-  res.send("Gmail connect endpoint (AUREA)");
-});
+app.get("/google/connect", ok("Google"));
+app.get("/gmail/connect", ok("Gmail"));
+app.get("/drive/connect", ok("Drive"));
 
-app.get("/drive/connect", (req, res) => {
-  res.send("Drive connect endpoint (AUREA)");
-});
+// Hosting rewrite が /api/** をそのまま渡すケース用（保険）
+app.get("/api/google/connect", ok("Google"));
+app.get("/api/gmail/connect", ok("Gmail"));
+app.get("/api/drive/connect", ok("Drive"));
 
-exports.api = functions
-  .runWith({memory: "256MB"})
-  .region("us-central1")
-  .https.onRequest(app);
-
+exports.api = onRequest({ region: "us-central1" }, app);
