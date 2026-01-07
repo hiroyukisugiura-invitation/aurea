@@ -1735,6 +1735,33 @@ btnNewChat?.addEventListener("click", (e) => {
   document.addEventListener("click", async (e) => {
     const t = e.target;
 
+    /* ===== Apps: SaaS card click → OAuth connect (same tab) ===== */
+    const saasCard = t.closest(".panel-apps .apps-grid .saas");
+    if (saasCard) {
+      // status button は既存の connect/disconnect ロジックに任せる
+      if (t.closest(".status-btn")) return;
+
+      const name = (saasCard.querySelector(".saas-name")?.textContent || "").trim();
+
+      if (name === "Google") {
+        e.preventDefault();
+        window.location.href = "/api/google/connect";
+        return;
+      }
+
+      if (name === "Gmail") {
+        e.preventDefault();
+        window.location.href = "/api/gmail/connect";
+        return;
+      }
+
+      if (name === "Google Drive") {
+        e.preventDefault();
+        window.location.href = "/api/drive/connect";
+        return;
+      }
+    }
+
     // PJ内：新しいチャット
     const pjNew = t.closest(".pj-thread[data-action='pj-new-thread']");
     if (pjNew) {
