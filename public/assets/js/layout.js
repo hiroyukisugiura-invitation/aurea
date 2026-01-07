@@ -1735,10 +1735,10 @@ btnNewChat?.addEventListener("click", (e) => {
   document.addEventListener("click", async (e) => {
     const t = e.target;
 
-    /* ===== Apps: SaaS card click → OAuth connect (same tab) ===== */
+    /* ===== Apps: SaaS card click → connect (same tab) ===== */
     const saasCard = t.closest(".panel-apps .apps-grid .saas");
     if (saasCard) {
-      // status button は既存の connect/disconnect ロジックに任せる
+      // status button は bindAppsConnectorsOnce() に任せる（ここでは触らない）
       if (t.closest(".status-btn")) return;
 
       const name = (saasCard.querySelector(".saas-name")?.textContent || "").trim();
@@ -1760,6 +1760,9 @@ btnNewChat?.addEventListener("click", (e) => {
         window.location.href = "/api/drive/connect";
         return;
       }
+
+      // それ以外はカードクリックでは何もしない
+      return;
     }
 
     // PJ内：新しいチャット
@@ -2023,10 +2026,12 @@ btnNewChat?.addEventListener("click", (e) => {
         if (!ok) return;
 
         if (name === "Google" || name === "Gmail" || name === "Google Drive") {
-          await startGoogleAccountConnect(name);
-          state.apps[name] = true;
-          save(state);
-          syncSettingsUi();
+          const url =
+            (name === "Gmail") ? "/api/gmail/connect"
+            : (name === "Google Drive") ? "/api/drive/connect"
+            : "/api/google/connect";
+
+          window.location.href = url;
           return;
         }
 
@@ -2090,17 +2095,9 @@ btnNewChat?.addEventListener("click", (e) => {
   };
 
   const SAAS_CATALOG = [
-
     { name: "Google",        icon: `<i class="fa-brands fa-google"></i>`,        desc: "Googleアカウント連携" },
     { name: "Gmail",         icon: `<i class="fa-solid fa-envelope"></i>`,       desc: "メールの検索・参照" },
-    { name: "Google Drive",  icon: `<i class="fa-brands fa-google-drive"></i>`,  desc: "Driveの検索・参照" },
-    { name: "GitHub",        icon: `<i class="fa-brands fa-github"></i>`,        desc: "リポジトリ参照・検索" },
-    { name: "Notion",        icon: `<i class="fa-brands fa-notion"></i>`,        desc: "Notionページ参照・検索" },
-    { name: "Slack",         icon: `<i class="fa-brands fa-slack"></i>`,         desc: "Slack検索・参照" },
-    { name: "Dropbox",       icon: `<i class="fa-brands fa-dropbox"></i>`,       desc: "Dropbox検索・参照" },
-    { name: "Jira",          icon: `<i class="fa-brands fa-jira"></i>`,          desc: "課題参照・検索" },
-    { name: "Salesforce",    icon: `<i class="fa-brands fa-salesforce"></i>`,    desc: "CRM参照・検索" },
-    { name: "Zoom",          icon: `<i class="fa-brands fa-zoom"></i>`,          desc: "会議情報参照・検索" }
+    { name: "Google Drive",  icon: `<i class="fa-brands fa-google-drive"></i>`,  desc: "Driveの検索・参照" }
   ];
 
   function ensureAppsGrid(){
@@ -2557,6 +2554,48 @@ btnNewChat?.addEventListener("click", (e) => {
 
   // sidebar search（render 後に必ず mount）
   mountSidebarSearch();
+
+    /* ================= OAuth return (v1) ================= */
+  (() => {
+    const params = new URLSearchParams(window.location.search);
+    const connect = params.get("connect");
+    const state = params.get("state"); // e.g. "svc=google"
+
+    if (connect === "ok" && state) {
+      const m = state.match(/^svc=(.+)$/);
+      const svc = m ? m[1] : null;
+
+      if (svc === "google") {
+        state.apps.Google = true;
+      }
+      if (svc === "gmail") {
+        state.apps.Gmail = true;
+      }
+      if (svc === "drive") {
+        state.apps["Google Drive"] = true;
+      }
+
+      // 保存 & UI反映
+      save(state);
+      syncSettingsUi();
+
+      // クエリを消す（履歴汚染防止）
+      history.replaceState({}, document.title, "/");
+
+      // 最低限の通知（後でトーストに差し替え可）
+      setTimeout(() => {
+        alert("Google アカウントの連携が完了しました");
+      }, 0);
+    }
+
+    if (connect === "error") {
+      const err = params.get("error") || "unknown";
+      history.replaceState({}, document.title, "/");
+      setTimeout(() => {
+        alert(`Google 連携に失敗しました: ${err}`);
+      }, 0);
+    }
+  })();
 
   // reflect immediately
   syncAccountUi();
