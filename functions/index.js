@@ -51,8 +51,7 @@ const connectGoogle = (service) => (req, res) => {
         ? ["https://www.googleapis.com/auth/drive.readonly"]
         : [];
 
-  // ★ 戻り先（Codespaces / 本番どちらでも）
-  // UI側から ?returnTo=<origin> を渡す
+  // UI から ?returnTo=<origin> を受け取る（Codespaces / 本番両対応）
   const returnTo = String(req.query.returnTo || "").trim();
   const rt = returnTo ? toB64Url(returnTo) : "";
 
@@ -76,31 +75,23 @@ const oauthCallback = (req, res) => {
   const err = String(req.query.error || "");
 
   // state から svc / rt を取り出す
-  let svc = "";
   let rt = "";
   try {
     const parts = state.split("|").map(s => s.trim()).filter(Boolean);
     for (const p of parts) {
-      if (p.startsWith("svc=")) svc = p.slice(4);
       if (p.startsWith("rt=")) rt = p.slice(3);
     }
   } catch {}
 
   const origin = rt ? fromB64Url(rt) : "";
-  const base = origin || "/";
+  const base = origin ? `${origin.replace(/\/+$/, "")}/` : "/";
 
   if (err) {
-    res.redirect(
-      302,
-      `${base}?connect=error&error=${encodeURIComponent(err)}&state=${encodeURIComponent(state)}`
-    );
+    res.redirect(302, `${base}?connect=error&error=${encodeURIComponent(err)}&state=${encodeURIComponent(state)}`);
     return;
   }
 
-  res.redirect(
-    302,
-    `${base}?connect=ok&state=${encodeURIComponent(state)}&code=${encodeURIComponent(code)}`
-  );
+  res.redirect(302, `${base}?connect=ok&state=${encodeURIComponent(state)}&code=${encodeURIComponent(code)}`);
 };
 
 app.get("/google/connect", connectGoogle("google"));

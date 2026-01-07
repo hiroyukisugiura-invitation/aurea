@@ -1744,7 +1744,7 @@ btnNewChat?.addEventListener("click", (e) => {
       const name = (saasCard.querySelector(".saas-name")?.textContent || "").trim();
 
       const goConnect = (path) => {
-        const rt = encodeURIComponent(window.location.origin);
+        const rt = encodeURIComponent(`${window.location.origin}/`);
         window.location.href = `${path}?returnTo=${rt}`;
       };
 
@@ -2036,7 +2036,8 @@ btnNewChat?.addEventListener("click", (e) => {
             : (name === "Google Drive") ? "/api/drive/connect"
             : "/api/google/connect";
 
-          window.location.href = url;
+          const rt = encodeURIComponent(`${window.location.origin}/`);
+          window.location.href = `${url}?returnTo=${rt}`;
           return;
         }
 
@@ -2578,8 +2579,15 @@ btnNewChat?.addEventListener("click", (e) => {
     };
 
     if (connect === "ok" && stateParam) {
-      const m = stateParam.match(/^svc=(.+)$/);
-      const svc = m ? m[1] : null;
+      let svc = null;
+      try {
+        const parts = stateParam.split("|").map(s => s.trim()).filter(Boolean);
+        for (const p of parts) {
+          if (p.startsWith("svc=")) svc = p.slice(4);
+        }
+      } catch {
+        svc = null;
+      }
 
       if (svc === "google") state.apps.Google = true;
       if (svc === "gmail") state.apps.Gmail = true;
