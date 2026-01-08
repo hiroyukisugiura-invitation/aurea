@@ -9,8 +9,32 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 
-<body class="">
-  <div class="app">
+<body class="" data-auth="required">
+  <!-- AUTH GATE (block until authenticated) -->
+  <div id="authGate" style="position:fixed;inset:0;z-index:9999;background:rgba(10,10,12,.85);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center">
+    <div style="max-width:520px;width:calc(100% - 32px);background:#111;border-radius:16px;padding:28px 24px;color:#fff;box-shadow:0 20px 60px rgba(0,0,0,.5)">
+      <div style="font-size:20px;font-weight:600;margin-bottom:8px">ようこそ AUREA へ</div>
+      <div style="opacity:.85;line-height:1.6;margin-bottom:18px">
+        初回利用にはログイン登録が必要です。<br>
+        Google アカウントと連携して続行してください。
+      </div>
+
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <button id="btnAuthPersonal" type="button" style="flex:1 1 200px;height:44px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#1a1a1a;color:#fff">
+          Personal
+        </button>
+        <button id="btnAuthCompany" type="button" style="flex:1 1 200px;height:44px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#1a1a1a;color:#fff">
+          Company
+        </button>
+      </div>
+
+      <div style="margin-top:14px;opacity:.6;font-size:12px">
+        ※ 未ログイン状態では AUREA 本体は利用できません
+      </div>
+    </div>
+  </div>
+
+  <div class="app" aria-hidden="true">
 
     <!-- SIDEBAR -->
     <aside class="sidebar" aria-label="左カラム">

@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AUREA | Login</title>
+
+  <meta name="color-scheme" content="dark light" />
+  <style>
+    :root{
+      --bg:#0b0b0d;
+      --card:#111114;
+      --text:rgba(255,255,255,.92);
+      --muted:rgba(255,255,255,.70);
+      --line:rgba(255,255,255,.12);
+      --soft:rgba(255,255,255,.06);
+    }
+    html,body{height:100%}
+    body{
+      margin:0;
+      background:radial-gradient(1200px 700px at 20% 10%, rgba(255,255,255,.08), transparent 55%),
+                 radial-gradient(900px 600px at 90% 40%, rgba(255,255,255,.06), transparent 60%),
+                 var(--bg);
+      color:var(--text);
+      font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+      display:flex;align-items:center;justify-content:center;
+      padding:18px;
+    }
+    .card{
+      width:min(520px, calc(100% - 24px));
+      background:rgba(17,17,20,.92);
+      border:1px solid var(--line);
+      border-radius:18px;
+      box-shadow:0 18px 60px rgba(0,0,0,.55);
+      overflow:hidden;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+    .hd{
+      padding:18px 18px 14px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+    }
+    .brand{
+      display:flex;align-items:center;gap:10px;min-width:0;
+    }
+    .logo{
+      width:28px;height:28px;border-radius:8px;
+      background:linear-gradient(135deg, rgba(255,255,255,.18), rgba(255,255,255,.06));
+      border:1px solid rgba(255,255,255,.12);
+      display:grid;place-items:center;
+      font-weight:700;font-size:13px;
+    }
+    .ttl{font-weight:700;font-size:14px}
+    .bd{padding:16px 18px 18px}
+    .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.06);
+      border-radius:999px;
+      padding:8px 10px;
+      font-size:12px;
+      color:var(--muted);
+      max-width:100%;
+    }
+    .pill strong{color:var(--text);font-weight:600}
+    .msg{
+      margin-top:12px;
+      font-size:13px;
+      line-height:1.65;
+      color:var(--muted);
+      white-space:pre-wrap;
+      word-break:break-word;
+    }
+    .err{
+      margin-top:12px;
+      font-size:13px;
+      line-height:1.65;
+      color:rgba(255,200,200,.92);
+      white-space:pre-wrap;
+      word-break:break-word;
+    }
+    .btn{
+      margin-top:14px;
+      width:100%;
+      height:44px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.08);
+      color:var(--text);
+      cursor:pointer;
+      font-size:13px;
+      display:flex;align-items:center;justify-content:center;gap:10px;
+    }
+    .btn:disabled{opacity:.55;cursor:not-allowed}
+    .spin{
+      width:16px;height:16px;border-radius:50%;
+      border:2px solid rgba(255,255,255,.18);
+      border-top-color:rgba(255,255,255,.76);
+      animation: r 1s linear infinite;
+    }
+    @keyframes r{to{transform:rotate(360deg)}}
+    .foot{
+      padding:12px 18px 16px;
+      border-top:1px solid rgba(255,255,255,.08);
+      font-size:11px;
+      color:rgba(255,255,255,.55);
+      line-height:1.6;
+    }
+    a{color:inherit}
+  </style>
+</head>
+
+<body>
+  <div class="card" role="dialog" aria-label="AUREA Login">
+    <div class="hd">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">A</div>
+        <div class="ttl">AUREA Login</div>
+      </div>
+      <div class="pill" id="modePill" aria-label="Mode">
+        Mode: <strong id="modeText">Personal</strong>
+      </div>
+    </div>
+
+    <div class="bd">
+      <div class="row">
+        <div class="pill" id="invitePill" style="display:none">
+          Invite: <strong id="inviteText"></strong>
+        </div>
+      </div>
+
+      <div class="msg" id="statusMsg">Google アカウントでログインします…</div>
+      <div class="err" id="errorMsg" style="display:none"></div>
+
+      <button class="btn" id="btnStart" type="button" disabled>
+        <span class="spin" aria-hidden="true"></span>
+        <span id="btnLabel">Signing in…</span>
+      </button>
+    </div>
+
+    <div class="foot">
+      Email/Password は使用しません。<br>
+      Company は招待制（期限：発行から7日）です。期限切れの場合は管理者に再招待を依頼してください。
+    </div>
+  </div>
+
+  <!-- Firebase (compat CDN) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const AUTH_MODE_KEY = "aurea_auth_mode";
+      const AUTH_STATE_KEY = "aurea_auth_state_v1";
+      const INVITE_KEY = "aurea_company_invite_v1";
+
+      const $ = (id) => document.getElementById(id);
+
+      const modeText = $("modeText");
+      const modePill = $("modePill");
+      const invitePill = $("invitePill");
+      const inviteText = $("inviteText");
+      const statusMsg = $("statusMsg");
+      const errorMsg = $("errorMsg");
+      const btnStart = $("btnStart");
+      const btnLabel = $("btnLabel");
+
+      const params = new URLSearchParams(location.search);
+      const modeParam = (params.get("mode") || "").trim();
+      const inviteParam = (params.get("invite") || "").trim();
+
+      const getSavedMode = () => {
+        try {
+          const v = localStorage.getItem(AUTH_MODE_KEY);
+          return (v === "company") ? "company" : (v === "personal" ? "personal" : null);
+        } catch { return null; }
+      };
+
+      const setSavedMode = (m) => {
+        try { localStorage.setItem(AUTH_MODE_KEY, m); } catch {}
+      };
+
+      const getAuthState = () => {
+        try {
+          const raw = localStorage.getItem(AUTH_STATE_KEY);
+          if (!raw) return null;
+          const obj = JSON.parse(raw);
+          return (obj && typeof obj === "object") ? obj : null;
+        } catch { return null; }
+      };
+
+      const setInvite = (obj) => {
+        try { localStorage.setItem(INVITE_KEY, JSON.stringify(obj || {})); } catch {}
+      };
+
+      const clearInvite = () => {
+        try { localStorage.removeItem(INVITE_KEY); } catch {}
+      };
+
+      const redirectToIndexOk = (user) => {
+        const url = new URL("/", location.origin);
+        url.searchParams.set("auth", "ok");
+        url.searchParams.set("email", user.email || "");
+        url.searchParams.set("uid", user.uid || "");
+        location.replace(url.toString());
+      };
+
+      const redirectToIndexError = (reason) => {
+        const url = new URL("/", location.origin);
+        url.searchParams.set("auth", "error");
+        if (reason) url.searchParams.set("reason", reason);
+        location.replace(url.toString());
+      };
+
+      const setModeUI = (m) => {
+        const label = (m === "company") ? "Company" : "Personal";
+        if (modeText) modeText.textContent = label;
+        if (modePill) modePill.setAttribute("aria-label", `Mode: ${label}`);
+      };
+
+      const setInviteUI = (token) => {
+        if (!token) {
+          if (invitePill) invitePill.style.display = "none";
+          return;
+        }
+        if (inviteText) inviteText.textContent = token;
+        if (invitePill) invitePill.style.display = "";
+      };
+
+      const showError = (text) => {
+        if (errorMsg) {
+          errorMsg.textContent = text || "Login error";
+          errorMsg.style.display = "block";
+        }
+        if (statusMsg) statusMsg.textContent = "";
+      };
+
+      // mode 결정: URL > 저장값 > personal
+      let mode = (modeParam === "company") ? "company" : (modeParam === "personal" ? "personal" : null);
+      if (!mode) mode = getSavedMode() || "personal";
+      setSavedMode(mode);
+      setModeUI(mode);
+
+      // 기업 모드: invite 필수
+      if (mode === "company") {
+        if (!inviteParam) {
+          const invRaw = (() => {
+            try {
+              const s = localStorage.getItem(INVITE_KEY);
+              return s ? JSON.parse(s) : null;
+            } catch { return null; }
+          })();
+          const token = invRaw?.token ? String(invRaw.token) : "";
+          if (!token) {
+            // 招待無しで company は絶対に通さない
+            redirectToIndexError("invite_invalid");
+            return;
+          }
+          setInviteUI(token);
+        } else {
+          setInvite({ token: inviteParam, receivedAt: new Date().toISOString() });
+          setInviteUI(inviteParam);
+        }
+      } else {
+        // personal は招待不要
+        clearInvite();
+        setInviteUI("");
+      }
+
+      // company アカウントを personal で使わせない（既に company loggedIn がある場合）
+      const st = getAuthState();
+      if (st?.loggedIn && st.mode === "company" && mode === "personal") {
+        redirectToIndexError("company_personal_blocked");
+        return;
+      }
+
+      // Firebase config: window.__FIREBASE_CONFIG__ を前提（無い場合は安全に止める）
+      const cfg = window.__FIREBASE_CONFIG__;
+      if (!cfg || typeof cfg !== "object") {
+        showError("Firebase 設定が見つかりません（window.__FIREBASE_CONFIG__ が未定義）");
+        // indexへ戻して Gate 表示させる
+        setTimeout(() => redirectToIndexError("config_missing"), 600);
+        return;
+      }
+
+      try {
+        firebase.initializeApp(cfg);
+      } catch (e) {
+        // 既に初期化済み等は許容
+      }
+
+      const auth = firebase.auth();
+      const provider = new firebase.auth.GoogleAuthProvider();
+
+      const consumeCompanyInvite = async (token, user) => {
+        // 招待制はサーバ検証必須（無いなら通さない）
+        // 想定API:
+        // POST /api/company/invite/consume
+        // body: { token, email, uid }
+        // 200 ok
+        // 400 invalid -> invite_invalid
+        // 409 used -> invite_used
+        // 410 expired -> invite_expired
+        // 403 domain -> domain_not_allowed
+        try {
+          const r = await fetch("/api/company/invite/consume", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ token, email: user.email || "", uid: user.uid || "" })
+          });
+
+          if (r && r.ok) return { ok: true };
+
+          if (r && r.status === 409) return { ok: false, reason: "invite_used" };
+          if (r && r.status === 410) return { ok: false, reason: "invite_expired" };
+          if (r && r.status === 403) return { ok: false, reason: "domain_not_allowed" };
+          if (r && r.status === 400) return { ok: false, reason: "invite_invalid" };
+
+          return { ok: false, reason: "invite_invalid" };
+        } catch {
+          return { ok: false, reason: "invite_invalid" };
+        }
+      };
+
+      const start = async () => {
+        btnStart.disabled = true;
+        btnLabel.textContent = "Signing in…";
+
+        // redirect result first
+        try {
+          const res = await auth.getRedirectResult();
+          if (res && res.user) {
+            const user = res.user;
+
+            if (mode === "company") {
+              const inv = (() => {
+                try {
+                  const raw = localStorage.getItem(INVITE_KEY);
+                  return raw ? JSON.parse(raw) : null;
+                } catch { return null; }
+              })();
+
+              const token = inv?.token ? String(inv.token) : "";
+              if (!token) { redirectToIndexError("invite_invalid"); return; }
+
+              const chk = await consumeCompanyInvite(token, user);
+              if (!chk.ok) { redirectToIndexError(chk.reason); return; }
+            }
+
+            redirectToIndexOk(user);
+            return;
+          }
+        } catch {}
+
+        // popup try -> fallback redirect
+        try {
+          statusMsg.textContent = "Google アカウント認証を開始します…";
+          const res = await auth.signInWithPopup(provider);
+          const user = res && res.user;
+          if (!user) { redirectToIndexError("login_failed"); return; }
+
+          if (mode === "company") {
+            const inv = (() => {
+              try {
+                const raw = localStorage.getItem(INVITE_KEY);
+                return raw ? JSON.parse(raw) : null;
+              } catch { return null; }
+            })();
+
+            const token = inv?.token ? String(inv.token) : "";
+            if (!token) { redirectToIndexError("invite_invalid"); return; }
+
+            const chk = await consumeCompanyInvite(token, user);
+            if (!chk.ok) { redirectToIndexError(chk.reason); return; }
+          }
+
+          redirectToIndexOk(user);
+          return;
+        } catch (e) {
+          // popup blocked or iOS => redirect
+          try {
+            statusMsg.textContent = "リダイレクトで認証します…";
+            await auth.signInWithRedirect(provider);
+            return;
+          } catch (e2) {
+            showError("Google ログインに失敗しました。");
+            setTimeout(() => redirectToIndexError("login_failed"), 600);
+          }
+        }
+      };
+
+      // UX: 自動開始（ボタンは保険）
+      btnStart.disabled = false;
+      btnLabel.textContent = "Continue with Google";
+      btnStart.addEventListener("click", (e) => {
+        e.preventDefault();
+        start();
+      });
+
+      // 自動開始
+      setTimeout(start, 0);
+    })();
+  </script>
+</body>
+</html>

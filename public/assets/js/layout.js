@@ -1986,6 +1986,210 @@ btnNewChat?.addEventListener("click", (e) => {
     }
   });
 
+  /* ================= auth / welcome gate ================= */
+  const AUTH_MODE_KEY = "aurea_auth_mode"; // "personal" | "company"
+  const AUTH_STATE_KEY = "aurea_auth_state_v1"; // json
+  const INVITE_KEY = "aurea_company_invite_v1"; // json { token, receivedAt }
+
+  const getAuthMode = () => {
+    try {
+      const v = localStorage.getItem(AUTH_MODE_KEY);
+      return (v === "company") ? "company" : (v === "personal" ? "personal" : null);
+    } catch { return null; }
+  };
+
+  const setAuthMode = (mode) => {
+    try { localStorage.setItem(AUTH_MODE_KEY, mode); } catch {}
+  };
+
+  const getAuthState = () => {
+    try {
+      const raw = localStorage.getItem(AUTH_STATE_KEY);
+      if (!raw) return null;
+      const obj = JSON.parse(raw);
+      return (obj && typeof obj === "object") ? obj : null;
+    } catch { return null; }
+  };
+
+  const setAuthState = (obj) => {
+    try { localStorage.setItem(AUTH_STATE_KEY, JSON.stringify(obj || {})); } catch {}
+  };
+
+  const clearAuthState = () => {
+    try { localStorage.removeItem(AUTH_STATE_KEY); } catch {}
+  };
+
+  const getInvite = () => {
+    try {
+      const raw = localStorage.getItem(INVITE_KEY);
+      if (!raw) return null;
+      const obj = JSON.parse(raw);
+      return (obj && typeof obj === "object") ? obj : null;
+    } catch { return null; }
+  };
+
+  const setInvite = (obj) => {
+    try { localStorage.setItem(INVITE_KEY, JSON.stringify(obj || {})); } catch {}
+  };
+
+  const clearInvite = () => {
+    try { localStorage.removeItem(INVITE_KEY); } catch {}
+  };
+
+  const authGate = document.getElementById("authGate");
+  const appRoot = document.querySelector(".app");
+  const btnAuthPersonal = document.getElementById("btnAuthPersonal");
+  const btnAuthCompany = document.getElementById("btnAuthCompany");
+
+  const ensureGateMessage = () => {
+    if (!authGate) return null;
+    let msg = document.getElementById("authGateMsg");
+    if (msg) return msg;
+
+    msg = document.createElement("div");
+    msg.id = "authGateMsg";
+    msg.style.cssText = "margin-top:12px;opacity:.92;font-size:12px;line-height:1.55;color:#fff;";
+    const card = authGate.querySelector("div > div"); // gate card
+    if (card) card.appendChild(msg);
+    return msg;
+  };
+
+  const setGateMessage = (text) => {
+    const msg = ensureGateMessage();
+    if (!msg) return;
+    msg.textContent = text || "";
+    msg.style.display = text ? "block" : "none";
+  };
+
+  const showAuthGate = () => {
+    if (authGate) authGate.style.display = "flex";
+    if (appRoot) appRoot.setAttribute("aria-hidden", "true");
+  };
+
+  const hideAuthGate = () => {
+    if (authGate) authGate.style.display = "none";
+    if (appRoot) appRoot.removeAttribute("aria-hidden");
+  };
+
+  const startGoogleLogin = (mode) => {
+    // Googleログインは login.html で実行（Email/Password導線は作らない）
+    const m = (mode === "company") ? "company" : "personal";
+    const invite = getInvite();
+
+    const url = new URL("/login.html", window.location.origin);
+    url.searchParams.set("mode", m);
+
+    // company 招待（token）を login.html 側へ渡す
+    if (m === "company" && invite?.token) {
+      url.searchParams.set("invite", String(invite.token));
+    }
+
+    window.location.href = url.toString();
+  };
+
+  // 初期は必ず Gate 表示（未ログインは本体に入れない）
+  showAuthGate();
+
+  // URL params（招待 / auth戻り）
+  const params = new URLSearchParams(window.location.search);
+  const inviteToken = params.get("invite");
+  const authResult = params.get("auth"); // "ok" | "error"
+  const authReason = params.get("reason") || ""; // "invite_expired" | "invite_used" | etc
+  const authEmail = params.get("email") || "";
+  const authUid = params.get("uid") || "";
+
+  // 招待リンクから来た場合：company固定 + token保存 + 次回自動
+  if (inviteToken) {
+    setAuthMode("company");
+    window.__AUREA_AUTH_MODE__ = "company";
+    setInvite({ token: String(inviteToken), receivedAt: nowISO() });
+  }
+
+  // login.html からの戻り（OKなら入場、ERRORならGateに留める）
+  if (authResult === "ok") {
+    // company invite は一度成功したら破棄（再利用防止）
+    clearInvite();
+
+    setAuthState({
+      loggedIn: true,
+      mode: getAuthMode() || (inviteToken ? "company" : "personal"),
+      email: authEmail || "",
+      uid: authUid || "",
+      authedAt: nowISO()
+    });
+
+    // Gate解除
+    setGateMessage("");
+    hideAuthGate();
+
+    // クエリ掃除（履歴汚染防止）
+    history.replaceState({}, document.title, "/");
+  } else if (authResult === "error") {
+    // エラー文言（再招待ボタン等は一切出さない）
+    let msg = "ログインに失敗しました。管理者に確認してください。";
+
+    if (authReason === "invite_expired") {
+      msg = "この招待URLは期限切れです（有効期限：発行から7日）。管理者に再招待を依頼してください。";
+    } else if (authReason === "invite_used") {
+      msg = "この招待URLは既に使用済みです。管理者に再招待を依頼してください。";
+    } else if (authReason === "invite_invalid") {
+      msg = "この招待URLは無効です。管理者に再招待を依頼してください。";
+    } else if (authReason === "domain_not_allowed") {
+      msg = "このGoogleアカウントは企業利用に対応していません。管理者に確認してください。";
+    } else if (authReason === "company_personal_blocked") {
+      msg = "企業アカウントはPersonal利用できません。個人利用は個人アドレスで登録してください。";
+    }
+
+    setGateMessage(msg);
+
+    // クエリ掃除
+    history.replaceState({}, document.title, "/");
+  }
+
+  // 既にログイン済みなら Gate を閉じる（認証は最終的にサーバ/APIでも必須化する）
+  const st = getAuthState();
+  if (st?.loggedIn) {
+    setGateMessage("");
+    hideAuthGate();
+  } else {
+    // モードが保存されている場合は自動でGoogleログインへ（次回自動）
+    const savedMode = getAuthMode();
+    if (savedMode) {
+      window.__AUREA_AUTH_MODE__ = savedMode;
+      // 招待tokenがある場合は company 優先
+      const inv = getInvite();
+      const nextMode = inv?.token ? "company" : savedMode;
+
+      // 自動遷移（UX：Welcome Gate → Googleログイン）
+      setTimeout(() => {
+        startGoogleLogin(nextMode);
+      }, 0);
+    }
+  }
+
+  btnAuthPersonal?.addEventListener("click", (e) => {
+    e.preventDefault();
+
+    // 企業アカウントを personal にさせない（別アドレス運用）
+    const st2 = getAuthState();
+    if (st2?.loggedIn && st2.mode === "company") {
+      setGateMessage("企業アカウントはPersonal利用できません。個人利用は個人アドレスで登録してください。");
+      return;
+    }
+
+    setAuthMode("personal");
+    window.__AUREA_AUTH_MODE__ = "personal";
+    clearInvite();
+    startGoogleLogin("personal");
+  });
+
+  btnAuthCompany?.addEventListener("click", (e) => {
+    e.preventDefault();
+    setAuthMode("company");
+    window.__AUREA_AUTH_MODE__ = "company";
+    startGoogleLogin("company");
+  });
+
   /* ================= boot ================= */
   if (!state.plan) state.plan = "Free";
 
@@ -1998,6 +2202,7 @@ btnNewChat?.addEventListener("click", (e) => {
       deviceTrusted: true
     };
   }
+
   if (typeof state.user.deviceTrusted !== "boolean") state.user.deviceTrusted = true;
 
   if (!state.context || (state.context.type !== "global" && state.context.type !== "project")) {
