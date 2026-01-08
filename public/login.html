@@ -339,12 +339,9 @@
         }
       };
 
-      const start = async () => {
-        btnStart.disabled = true;
-        btnLabel.textContent = "Signing in…";
-
-        // redirect result first
+      const handleRedirectResultOnce = async () => {
         try {
+          statusMsg.textContent = "ログイン状態を確認しています…";
           const res = await auth.getRedirectResult();
           if (res && res.user) {
             const user = res.user;
@@ -367,9 +364,20 @@
             redirectToIndexOk(user);
             return;
           }
-        } catch {}
+        } catch (e) {
+          void e;
+        }
 
-        // redirect only（環境差でのループ/ブロックを避ける）
+        // 未ログインなら待機（自動で redirect を開始しない＝ループ防止）
+        statusMsg.textContent = "Google アカウントでログインしてください。";
+        btnStart.disabled = false;
+        btnLabel.textContent = "Continue with Google";
+      };
+
+      const startLogin = async () => {
+        btnStart.disabled = true;
+        btnLabel.textContent = "Signing in…";
+
         try {
           statusMsg.textContent = "Google アカウント認証を開始します…";
           await auth.signInWithRedirect(provider);
@@ -377,20 +385,18 @@
         } catch (e) {
           void e;
           showError("Google ログインに失敗しました。");
-          setTimeout(() => redirectToIndexError("login_failed"), 600);
+          btnStart.disabled = false;
+          btnLabel.textContent = "Continue with Google";
         }
       };
 
-      // UX: 自動開始（ボタンは保険）
-      btnStart.disabled = false;
-      btnLabel.textContent = "Continue with Google";
       btnStart.addEventListener("click", (e) => {
         e.preventDefault();
-        start();
+        startLogin();
       });
 
-      // 自動開始
-      setTimeout(start, 0);
+      // 先に「戻り結果」を処理。ここで redirect は開始しない。
+      await handleRedirectResultOnce();
     })();
   </script>
 </body>
