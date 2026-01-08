@@ -5,7 +5,7 @@
     ja: {
       /* ===== Sidebar / Main ===== */
       newChat: "新しいチャット",
-      threadNew: "新しいチャット",
+      threadNew: "+ 新しいチャット",
       titleMatch: "（タイトル一致）",
 
       library: "ライブラリ",

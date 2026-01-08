@@ -840,6 +840,51 @@ const closeSettings = () => {
     renderView();
   };
 
+  const renameProjectThread = (projectId, threadId) => {
+    const pid = String(projectId || "");
+    const tid = String(threadId || "");
+    const threads = state.threads.projects?.[pid] || [];
+    const t = threads.find(x => x.id === tid);
+    if (!t) return;
+
+    const next = window.prompt(tr("promptNewName"), t.title || tr("threadNew"));
+    if (next === null) return;
+    const v = next.trim();
+    if (!v) return;
+
+    t.title = v;
+    t.updatedAt = nowISO();
+    save(state);
+    renderSidebar();
+  };
+
+  const deleteProjectThread = async (projectId, threadId) => {
+    const pid = String(projectId || "");
+    const tid = String(threadId || "");
+
+    const ok1 = await confirmModal(tr("confirmDelete"));
+    if (!ok1) return;
+
+    const threads = state.threads.projects?.[pid] || [];
+    const idx = threads.findIndex(x => x.id === tid);
+    if (idx < 0) return;
+
+    threads.splice(idx, 1);
+
+    if (state.activeThreadIdByScope?.projects?.[pid] === tid) {
+      state.activeThreadIdByScope.projects[pid] = null;
+    }
+
+    if (state.context?.type === "project" && state.context?.projectId === pid && getActiveThreadId() === tid) {
+      state.context = { type: "global" };
+      state.view = "chat";
+    }
+
+    save(state);
+    renderSidebar();
+    renderView();
+  };
+
   const appendMessage = (role, content) => {
     let t = getThreadByIdInContext(getActiveThreadId());
 
@@ -1328,6 +1373,12 @@ const closeSettings = () => {
             .sort((a,b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
 
           list.forEach((t) => {
+            const row = document.createElement("div");
+            row.className = "pj-row";
+            row.dataset.kind = "pj-thread";
+            row.dataset.projectId = p.id;
+            row.dataset.threadId = t.id;
+
             const a = document.createElement("a");
             a.href = "#";
             a.className = "pj-thread";
@@ -1347,7 +1398,41 @@ const closeSettings = () => {
             }
 
             a.innerHTML = `<div class="t">${escHtml(t.title || tr("threadNew"))}</div>`;
-            inner.appendChild(a);
+
+            const more = document.createElement("details");
+            more.className = "sb-more";
+
+            const sum = document.createElement("summary");
+            sum.className = "sb-dots";
+            sum.setAttribute("aria-label", "メニュー");
+            sum.textContent = "•••";
+
+            const pop = document.createElement("div");
+            pop.className = "sb-pop";
+            pop.setAttribute("role","menu");
+            pop.setAttribute("aria-label","メニュー");
+
+            const rename = document.createElement("button");
+            rename.type = "button";
+            rename.className = "sb-act";
+            rename.textContent = tr("menuRename");
+            rename.dataset.action = "rename-pj-thread";
+
+            const del = document.createElement("button");
+            del.type = "button";
+            del.className = "sb-act danger";
+            del.textContent = tr("menuDelete");
+            del.dataset.action = "delete-pj-thread";
+
+            pop.appendChild(rename);
+            pop.appendChild(del);
+
+            more.appendChild(sum);
+            more.appendChild(pop);
+
+            row.appendChild(a);
+            row.appendChild(more);
+            inner.appendChild(row);
           });
 
           projectList.appendChild(inner);
@@ -1850,6 +1935,26 @@ btnNewChat?.addEventListener("click", (e) => {
     // PJ内スレッド（pj-thread）クリック：ここでのみ project context に切替
     const pjThread = t.closest(".pj-thread[data-action='pj-open-thread']");
     if (pjThread) {
+      const pjRow = t.closest(".pj-row[data-kind='pj-thread']");
+
+      // PJスレッドのメニュー操作
+      const actionBtn = t.closest("button.sb-act");
+      if (pjRow && actionBtn?.dataset.action === "rename-pj-thread") {
+        e.preventDefault();
+        renameProjectThread(pjRow.dataset.projectId, pjRow.dataset.threadId);
+        closeDetails(pjRow.querySelector(".sb-more"));
+        return;
+      }
+      if (pjRow && actionBtn?.dataset.action === "delete-pj-thread") {
+        e.preventDefault();
+        await deleteProjectThread(pjRow.dataset.projectId, pjRow.dataset.threadId);
+        closeDetails(pjRow.querySelector(".sb-more"));
+        return;
+      }
+
+      // メニュークリックは開閉に任せる
+      if (t.closest(".sb-more") || t.classList.contains("sb-dots")) return;
+
       e.preventDefault();
 
       const pid = pjThread.dataset.projectId;

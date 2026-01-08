@@ -311,7 +311,9 @@ details > summary::-webkit-details-marker{ display:none; }
   pointer-events:none;
   transition:opacity .12s ease;
 }
+/* show dots on hover (global rows + project rows) */
 .sb-row:hover .sb-dots,
+.pj-row:hover .sb-dots,
 .sb-more[open] .sb-dots{
   opacity:1;
   pointer-events:auto;
