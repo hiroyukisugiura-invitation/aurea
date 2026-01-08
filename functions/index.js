@@ -2,10 +2,16 @@ const { onRequest } = require("firebase-functions/v2/https");
 const express = require("express");
 const admin = require("firebase-admin");
 const Stripe = require("stripe");
+const { defineSecret } = require("firebase-functions/params");
 
-// Stripe は env が無い状態で new するとデプロイ解析で落ちるため、遅延初期化する
+const STRIPE_SECRET_KEY = defineSecret("STRIPE_SECRET_KEY");
+const STRIPE_PRICE_PRO = defineSecret("STRIPE_PRICE_PRO");
+const STRIPE_PRICE_TEAM = defineSecret("STRIPE_PRICE_TEAM");
+const STRIPE_PRICE_ENTERPRISE = defineSecret("STRIPE_PRICE_ENTERPRISE");
+
+// Secret が無い状態で Stripe を初期化しない（解析落ち防止）
 const getStripe = () => {
-  const key = String(process.env.STRIPE_SECRET_KEY || "").trim();
+  const key = String(STRIPE_SECRET_KEY.value() || "").trim();
   if (!key) return null;
   return new Stripe(key);
 };
@@ -230,9 +236,9 @@ app.post("/api/billing/checkout", async (req, res) => {
     }
 
     const priceMap = {
-      Pro: String(process.env.STRIPE_PRICE_PRO || "").trim(),
-      Team: String(process.env.STRIPE_PRICE_TEAM || "").trim(),
-      Enterprise: String(process.env.STRIPE_PRICE_ENTERPRISE || "").trim()
+      Pro: String(STRIPE_PRICE_PRO.value() || "").trim(),
+      Team: String(STRIPE_PRICE_TEAM.value() || "").trim(),
+      Enterprise: String(STRIPE_PRICE_ENTERPRISE.value() || "").trim()
     };
 
     const price = priceMap[plan];
@@ -273,4 +279,10 @@ app.get("/api/google/callback", oauthCallback);
 app.post("/company/invite/consume", consumeInvite);
 app.post("/api/company/invite/consume", consumeInvite);
 
-exports.api = onRequest({ region: "us-central1" }, app);
+exports.api = onRequest(
+  {
+    region: "us-central1",
+    secrets: [STRIPE_SECRET_KEY, STRIPE_PRICE_PRO, STRIPE_PRICE_TEAM, STRIPE_PRICE_ENTERPRISE]
+  },
+  app
+);
