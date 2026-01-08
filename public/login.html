@@ -147,26 +147,12 @@
     </div>
   </div>
 
-    <script>
-    // Firebase Console > Project settings > General > Your apps (Web) > Firebase SDK snippet (config)
-    // ここに config を貼る（この値は公開情報でOK）
-    window.__FIREBASE_CONFIG__ = {
-      apiKey: "PASTE_HERE",
-      authDomain: "PASTE_HERE",
-      projectId: "PASTE_HERE",
-      storageBucket: "PASTE_HERE",
-      messagingSenderId: "PASTE_HERE",
-      appId: "PASTE_HERE"
-      // measurementId がある場合はここに追加してOK
-    };
-  </script>
-
   <!-- Firebase (compat CDN) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 
   <script>
-    (() => {
+    (async () => {
       "use strict";
 
       const AUTH_MODE_KEY = "aurea_auth_mode";
