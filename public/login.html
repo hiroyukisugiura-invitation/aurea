@@ -380,10 +380,29 @@
 
         try {
           statusMsg.textContent = "Google アカウント認証を開始します…";
-          await auth.signInWithRedirect(provider);
-          return;
+          const res = await auth.signInWithPopup(provider);
+          const user = res && res.user;
+          if (!user) throw new Error("no_user");
+
+          // Company の場合だけ invite 消費
+          if (mode === "company") {
+            const inv = (() => {
+              try {
+                const raw = localStorage.getItem(INVITE_KEY);
+                return raw ? JSON.parse(raw) : null;
+              } catch { return null; }
+            })();
+
+            const token = inv?.token ? String(inv.token) : "";
+            if (!token) { redirectToIndexError("invite_invalid"); return; }
+
+            const chk = await consumeCompanyInvite(token, user);
+            if (!chk.ok) { redirectToIndexError(chk.reason); return; }
+          }
+
+          redirectToIndexOk(user);
         } catch (e) {
-          void e;
+          console.error(e);
           showError("Google ログインに失敗しました。");
           btnStart.disabled = false;
           btnLabel.textContent = "Continue with Google";
