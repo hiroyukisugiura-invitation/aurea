@@ -369,40 +369,15 @@
           }
         } catch {}
 
-        // popup try -> fallback redirect
+        // redirect only（環境差でのループ/ブロックを避ける）
         try {
           statusMsg.textContent = "Google アカウント認証を開始します…";
-          const res = await auth.signInWithPopup(provider);
-          const user = res && res.user;
-          if (!user) { redirectToIndexError("login_failed"); return; }
-
-          if (mode === "company") {
-            const inv = (() => {
-              try {
-                const raw = localStorage.getItem(INVITE_KEY);
-                return raw ? JSON.parse(raw) : null;
-              } catch { return null; }
-            })();
-
-            const token = inv?.token ? String(inv.token) : "";
-            if (!token) { redirectToIndexError("invite_invalid"); return; }
-
-            const chk = await consumeCompanyInvite(token, user);
-            if (!chk.ok) { redirectToIndexError(chk.reason); return; }
-          }
-
-          redirectToIndexOk(user);
+          await auth.signInWithRedirect(provider);
           return;
         } catch (e) {
-          // popup blocked or iOS => redirect
-          try {
-            statusMsg.textContent = "リダイレクトで認証します…";
-            await auth.signInWithRedirect(provider);
-            return;
-          } catch (e2) {
-            showError("Google ログインに失敗しました。");
-            setTimeout(() => redirectToIndexError("login_failed"), 600);
-          }
+          void e;
+          showError("Google ログインに失敗しました。");
+          setTimeout(() => redirectToIndexError("login_failed"), 600);
         }
       };
 
