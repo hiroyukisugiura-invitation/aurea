@@ -2,7 +2,13 @@ const { onRequest } = require("firebase-functions/v2/https");
 const express = require("express");
 const admin = require("firebase-admin");
 const Stripe = require("stripe");
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
+
+// Stripe は env が無い状態で new するとデプロイ解析で落ちるため、遅延初期化する
+const getStripe = () => {
+  const key = String(process.env.STRIPE_SECRET_KEY || "").trim();
+  if (!key) return null;
+  return new Stripe(key);
+};
 
 const app = express();
 app.use(express.json({ limit: "1mb" }));
@@ -207,6 +213,50 @@ const consumeInvite = async (req, res) => {
     void e;
   }
 };
+
+/* ================= Billing (Stripe) ================= */
+app.post("/api/billing/checkout", async (req, res) => {
+  const stripe = getStripe();
+  if (!stripe) {
+    res.status(500).json({ ok: false, reason: "stripe_key_missing" });
+    return;
+  }
+
+  try {
+    const { plan, uid, email, successUrl, cancelUrl } = req.body || {};
+    if (!plan || !uid || !email) {
+      res.status(400).json({ ok: false, reason: "missing_params" });
+      return;
+    }
+
+    const priceMap = {
+      Pro: String(process.env.STRIPE_PRICE_PRO || "").trim(),
+      Team: String(process.env.STRIPE_PRICE_TEAM || "").trim(),
+      Enterprise: String(process.env.STRIPE_PRICE_ENTERPRISE || "").trim()
+    };
+
+    const price = priceMap[plan];
+    if (!price) {
+      res.status(400).json({ ok: false, reason: "invalid_plan" });
+      return;
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "subscription",
+      payment_method_types: ["card"],
+      line_items: [{ price, quantity: 1 }],
+      customer_email: email,
+      success_url: successUrl || `${req.protocol}://${req.get("host")}/?billing=success`,
+      cancel_url: cancelUrl || `${req.protocol}://${req.get("host")}/?billing=cancel`,
+      metadata: { uid, plan }
+    });
+
+    res.json({ ok: true, url: session.url });
+  } catch (e) {
+    void e;
+    res.status(400).json({ ok: false, reason: "checkout_failed" });
+  }
+});
 
 app.get("/google/connect", connectGoogle("google"));
 app.get("/gmail/connect", connectGoogle("gmail"));
