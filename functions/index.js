@@ -1,6 +1,8 @@
 const { onRequest } = require("firebase-functions/v2/https");
 const express = require("express");
 const admin = require("firebase-admin");
+const Stripe = require("stripe");
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
 
 const app = express();
 app.use(express.json({ limit: "1mb" }));

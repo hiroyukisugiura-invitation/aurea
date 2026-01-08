@@ -141,6 +141,11 @@
   // IMPORTANT: reload should not start in images
   state.view = "chat";
 
+  // IMPORTANT: reload should not open previous thread (start blank like GPT)
+  state.context = { type: "global" };
+  if (!state.activeThreadIdByScope) state.activeThreadIdByScope = { global: null, projects: {} };
+  state.activeThreadIdByScope.global = null;
+
   /* ===== i18n (v1) ===== */
   const tr = (key) => {
     return (window.AUREA_I18N && typeof window.AUREA_I18N.tr === "function")
@@ -259,13 +264,12 @@
     }
 
     // Data storage
-    const selData = document.querySelector(".settings-modal select[aria-label='会話とデータの保存先']");
+    const selData = document.querySelector(".settings-modal #settingsDataStorage");
     if (selData && state.settings?.dataStorage) {
-      const label = (state.settings.dataStorage === "local") ? "端末内" : "クラウド";
-      Array.from(selData.options).forEach(o => { o.selected = (o.textContent === label); });
+      selData.value = (state.settings.dataStorage === "local") ? "local" : "cloud";
     }
 
-    const dataNow = document.querySelector(".panel-data .section[aria-label='保存設定'] .row .l .v");
+    const dataNow = document.getElementById("dataStorageNow");
     if (dataNow) dataNow.textContent = `現在：${(state.settings?.dataStorage === "local") ? "端末内" : "クラウド"}`;
 
     // Apps status
@@ -628,10 +632,14 @@ const closeSettings = () => {
 
   const updateSendButtonVisibility = () => {
     if (!askInput || !sendBtn) return;
+
     const hasText = askInput.value.trim().length > 0;
-    sendBtn.style.display = hasText ? "" : "none";
-    if (micBtn) micBtn.style.display = hasText ? "none" : "";
-    if (voiceBtn) voiceBtn.style.display = hasText ? "none" : "";
+
+    // send（↑）は常時表示、未入力は disabled（GPT準拠）
+    sendBtn.style.display = "";
+    sendBtn.disabled = !hasText;
+    sendBtn.style.opacity = hasText ? "" : ".45";
+    sendBtn.style.cursor = hasText ? "" : "not-allowed";
   };
 
   /* ================= project modal ================= */
@@ -1575,9 +1583,14 @@ const closeSettings = () => {
 
   const setStreaming = (on) => {
     if (stopBtn) stopBtn.style.display = on ? "" : "none";
-    if (sendBtn) sendBtn.style.display = on ? "none" : (askInput?.value.trim() ? "" : "none");
-    if (micBtn) micBtn.style.display = on ? "none" : (askInput?.value.trim() ? "none" : "");
-    if (voiceBtn) voiceBtn.style.display = on ? "none" : (askInput?.value.trim() ? "none" : "");
+
+    // streaming中は送信ボタンを無効化（表示は維持）
+    if (sendBtn) {
+      sendBtn.style.display = "";
+      sendBtn.disabled = !!on || !(askInput?.value.trim());
+      sendBtn.style.opacity = sendBtn.disabled ? ".45" : "";
+      sendBtn.style.cursor = sendBtn.disabled ? "not-allowed" : "";
+    }
   };
 
   const stopStreaming = () => {
@@ -1820,8 +1833,7 @@ btnNewChat?.addEventListener("click", (e) => {
   sendBtn?.addEventListener("click", (e) => { e.preventDefault(); send(); });
   stopBtn?.addEventListener("click", (e) => { e.preventDefault(); stopStreaming(); });
 
-  micBtn?.addEventListener("click", (e) => { e.preventDefault(); });
-  voiceBtn?.addEventListener("click", (e) => { e.preventDefault(); });
+  // mic / voice buttons removed in index.html (no-op)
 
 /* ================= global close rules ================= */
   document.addEventListener("pointerdown", (e) => {
@@ -1932,26 +1944,27 @@ btnNewChat?.addEventListener("click", (e) => {
       return;
     }
 
+    // PJ内スレッド：••• メニュー（名前変更 / 削除）
+    const pjRowMenu = t.closest(".pj-row[data-kind='pj-thread']");
+    if (pjRowMenu) {
+      const actionBtn = t.closest("button.sb-act");
+      if (actionBtn?.dataset.action === "rename-pj-thread") {
+        e.preventDefault();
+        renameProjectThread(pjRowMenu.dataset.projectId, pjRowMenu.dataset.threadId);
+        closeDetails(pjRowMenu.querySelector(".sb-more"));
+        return;
+      }
+      if (actionBtn?.dataset.action === "delete-pj-thread") {
+        e.preventDefault();
+        await deleteProjectThread(pjRowMenu.dataset.projectId, pjRowMenu.dataset.threadId);
+        closeDetails(pjRowMenu.querySelector(".sb-more"));
+        return;
+      }
+    }
+
     // PJ内スレッド（pj-thread）クリック：ここでのみ project context に切替
     const pjThread = t.closest(".pj-thread[data-action='pj-open-thread']");
     if (pjThread) {
-      const pjRow = t.closest(".pj-row[data-kind='pj-thread']");
-
-      // PJスレッドのメニュー操作
-      const actionBtn = t.closest("button.sb-act");
-      if (pjRow && actionBtn?.dataset.action === "rename-pj-thread") {
-        e.preventDefault();
-        renameProjectThread(pjRow.dataset.projectId, pjRow.dataset.threadId);
-        closeDetails(pjRow.querySelector(".sb-more"));
-        return;
-      }
-      if (pjRow && actionBtn?.dataset.action === "delete-pj-thread") {
-        e.preventDefault();
-        await deleteProjectThread(pjRow.dataset.projectId, pjRow.dataset.threadId);
-        closeDetails(pjRow.querySelector(".sb-more"));
-        return;
-      }
-
       // メニュークリックは開閉に任せる
       if (t.closest(".sb-more") || t.classList.contains("sb-dots")) return;
 
@@ -2754,7 +2767,7 @@ btnNewChat?.addEventListener("click", (e) => {
     bindAppsConnectorsOnce();
 
     /* ===== Data ===== */
-    const btnDeleteAll = document.querySelector(".panel-data .section[aria-label='削除'] .btn.danger");
+    const btnDeleteAll = document.getElementById("btnDeleteAllChats");
     btnDeleteAll?.addEventListener("click", async (e) => {
       e.preventDefault();
       const ok = await confirmModal(tr("confirmDeleteAllChats"));
@@ -2853,10 +2866,84 @@ btnNewChat?.addEventListener("click", (e) => {
       un.addEventListener("blur", saveUser);
     }
 
+    const ensurePlanModal = () => {
+      let wrap = document.getElementById("aureaPlanModal");
+      if (wrap) return wrap;
+
+      wrap = document.createElement("div");
+      wrap.id = "aureaPlanModal";
+      wrap.setAttribute("aria-hidden", "true");
+      wrap.style.cssText = `
+        position:fixed; inset:0; display:none; align-items:center; justify-content:center;
+        background:rgba(0,0,0,.45); z-index:99999; padding:18px;
+      `;
+
+      wrap.innerHTML = `
+        <div style="
+          width:min(560px, calc(100% - 24px));
+          background:rgba(20,21,22,.96);
+          border:1px solid rgba(255,255,255,.10);
+          border-radius:18px;
+          box-shadow:0 10px 30px rgba(0,0,0,.45);
+          overflow:hidden;
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
+          color:rgba(255,255,255,.92);
+          font-family: -apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Hiragino Sans','Noto Sans JP',sans-serif;
+        ">
+          <div style="padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.08);font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:space-between;">
+            <span>プラン一覧</span>
+            <button id="aureaPlanClose" type="button" style="width:36px;height:36px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:rgba(255,255,255,.92);cursor:pointer;font-size:18px;line-height:34px;">×</button>
+          </div>
+
+          <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px;">
+            <button class="btn" type="button" data-plan="Free">Free</button>
+            <button class="btn" type="button" data-plan="Pro">Pro</button>
+            <button class="btn" type="button" data-plan="Team">Team</button>
+            <button class="btn" type="button" data-plan="Enterprise">Enterprise</button>
+
+            <div style="margin-top:6px;font-size:12px;line-height:1.6;color:rgba(255,255,255,.70);">
+              Free 以外のプランは有料です。プランを選択すると料金に同意した上で変更されます
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(wrap);
+
+      wrap.addEventListener("click", (e) => {
+        if (e.target === wrap) document.getElementById("aureaPlanClose")?.click();
+      });
+
+      wrap.querySelector("#aureaPlanClose")?.addEventListener("click", () => {
+        wrap.style.display = "none";
+        wrap.setAttribute("aria-hidden", "true");
+      });
+
+      wrap.querySelectorAll("button[data-plan]").forEach((b) => {
+        b.addEventListener("click", async () => {
+          const plan = b.getAttribute("data-plan") || "Free";
+
+          // v1: UIのみ。Stripe連動は次工程で /api/billing に接続する。
+          state.plan = plan;
+          save(state);
+          syncAccountUi();
+          syncSettingsUi();
+
+          wrap.style.display = "none";
+          wrap.setAttribute("aria-hidden", "true");
+        });
+      });
+
+      return wrap;
+    };
+
     const btnBilling = document.getElementById("btnBilling");
-    btnBilling?.addEventListener("click", async (e) => {
+    btnBilling?.addEventListener("click", (e) => {
       e.preventDefault();
-      await confirmModal("請求情報を開きますか？");
+      const m = ensurePlanModal();
+      m.style.display = "flex";
+      m.setAttribute("aria-hidden", "false");
     });
 
     const btnChangeEmail = document.getElementById("btnChangeEmail");
@@ -2899,6 +2986,55 @@ btnNewChat?.addEventListener("click", (e) => {
         openReg(b.dataset.regTab || "tokusho");
       });
     });
+
+        const btnAddTrainerCase = document.getElementById("btnAddTrainerCase");
+    btnAddTrainerCase?.addEventListener("click", async (e) => {
+      e.preventDefault();
+      await confirmModal("ケース追加（AET）は次工程で実装します。");
+    });
+
+        const fillRegulations = () => {
+      const set = (panelKey, html) => {
+        const panel = document.querySelector(`.settings-modal .reg-panel[data-reg-panel='${panelKey}'] .reg-card`);
+        if (!panel) return;
+        panel.innerHTML = html;
+      };
+
+      set("tokusho", `
+        <div class="reg-title">特定商取引法に基づく表記</div>
+        <div class="reg-text">
+          事業者名：AUREA<br>
+          販売価格：各プランページに表示（消費税込）<br>
+          商品代金以外の必要料金：通信料等は利用者負担<br>
+          支払方法：クレジットカード（Stripe）<br>
+          支払時期：申込時に確定、以後は更新日に自動課金<br>
+          提供時期：決済完了後、直ちに利用可能<br>
+          返品・キャンセル：デジタルサービスの性質上、原則不可（法令に基づく場合を除く）<br>
+          お問い合わせ：アプリ内の「バグレポート」等からご連絡ください
+        </div>
+      `);
+
+      set("terms", `
+        <div class="reg-title">利用規約（概要）</div>
+        <div class="reg-text">
+          本サービスは、AIを用いて情報の整理・要約・提案を提供します。<br>
+          提供される内容は正確性を保証しません。重要な判断は利用者が必ず追加確認を行ってください。<br>
+          不正利用、第三者の権利侵害、法令違反行為は禁止します。<br>
+          当社は、必要に応じてサービス内容の変更・停止を行う場合があります。
+        </div>
+      `);
+
+      set("privacy", `
+        <div class="reg-title">プライバシーポリシー（概要）</div>
+        <div class="reg-text">
+          当社は、アカウント情報（メール、表示名等）および利用ログ等を、サービス提供・改善・不正防止の目的で取り扱います。<br>
+          法令に基づく場合を除き、本人の同意なく第三者へ提供しません。<br>
+          収集・利用・保管の詳細は、本ポリシーおよび関連法令に従います。
+        </div>
+      `);
+    };
+
+    fillRegulations();
 
     openReg("tokusho");
   };
