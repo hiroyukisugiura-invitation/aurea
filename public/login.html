@@ -142,9 +142,24 @@
 
     <div class="foot">
       Email/Password は使用しません。<br>
-      Company は招待制（期限：発行から7日）です。期限切れの場合は管理者に再招待を依頼してください。
+      Company は招待制（期限：発行から7日）です。<br>
+      期限切れの場合は管理者に再招待を依頼してください。
     </div>
   </div>
+
+    <script>
+    // Firebase Console > Project settings > General > Your apps (Web) > Firebase SDK snippet (config)
+    // ここに config を貼る（この値は公開情報でOK）
+    window.__FIREBASE_CONFIG__ = {
+      apiKey: "PASTE_HERE",
+      authDomain: "PASTE_HERE",
+      projectId: "PASTE_HERE",
+      storageBucket: "PASTE_HERE",
+      messagingSenderId: "PASTE_HERE",
+      appId: "PASTE_HERE"
+      // measurementId がある場合はここに追加してOK
+    };
+  </script>
 
   <!-- Firebase (compat CDN) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
@@ -278,12 +293,23 @@
         return;
       }
 
-      // Firebase config: window.__FIREBASE_CONFIG__ を前提（無い場合は安全に止める）
-      const cfg = window.__FIREBASE_CONFIG__;
+      // Firebase Hosting の init.json から config を自動取得（貼り付け不要）
+      const fetchFirebaseConfig = async () => {
+        try {
+          const r = await fetch("/__/firebase/init.json", { cache: "no-store" });
+          if (!r || !r.ok) return null;
+          const cfg = await r.json();
+          return (cfg && typeof cfg === "object") ? cfg : null;
+        } catch {
+          return null;
+        }
+      };
+
+      const cfg = await fetchFirebaseConfig();
       if (!cfg || typeof cfg !== "object") {
-        showError("Firebase 設定が見つかりません（window.__FIREBASE_CONFIG__ が未定義）");
-        // indexへ戻して Gate 表示させる
-        setTimeout(() => redirectToIndexError("config_missing"), 600);
+        showError("Firebase 設定が取得できません（/__/firebase/init.json）");
+        btnStart.disabled = true;
+        btnLabel.textContent = "Config missing";
         return;
       }
 
@@ -291,6 +317,7 @@
         firebase.initializeApp(cfg);
       } catch (e) {
         // 既に初期化済み等は許容
+        void e;
       }
 
       const auth = firebase.auth();

@@ -1,7 +1,12 @@
 const { onRequest } = require("firebase-functions/v2/https");
 const express = require("express");
+const admin = require("firebase-admin");
 
 const app = express();
+app.use(express.json({ limit: "1mb" }));
+
+try { admin.initializeApp(); } catch (e) { void e; }
+const db = admin.firestore();
 
 /* ================= Google OAuth (v1: redirect only) =================
   必要な環境変数:
@@ -97,6 +102,110 @@ const oauthCallback = (req, res) => {
   res.redirect(302, `${base}?connect=ok&state=${encodeURIComponent(state)}&code=${encodeURIComponent(code)}`);
 };
 
+/* ================= Company Invite Consume (AUREA) =================
+  Firestore 想定:
+  - company_invites/{token}
+      { email, companyId, expiresAt, usedAt, usedByUid, usedByEmail }
+  - companies/{companyId}
+      { allowedDomains: ["invitation.co", ...] }  // 任意（無ければ invite email ドメインのみ許可）
+*/
+const getEmailDomain = (email) => {
+  const s = String(email || "").trim().toLowerCase();
+  const i = s.lastIndexOf("@");
+  return (i >= 0) ? s.slice(i + 1) : "";
+};
+
+const normalizeEmail = (email) => String(email || "").trim().toLowerCase();
+
+const consumeInvite = async (req, res) => {
+  const token = String(req.body?.token || "").trim();
+  const email = normalizeEmail(req.body?.email || "");
+  const uid = String(req.body?.uid || "").trim();
+
+  if (!token || !email || !uid) {
+    res.status(400).json({ ok: false, error: "missing_params" });
+    return;
+  }
+
+  const ref = db.collection("company_invites").doc(token);
+
+  try {
+    const result = await db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      if (!snap.exists) return { ok: false, status: 400, reason: "invite_invalid" };
+
+      const inv = snap.data() || {};
+      const invitedEmail = normalizeEmail(inv.email || "");
+      const companyId = String(inv.companyId || "").trim();
+
+      // 招待メール一致（転送・なりすまし防止）
+      if (!invitedEmail || invitedEmail !== email) {
+        return { ok: false, status: 400, reason: "invite_invalid" };
+      }
+
+      // 期限チェック
+      const now = admin.firestore.Timestamp.now();
+      const expiresAt = inv.expiresAt;
+      if (!expiresAt || expiresAt.toMillis == null) {
+        return { ok: false, status: 400, reason: "invite_invalid" };
+      }
+      if (expiresAt.toMillis() < now.toMillis()) {
+        return { ok: false, status: 410, reason: "invite_expired" };
+      }
+
+      // 使用済み
+      if (inv.usedAt) {
+        return { ok: false, status: 409, reason: "invite_used" };
+      }
+
+      // ドメイン制限（companies/{companyId}.allowedDomains があれば優先）
+      const invitedDomain = getEmailDomain(email);
+      if (!invitedDomain) {
+        return { ok: false, status: 400, reason: "invite_invalid" };
+      }
+
+      if (companyId) {
+        const cRef = db.collection("companies").doc(companyId);
+        const cSnap = await tx.get(cRef);
+        if (cSnap.exists) {
+          const c = cSnap.data() || {};
+          const allowed = Array.isArray(c.allowedDomains) ? c.allowedDomains.map(x => String(x || "").toLowerCase()) : null;
+          if (allowed && allowed.length > 0) {
+            if (!allowed.includes(invitedDomain)) {
+              return { ok: false, status: 403, reason: "domain_not_allowed" };
+            }
+          } else {
+            // allowedDomains 無いなら「招待メールのドメインのみ許可」
+            const invitedEmailDomain = getEmailDomain(invitedEmail);
+            if (invitedEmailDomain && invitedEmailDomain !== invitedDomain) {
+              return { ok: false, status: 403, reason: "domain_not_allowed" };
+            }
+          }
+        }
+      }
+
+      // 消費（原子的に used を立てる）
+      tx.update(ref, {
+        usedAt: now,
+        usedByUid: uid,
+        usedByEmail: email
+      });
+
+      return { ok: true, status: 200 };
+    });
+
+    if (!result.ok) {
+      res.status(result.status).json({ ok: false, reason: result.reason });
+      return;
+    }
+
+    res.status(200).json({ ok: true });
+  } catch (e) {
+    res.status(400).json({ ok: false, reason: "invite_invalid" });
+    void e;
+  }
+};
+
 app.get("/google/connect", connectGoogle("google"));
 app.get("/gmail/connect", connectGoogle("gmail"));
 app.get("/drive/connect", connectGoogle("drive"));
@@ -109,5 +218,7 @@ app.get("/api/drive/connect", connectGoogle("drive"));
 // callback（保険で両方）
 app.get("/google/callback", oauthCallback);
 app.get("/api/google/callback", oauthCallback);
+app.post("/company/invite/consume", consumeInvite);
+app.post("/api/company/invite/consume", consumeInvite);
 
 exports.api = onRequest({ region: "us-central1" }, app);
