@@ -2767,6 +2767,11 @@ btnNewChat?.addEventListener("click", (e) => {
         const pm = document.getElementById("aureaPlanModal");
         if (pm) pm.remove();
 
+        // Trainer: 既に生成済みの「ケース追加」モーダルも破棄（言語固定化対策）
+        const tm = document.getElementById("aureaTrainerCaseModal");
+        if (tm) tm.remove();
+        trainerWrap = null;
+
         saveSettings();
         applyI18n();
         renderSidebar();
@@ -2774,6 +2779,9 @@ btnNewChat?.addEventListener("click", (e) => {
         // 強制再描画（混在防止）
         clearBoardViewNodes();
         renderView();
+
+        // Trainer: 「まだケースがありません。」等を言語に追従させるため再描画
+        try { renderTrainerCases(); } catch {}
       });
     }
 
