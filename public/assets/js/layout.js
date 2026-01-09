@@ -263,14 +263,25 @@
       selSend.value = (mode === "enter") ? "enter" : "cmdEnter";
     }
 
-    // Data storage
-    const selData = document.querySelector(".settings-modal #settingsDataStorage");
-    if (selData && state.settings?.dataStorage) {
-      selData.value = (state.settings.dataStorage === "local") ? "local" : "cloud";
+    // Data storage (Data panel buttons)
+    const dataNow = document.getElementById("dataStorageNow");
+    const onLocal = (state.settings?.dataStorage === "local");
+
+    if (dataNow) {
+      dataNow.textContent = `現在：${onLocal ? "端末内" : "クラウド"}`;
     }
 
-    const dataNow = document.getElementById("dataStorageNow");
-    if (dataNow) dataNow.textContent = `現在：${(state.settings?.dataStorage === "local") ? "端末内" : "クラウド"}`;
+    const bCloud = document.getElementById("btnStorageCloud");
+    const bLocal = document.getElementById("btnStorageLocal");
+
+    if (bCloud) {
+      bCloud.setAttribute("aria-pressed", onLocal ? "false" : "true");
+      bCloud.style.opacity = onLocal ? ".65" : "1";
+    }
+    if (bLocal) {
+      bLocal.setAttribute("aria-pressed", onLocal ? "true" : "false");
+      bLocal.style.opacity = onLocal ? "1" : ".65";
+    }
 
     // Apps status
     const appCards = Array.from(document.querySelectorAll(".panel-apps .apps-grid .saas"));
@@ -2688,7 +2699,6 @@ btnNewChat?.addEventListener("click", (e) => {
     const selTheme = document.querySelector(".settings-modal #settingsTheme");
     const selLang  = document.querySelector(".settings-modal #settingsLang");
     const selSend  = document.querySelector(".settings-modal #settingsSendMode");
-    const selData  = document.querySelector(".settings-modal #settingsDataStorage");
 
     const saveSettings = () => {
       save(state);
@@ -2737,10 +2747,34 @@ btnNewChat?.addEventListener("click", (e) => {
       });
     }
 
-  if (selData) {
-    // 表示専用（変更不可）
-    selData.setAttribute("disabled", "true");
-  }
+    // Data storage buttons (cloud/local)
+    const setStorageMode = (nextMode) => {
+      const mode = (nextMode === "local") ? "local" : "cloud";
+      const prevKey = getStorageKey();
+
+      try { localStorage.setItem(STORAGE_PREF_KEY, mode); } catch {}
+
+      state.settings.dataStorage = mode;
+
+      // 移行：新キーへ保存（旧キーは保持）
+      try { localStorage.setItem(getStorageKey(), JSON.stringify(state)); } catch {}
+
+      saveSettings();
+      void prevKey;
+    };
+
+    const btnCloud = document.getElementById("btnStorageCloud");
+    const btnLocal = document.getElementById("btnStorageLocal");
+
+    btnCloud?.addEventListener("click", (e) => {
+      e.preventDefault();
+      setStorageMode("cloud");
+    });
+
+    btnLocal?.addEventListener("click", (e) => {
+      e.preventDefault();
+      setStorageMode("local");
+    });
 
 /* ===== Apps ===== */
     const btnAddSaas = document.querySelector(".panel-apps .apps-header .btn");
@@ -3026,13 +3060,13 @@ btnNewChat?.addEventListener("click", (e) => {
         <div class="reg-title">特定商取引法に基づく表記</div>
         <div class="reg-text">
           事業者名：AUREA<br>
-          販売価格：各プランページに表示（消費税込）<br>
+          販売価格：各プランページに表示（税抜）<br>
           商品代金以外の必要料金：通信料等は利用者負担<br>
-          支払方法：クレジットカード（Stripe）<br>
+          支払方法：クレジットカード<br>
           支払時期：申込時に確定、以後は更新日に自動課金<br>
           提供時期：決済完了後、直ちに利用可能<br>
-          返品・キャンセル：デジタルサービスの性質上、原則不可（法令に基づく場合を除く）<br>
-          お問い合わせ：アプリ内の「バグレポート」等からご連絡ください
+          決済後の返品・キャンセル：デジタルサービスの性質上、原則不可（法令に基づく場合を除く）<br>
+          お問い合わせ：from.invitation@gmail.com、担当者まで
         </div>
       `,
       terms: `

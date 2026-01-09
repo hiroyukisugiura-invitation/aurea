@@ -104,6 +104,8 @@
       sendEnter: "Enterで送信（Shift + Enterで改行）",
 
       dataStorage: "会話とデータの保存先",
+      storageCloud: "クラウド",
+      storageLocal: "端末内",
 
       /* ===== Library view ===== */
       librarySub: "会話内で作成された画像がここに保存されます",
