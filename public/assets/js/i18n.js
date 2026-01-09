@@ -186,6 +186,7 @@
       aiStack: "AI Stack",
       aiStackDesc: "展開中のAI / 最新Ver, / 稼働条件",
       listTable: "一覧表",
+      ai: "AI",
       ver: "Ver,",
       condition: "稼働条件"
     },
@@ -195,16 +196,13 @@
       newChat: "New chat",
       threadNew: "New chat",
       titleMatch: "(Title match)",
-
       library: "Library",
       images: "Library",
       projects: "Projects",
       chats: "Chats",
       search: "Search",
-
       menuRename: "Rename",
       menuDelete: "Delete",
-
       share: "Share",
 
       /* ===== Ask bar ===== */
@@ -218,18 +216,26 @@
       stop: "Stop",
       askNote: "AUREA aggregates/analyzes/judges/summarizes information from multiple AI searches, but it may not be accurate. Please verify important information.",
       promptEmpty: "(Empty)",
-
       aureaPrefix: "(AUREA)",
       replyPlaceholder: "This will be connected to /api/chat later.",
       imageSaved: "(Image saved)",
-      imageSavedInLibrary: '"{images}" → saved to your library.',
+      imageSavedInLibrary: "\"{images}\" → saved to your library.",
 
       /* ===== Settings ===== */
       settings: "Settings",
       logout: "Log out",
-
       general: "General",
       generalDesc: "Basic device settings",
+      theme: "Theme",
+      themeSystem: "System",
+      themeLight: "Light",
+      themeDark: "Dark",
+      language: "Language",
+      langJa: "Japanese",
+      langEn: "English (US)",
+      sendMode: "Send mode",
+      sendCmdEnter: "Send with ⌘ + Enter (Enter for newline)",
+      sendEnter: "Send with Enter (Shift+Enter for newline)",
 
       apps: "Apps",
       appsDesc: "Connect SaaS and optionally set up API connections",
@@ -241,10 +247,12 @@
       dataNowLocal: "Now: Local",
       storageCloud: "Cloud",
       storageLocal: "Local",
+      deleteAllChats: "Delete all chats",
 
       trainer: "AUREA Data Trainer",
       trainerDesc: "Train your internal AI to improve workflow efficiency",
-
+      trainerSection: "Train AUREA (AET)",
+      trainerSectionDesc: "Register “If the question is like this, use this answer” cases to improve your internal AI.",
       trainerAddCase: "Add case",
       trainerAddCaseDesc: "Register a case (question → best answer)",
       trainerCaseQuestion: "Question",
@@ -259,20 +267,63 @@
 
       addSaas: "Add SaaS",
       addCustom: "Add custom",
-
       connected: "Connected",
       notConnected: "Not connected",
-
       saasCustom: "Custom SaaS",
       saasNoMatch: "No matching SaaS.",
-
       confirmReconnectGoogle: "Reconnect Google?",
       confirmConnectGoogle: "Connect Google account?",
       confirmConnectSaas: "Connect {name}?",
       confirmDisconnectSaas: "Disconnect {name}?",
-      confirmRevokeDevice: "Revoke this device?",
-
       saasName: "SaaS name",
+      saasNamePh: "e.g., Custom CRM",
+      apiBaseUrl: "API Base URL",
+      apiBaseUrlPh: "https://api.example.com",
+      authMode: "Auth method",
+      authApiKey: "API Key",
+      authBearer: "Bearer Token",
+      apiToken: "API Key / Token",
+      apiTokenPh: "********",
+      save: "Save",
+      createProject: "Create project",
+      projectName: "Project name",
+
+      /* ===== Library view ===== */
+      librarySub: "Images created in chats are saved here.",
+      libraryEmpty: "No saved images yet.",
+
+      /* ===== Search view ===== */
+      searchTitle: "Search results",
+      searchPrompt: "Type to search",
+      searchNoMatch: "No matching chats found.",
+      searchSubPrefix: "“",
+      searchSubMid: "” results (",
+      searchSubSuffix: " results)",
+
+      /* ===== Confirm / Prompt ===== */
+      confirmLogout: "Log out?",
+      confirmDelete: "Delete?",
+      confirmDeleteProject: "Delete this project?",
+      confirmDeleteChat: "Delete this chat?",
+      confirmDeleteImage: "Delete this image?",
+      confirmCreateProject: "Create project?",
+      confirmDeleteAllChats: "Delete all chats?",
+      confirmRevokeDevice: "Revoke this device?",
+      promptNewName: "New name",
+      promptSaasName: "SaaS name",
+      promptNewEmail: "New email address",
+      confirmTitle: "Confirm",
+      cancel: "Cancel",
+      ok: "OK",
+      areYouSure: "Are you sure?",
+      open: "Open",
+      delete: "Delete",
+      project: "Project",
+      chat: "Chat",
+      global: "Global",
+
+      /* ===== Account ===== */
+      displayName: "Display name",
       userName: "Username",
       userHandleOptional: "@handle (optional)",
       currentPlan: "Current plan",
@@ -281,7 +332,6 @@
       change: "Change",
       trustedDevices: "Trusted devices",
       revokeDevice: "Revoke this device",
-
       planListTitle: "Plans",
       planSelect: "Select",
       perMonth: "/month",
@@ -291,18 +341,16 @@
       planEnterpriseDesc: "Enterprise",
       planPriceTbd: "$--",
       planPaidNote: "Plans other than Free are paid. By selecting a plan, you agree to the pricing.",
-
       googleConnectedAlert: "Google account connected",
       googleConnectFailedAlert: "Google connect failed: {err}",
-
       regulations: "Regulations",
       tokusho: "Specified Commercial Transaction Act",
       terms: "Terms",
       privacy: "Privacy",
-
       aiStack: "AI Stack",
       aiStackDesc: "Active AIs / Latest ver / Conditions",
       listTable: "List",
+      ai: "AI",
       ver: "Ver,",
       condition: "Condition"
     }

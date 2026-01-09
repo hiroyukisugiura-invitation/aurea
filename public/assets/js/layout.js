@@ -454,12 +454,30 @@ const closeSettings = () => {
 
   // 表示用データ（最新版文字列 + 稼働条件）
   let AI_STACK = [
-    { name: "GPT",        ver: "GPT-5.2",            condition: "総合監修・最終判断/回答提案" },
-    { name: "Gemini",     ver: "Gemini 3",          condition: "大規模範囲の情報収集・マルチモーダル対応" },
-    { name: "Claude",     ver: "Claude 4",          condition: "長文分析・構造/論点の洗い出し" },
-    { name: "Perplexity", ver: "最新版",         condition: "検証・裏取り・ハルシネーション対応" },
-    { name: "Mistral",    ver: "Mistral Lange3,",   condition: "高速処理・軽量質疑対応" },
-    { name: "Sora",       ver: "Sora 2",            condition: "画像生成時に稼働" }
+    { name: "GPT",        ver: "GPT-5.2",
+      conditionJa: "総合監修・最終判断/回答提案",
+      conditionEn: "Overall supervision / final decision & answer proposal"
+    },
+    { name: "Gemini",     ver: "Gemini 3",
+      conditionJa: "大規模範囲の情報収集・マルチモーダル対応",
+      conditionEn: "Large-scale research / multimodal support"
+    },
+    { name: "Claude",     ver: "Claude 4",
+      conditionJa: "長文分析・構造/論点の洗い出し",
+      conditionEn: "Long-form analysis / structure & issue mapping"
+    },
+    { name: "Perplexity", ver: "最新版",
+      conditionJa: "検証・裏取り・ハルシネーション対応",
+      conditionEn: "Verification / fact-checking & hallucination mitigation"
+    },
+    { name: "Mistral",    ver: "Mistral Lange3,",
+      conditionJa: "高速処理・軽量質疑対応",
+      conditionEn: "Fast processing / lightweight Q&A"
+    },
+    { name: "Sora",       ver: "Sora 2",
+      conditionJa: "画像生成時に稼働",
+      conditionEn: "Active when generating images"
+    }
   ];
 
   const syncAiStackHeader = () => {
@@ -468,9 +486,9 @@ const closeSettings = () => {
     if (!headRow) return;
 
     headRow.innerHTML = `
-      <div class="table__cell">AI</div>
-      <div class="table__cell">Ver,</div>
-      <div class="table__cell">稼働条件</div>
+      <div class="table__cell">${escHtml(tr("ai"))}</div>
+      <div class="table__cell">${escHtml(tr("ver"))}</div>
+      <div class="table__cell">${escHtml(tr("condition"))}</div>
     `;
   };
 
@@ -497,7 +515,13 @@ const closeSettings = () => {
       row.className = "table__row";
 
       const verText = (a.ver && String(a.ver).trim()) ? String(a.ver) : "";
-      const condText = (localCond[a.name] != null) ? String(localCond[a.name]) : String(a.condition || "");
+
+      const defaultCond =
+        ((state.settings?.language || "ja") === "en")
+          ? String(a.conditionEn || "")
+          : String(a.conditionJa || "");
+
+      const condText = (localCond[a.name] != null) ? String(localCond[a.name]) : defaultCond;
 
       row.innerHTML = `
         <div class="table__cell">${escHtml(a.name)}</div>
@@ -3275,7 +3299,7 @@ btnNewChat?.addEventListener("click", (e) => {
       tokusho: `
         <div class="reg-title">特定商取引法に基づく表記</div>
         <div class="reg-text">
-          事業者名：AUREA<br>
+          事業者名：INViTATION.co<br>
           販売価格：各プランページに表示（税抜）<br>
           商品代金以外の必要料金：通信料等は利用者負担<br>
           支払方法：クレジットカード<br>
