@@ -466,7 +466,7 @@ const closeSettings = () => {
       conditionJa: "長文分析・構造/論点の洗い出し",
       conditionEn: "Long-form analysis / structure & issue mapping"
     },
-    { name: "Perplexity", ver: "最新版",
+    { name: "Perplexity", ver: "Latest version",
       conditionJa: "検証・裏取り・ハルシネーション対応",
       conditionEn: "Verification / fact-checking & hallucination mitigation"
     },
@@ -2938,14 +2938,19 @@ btnNewChat?.addEventListener("click", (e) => {
       `;
 
       const L_TITLE = tr("planListTitle");
-      const L_SELECT = tr("planSelect");
-      const L_PER = tr("perMonth");
-      const L_TBD = tr("planPriceTbd");
       const L_NOTE = tr("planPaidNote");
+
+      const rt = encodeURIComponent(`${window.location.origin}/`);
+
+      const goStripe = (plan) => {
+        // Stripe遷移（既存Stripe連携を前提：サーバ側でplanを解釈）
+        const p = encodeURIComponent(String(plan || "Free"));
+        window.location.href = `/api/billing?plan=${p}&returnTo=${rt}`;
+      };
 
       wrap.innerHTML = `
         <div style="
-          width:min(760px, calc(100% - 24px));
+          width:min(520px, calc(100% - 24px));
           background:rgba(20,21,22,.96);
           border:1px solid rgba(255,255,255,.10);
           border-radius:18px;
@@ -2956,73 +2961,78 @@ btnNewChat?.addEventListener("click", (e) => {
           color:rgba(255,255,255,.92);
           font-family: -apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Hiragino Sans','Noto Sans JP',sans-serif;
         ">
-          <div style="padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.08);font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:space-between;">
-            <span>${escHtml(L_TITLE)}</span>
-            <button id="aureaPlanClose" type="button" style="width:36px;height:36px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:rgba(255,255,255,.92);cursor:pointer;font-size:18px;line-height:34px;">×</button>
+          <div style="padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+            <div style="min-width:0;">
+              <div style="font-size:16px;font-weight:700;line-height:1.2;">${escHtml(L_TITLE)}</div>
+              <div style="margin-top:8px;font-size:12px;line-height:1.6;color:rgba(255,255,255,.70);">${escHtml(L_NOTE)}</div>
+            </div>
+            <button id="aureaPlanClose" type="button" style="
+              width:32px;height:32px;border-radius:10px;border:1px solid rgba(255,255,255,.12);
+              background:rgba(255,255,255,.06);color:rgba(255,255,255,.92);
+              cursor:pointer;font-size:16px;line-height:30px;flex:0 0 auto;
+            ">×</button>
           </div>
 
-          <div style="padding:14px 16px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;">
-            <div style="border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);border-radius:16px;padding:14px;min-width:0;">
-              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
-                <div style="min-width:0;">
-                  <div style="font-weight:700;font-size:14px;line-height:1.2;">Free</div>
-                  <div style="margin-top:6px;font-size:12px;line-height:1.5;color:rgba(255,255,255,.70);">${escHtml(tr("planFreeDesc"))}</div>
-                </div>
-                <div style="text-align:right;">
-                  <div style="font-weight:700;font-size:14px;">¥0</div>
-                  <div style="font-size:11px;color:rgba(255,255,255,.65);">${escHtml(L_PER)}</div>
-                </div>
+          <div style="padding:14px 16px 16px;display:flex;flex-direction:column;gap:10px;">
+            <button type="button" class="aurea-plan-row" data-plan="Free" style="
+              width:100%;text-align:left;border-radius:14px;border:1px solid rgba(255,255,255,.10);
+              background:rgba(255,255,255,.03);color:rgba(255,255,255,.92);cursor:pointer;
+              padding:12px 12px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
+            ">
+              <div style="min-width:0;">
+                <div style="font-weight:700;font-size:14px;line-height:1.2;">Free</div>
+                <div style="margin-top:6px;font-size:12px;line-height:1.5;color:rgba(255,255,255,.70);">${escHtml(tr("planFreeDesc"))}</div>
               </div>
-              <button class="btn" type="button" data-plan="Free" style="margin-top:12px;width:100%;">${escHtml(L_SELECT)}</button>
-            </div>
-
-            <div style="border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);border-radius:16px;padding:14px;min-width:0;">
-              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
-                <div style="min-width:0;">
-                  <div style="font-weight:700;font-size:14px;line-height:1.2;">Pro</div>
-                  <div style="margin-top:6px;font-size:12px;line-height:1.5;color:rgba(255,255,255,.70);">${escHtml(tr("planProDesc"))}</div>
-                </div>
-                <div style="text-align:right;">
-                  <div style="font-weight:700;font-size:14px;">${escHtml(L_TBD)}</div>
-                  <div style="font-size:11px;color:rgba(255,255,255,.65);">${escHtml(L_PER)}</div>
-                </div>
+              <div style="text-align:right;flex:0 0 auto;">
+                <div style="font-weight:700;font-size:14px;">¥0</div>
+                <div style="font-size:11px;color:rgba(255,255,255,.65);">${escHtml(tr("perMonth"))}</div>
               </div>
-              <button class="btn" type="button" data-plan="Pro" style="margin-top:12px;width:100%;">${escHtml(L_SELECT)}</button>
-            </div>
+            </button>
 
-            <div style="border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);border-radius:16px;padding:14px;min-width:0;">
-              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
-                <div style="min-width:0;">
-                  <div style="font-weight:700;font-size:14px;line-height:1.2;">Team</div>
-                  <div style="margin-top:6px;font-size:12px;line-height:1.5;color:rgba(255,255,255,.70);">${escHtml(tr("planTeamDesc"))}</div>
-                </div>
-                <div style="text-align:right;">
-                  <div style="font-weight:700;font-size:14px;">${escHtml(L_TBD)}</div>
-                  <div style="font-size:11px;color:rgba(255,255,255,.65);">${escHtml(L_PER)}</div>
-                </div>
+            <button type="button" class="aurea-plan-row" data-plan="Pro" style="
+              width:100%;text-align:left;border-radius:14px;border:1px solid rgba(255,255,255,.10);
+              background:rgba(255,255,255,.03);color:rgba(255,255,255,.92);cursor:pointer;
+              padding:12px 12px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
+            ">
+              <div style="min-width:0;">
+                <div style="font-weight:700;font-size:14px;line-height:1.2;">Pro</div>
+                <div style="margin-top:6px;font-size:12px;line-height:1.5;color:rgba(255,255,255,.70);">${escHtml(tr("planProDesc"))}</div>
               </div>
-              <button class="btn" type="button" data-plan="Team" style="margin-top:12px;width:100%;">${escHtml(L_SELECT)}</button>
-            </div>
-
-            <div style="border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);border-radius:16px;padding:14px;min-width:0;">
-              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
-                <div style="min-width:0;">
-                  <div style="font-weight:700;font-size:14px;line-height:1.2;">Enterprise</div>
-                  <div style="margin-top:6px;font-size:12px;line-height:1.5;color:rgba(255,255,255,.70);">${escHtml(tr("planEnterpriseDesc"))}</div>
-                </div>
-                <div style="text-align:right;">
-                  <div style="font-weight:700;font-size:14px;">${escHtml(L_TBD)}</div>
-                  <div style="font-size:11px;color:rgba(255,255,255,.65);">${escHtml(L_PER)}</div>
-                </div>
+              <div style="text-align:right;flex:0 0 auto;">
+                <div style="font-weight:700;font-size:14px;">${escHtml(tr("planPriceTbd"))}</div>
+                <div style="font-size:11px;color:rgba(255,255,255,.65);">${escHtml(tr("perMonth"))}</div>
               </div>
-              <button class="btn" type="button" data-plan="Enterprise" style="margin-top:12px;width:100%;">${escHtml(L_SELECT)}</button>
-            </div>
-          </div>
+            </button>
 
-          <div style="padding:0 16px 14px;">
-            <div style="font-size:12px;line-height:1.6;color:rgba(255,255,255,.70);">
-              ${escHtml(L_NOTE)}
-            </div>
+            <button type="button" class="aurea-plan-row" data-plan="Team" style="
+              width:100%;text-align:left;border-radius:14px;border:1px solid rgba(255,255,255,.10);
+              background:rgba(255,255,255,.03);color:rgba(255,255,255,.92);cursor:pointer;
+              padding:12px 12px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
+            ">
+              <div style="min-width:0;">
+                <div style="font-weight:700;font-size:14px;line-height:1.2;">Team</div>
+                <div style="margin-top:6px;font-size:12px;line-height:1.5;color:rgba(255,255,255,.70);">${escHtml(tr("planTeamDesc"))}</div>
+              </div>
+              <div style="text-align:right;flex:0 0 auto;">
+                <div style="font-weight:700;font-size:14px;">${escHtml(tr("planPriceTbd"))}</div>
+                <div style="font-size:11px;color:rgba(255,255,255,.65);">${escHtml(tr("perMonth"))}</div>
+              </div>
+            </button>
+
+            <button type="button" class="aurea-plan-row" data-plan="Enterprise" style="
+              width:100%;text-align:left;border-radius:14px;border:1px solid rgba(255,255,255,.10);
+              background:rgba(255,255,255,.03);color:rgba(255,255,255,.92);cursor:pointer;
+              padding:12px 12px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
+            ">
+              <div style="min-width:0;">
+                <div style="font-weight:700;font-size:14px;line-height:1.2;">Enterprise</div>
+                <div style="margin-top:6px;font-size:12px;line-height:1.5;color:rgba(255,255,255,.70);">${escHtml(tr("planEnterpriseDesc"))}</div>
+              </div>
+              <div style="text-align:right;flex:0 0 auto;">
+                <div style="font-weight:700;font-size:14px;">${escHtml(tr("planPriceTbd"))}</div>
+                <div style="font-size:11px;color:rgba(255,255,255,.65);">${escHtml(tr("perMonth"))}</div>
+              </div>
+            </button>
           </div>
         </div>
       `;
@@ -3038,17 +3048,10 @@ btnNewChat?.addEventListener("click", (e) => {
         wrap.setAttribute("aria-hidden", "true");
       });
 
-      wrap.querySelectorAll("button[data-plan]").forEach((b) => {
-        b.addEventListener("click", async () => {
+      wrap.querySelectorAll("button.aurea-plan-row[data-plan]").forEach((b) => {
+        b.addEventListener("click", () => {
           const plan = b.getAttribute("data-plan") || "Free";
-
-          state.plan = plan;
-          save(state);
-          syncAccountUi();
-          syncSettingsUi();
-
-          wrap.style.display = "none";
-          wrap.setAttribute("aria-hidden", "true");
+          goStripe(plan);
         });
       });
 
@@ -3358,7 +3361,8 @@ btnNewChat?.addEventListener("click", (e) => {
         en: `
           <div class="reg-title">Privacy</div>
           <div class="reg-text">
-            We handle account information (email, display name, etc.) and usage logs for service delivery, improvement, and fraud prevention.<br>
+            We handle account information (email, display name, etc.) <br>
+            and usage logs for service delivery, improvement, and fraud prevention.<br>
             We do not provide personal data to third parties without consent except as required by law.<br>
             Collection, use, and retention follow this policy and applicable laws.
           </div>
