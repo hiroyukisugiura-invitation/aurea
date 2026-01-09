@@ -26,7 +26,9 @@ jobs:
           credentials_json: ${{ secrets.GCP_SA_AUREA_2026 }}
 
       - name: Verify Auth
-        run: firebase projects:list
+        run: |
+          echo "ACTIVE_ACCOUNT=$(gcloud auth list --filter=status:ACTIVE --format='value(account)' || true)"
+          firebase projects:list
 
       - name: Deploy
         run: firebase deploy --project aurea-2026 --only functions,hosting
