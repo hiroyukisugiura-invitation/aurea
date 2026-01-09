@@ -2940,10 +2940,16 @@ btnNewChat?.addEventListener("click", (e) => {
       const L_TITLE = tr("planListTitle");
       const L_NOTE = tr("planPaidNote");
 
+      const PRICE = {
+        Free: "¥0",
+        Pro: "¥30,000",
+        Team: "¥69,000",
+        Enterprise: "¥200,000〜"
+      };
+
       const rt = encodeURIComponent(`${window.location.origin}/`);
 
       const goStripe = (plan) => {
-        // Stripe遷移（既存Stripe連携を前提：サーバ側でplanを解釈）
         const p = encodeURIComponent(String(plan || "Free"));
         window.location.href = `/api/billing?plan=${p}&returnTo=${rt}`;
       };
@@ -2964,7 +2970,7 @@ btnNewChat?.addEventListener("click", (e) => {
           <div style="padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
             <div style="min-width:0;">
               <div style="font-size:16px;font-weight:700;line-height:1.2;">${escHtml(L_TITLE)}</div>
-              <div style="margin-top:8px;font-size:12px;line-height:1.6;color:rgba(255,255,255,.70);">${escHtml(L_NOTE)}</div>
+              <div style="margin-top:8px;font-size:12px;line-height:1.6;color:rgba(255,255,255,.70);white-space:pre-line;">${escHtml(L_NOTE)}</div>
             </div>
             <button id="aureaPlanClose" type="button" style="
               width:32px;height:32px;border-radius:10px;border:1px solid rgba(255,255,255,.12);
@@ -2984,7 +2990,7 @@ btnNewChat?.addEventListener("click", (e) => {
                 <div style="margin-top:6px;font-size:12px;line-height:1.5;color:rgba(255,255,255,.70);">${escHtml(tr("planFreeDesc"))}</div>
               </div>
               <div style="text-align:right;flex:0 0 auto;">
-                <div style="font-weight:700;font-size:14px;">¥0</div>
+                <div style="font-weight:700;font-size:14px;">${escHtml(PRICE.Free)}</div>
                 <div style="font-size:11px;color:rgba(255,255,255,.65);">${escHtml(tr("perMonth"))}</div>
               </div>
             </button>
@@ -2999,7 +3005,7 @@ btnNewChat?.addEventListener("click", (e) => {
                 <div style="margin-top:6px;font-size:12px;line-height:1.5;color:rgba(255,255,255,.70);">${escHtml(tr("planProDesc"))}</div>
               </div>
               <div style="text-align:right;flex:0 0 auto;">
-                <div style="font-weight:700;font-size:14px;">${escHtml(tr("planPriceTbd"))}</div>
+                <div style="font-weight:700;font-size:14px;">${escHtml(PRICE.Pro)}</div>
                 <div style="font-size:11px;color:rgba(255,255,255,.65);">${escHtml(tr("perMonth"))}</div>
               </div>
             </button>
@@ -3014,7 +3020,7 @@ btnNewChat?.addEventListener("click", (e) => {
                 <div style="margin-top:6px;font-size:12px;line-height:1.5;color:rgba(255,255,255,.70);">${escHtml(tr("planTeamDesc"))}</div>
               </div>
               <div style="text-align:right;flex:0 0 auto;">
-                <div style="font-weight:700;font-size:14px;">${escHtml(tr("planPriceTbd"))}</div>
+                <div style="font-weight:700;font-size:14px;">${escHtml(PRICE.Team)}</div>
                 <div style="font-size:11px;color:rgba(255,255,255,.65);">${escHtml(tr("perMonth"))}</div>
               </div>
             </button>
@@ -3029,7 +3035,7 @@ btnNewChat?.addEventListener("click", (e) => {
                 <div style="margin-top:6px;font-size:12px;line-height:1.5;color:rgba(255,255,255,.70);">${escHtml(tr("planEnterpriseDesc"))}</div>
               </div>
               <div style="text-align:right;flex:0 0 auto;">
-                <div style="font-weight:700;font-size:14px;">${escHtml(tr("planPriceTbd"))}</div>
+                <div style="font-weight:700;font-size:14px;">${escHtml(PRICE.Enterprise)}</div>
                 <div style="font-size:11px;color:rgba(255,255,255,.65);">${escHtml(tr("perMonth"))}</div>
               </div>
             </button>
