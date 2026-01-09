@@ -152,6 +152,19 @@
       trustedDevices: "信頼できるデバイス",
       revokeDevice: "この端末を解除",
 
+      planListTitle: "プラン一覧",
+      planSelect: "選択",
+      perMonth: "/month",
+      planFreeDesc: "個人のライト利用",
+      planProDesc: "個人の本格利用",
+      planTeamDesc: "チーム運用",
+      planEnterpriseDesc: "企業向け",
+      planPriceTbd: "¥--",
+      planPaidNote: "Free 以外のプランは有料です。プランを選択すると料金に同意した上で変更されます",
+
+      googleConnectedAlert: "Google アカウントの連携が完了しました",
+      googleConnectFailedAlert: "Google 連携に失敗しました: {err}",
+
       regulations: "規約・規定",
       tokusho: "特定商取引法",
       terms: "利用規約",
@@ -232,79 +245,6 @@
       confirmDisconnectSaas: "Disconnect {name}?",
 
       saasName: "SaaS name",
-      saasNamePh: "e.g., Custom CRM",
-      apiBaseUrl: "API Base URL",
-      apiBaseUrlPh: "https://api.example.com",
-      authMode: "Auth mode",
-      authApiKey: "API Key",
-      authBearer: "Bearer Token",
-      apiToken: "API Key / Token",
-      apiTokenPh: "********",
-      save: "Save",
-
-      createProject: "Create project",
-      projectName: "Project name",
-
-      dataNowCloud: "Current: Cloud",
-      deleteAllChats: "Delete all chats",
-
-
-      trainerSection: "Train AUREA (AET)",
-      trainerSectionDesc: "Register cases like “For this question, use this” to improve internal answer quality.",
-
-      theme: "Theme",
-      themeSystem: "System",
-      themeLight: "Light",
-      themeDark: "Dark",
-
-      language: "Language",
-      langJa: "Japanese",
-      langEn: "English (US)",
-
-      sendMode: "Send behavior",
-      sendCmdEnter: "Send with ⌘ + Enter (Enter = newline)",
-      sendEnter: "Send with Enter (Shift + Enter = newline)",
-
-      dataStorage: "Chat & data storage",
-
-      /* ===== Library view ===== */
-      librarySub: "Images created in chats are saved here.",
-      libraryEmpty: "No saved images yet.",
-
-      /* ===== Search view ===== */
-      searchTitle: "Search results",
-      searchPrompt: "Type a keyword to search",
-      searchNoMatch: "No matching chats found.",
-      searchSubPrefix: '"',
-      searchSubMid: '" results (',
-      searchSubSuffix: ")",
-
-      /* ===== Confirm / Prompt ===== */
-      confirmLogout: "Log out?",
-      confirmDelete: "Delete?",
-      confirmDeleteProject: "Delete this project?",
-      confirmDeleteChat: "Delete this chat?",
-      confirmDeleteImage: "Delete this image?",
-      confirmCreateProject: "Create this project?",
-      confirmDeleteAllChats: "Delete all chats?",
-
-      promptNewName: "New name",
-      promptSaasName: "SaaS name",
-      promptNewEmail: "New email address",
-
-      confirmTitle: "Confirm",
-      cancel: "Cancel",
-      ok: "OK",
-      areYouSure: "Are you sure?",
-
-      open: "Open",
-      delete: "Delete",
-
-      project: "Project",
-      chat: "Chat",
-      global: "Global",
-
-      displayName: "Display name",
       userName: "Username",
       userHandleOptional: "@handle (optional)",
       currentPlan: "Current plan",
@@ -313,6 +253,19 @@
       change: "Change",
       trustedDevices: "Trusted devices",
       revokeDevice: "Revoke this device",
+
+      planListTitle: "Plans",
+      planSelect: "Select",
+      perMonth: "/month",
+      planFreeDesc: "Light personal use",
+      planProDesc: "Power personal use",
+      planTeamDesc: "Team",
+      planEnterpriseDesc: "Enterprise",
+      planPriceTbd: "$--",
+      planPaidNote: "Plans other than Free are paid. By selecting a plan, you agree to the pricing.",
+
+      googleConnectedAlert: "Google account connected",
+      googleConnectFailedAlert: "Google connect failed: {err}",
 
       regulations: "Regulations",
       tokusho: "Specified Commercial Transaction Act",

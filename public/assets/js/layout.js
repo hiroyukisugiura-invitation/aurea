@@ -1876,7 +1876,11 @@ btnNewChat?.addEventListener("click", (e) => {
     if (e.key !== "Escape") return;
 
     // AI Stack が開いていれば最優先で閉じる
-    if (aiStackOverlay && aiStackOverlay.style.display === "flex") { closeAiStackPopup(); return; }
+    if (aiStackOverlay && aiStackOverlay.style.display !== "none") { closeAiStackPopup(); return; }
+
+    // Legal modal first (inside settings)
+    const legalOverlay = document.getElementById("legalOverlay");
+    if (legalOverlay && legalOverlay.style.display !== "none") { legalOverlay.style.display = "none"; return; }
 
     // settings first
     if (settingsModal && !settingsModal.hasAttribute("hidden")) { closeSettings(); return; }
@@ -2734,27 +2738,8 @@ btnNewChat?.addEventListener("click", (e) => {
     }
 
   if (selData) {
-    selData.addEventListener("change", () => {
-      const tval = (selData.value || selData.options[selData.selectedIndex]?.textContent || "").trim();
-      const nextMode = (tval === "端末内" || tval === "Local") ? "local" : "cloud";
-
-      const prevKey = getStorageKey();
-
-      try { localStorage.setItem(STORAGE_PREF_KEY, nextMode); } catch {}
-
-      // state側も更新
-      state.settings.dataStorage = nextMode;
-
-      // 移行：新キーへ保存（旧キーは保持）
-      try { localStorage.setItem(getStorageKey(), JSON.stringify(state)); } catch {}
-
-      // UI反映
-      saveSettings();
-
-      // 旧キーに残っているデータがある場合もあるため、必要なら参照できるよう保持
-      // prevKey は未使用でも削除しない
-      void prevKey;
-    });
+    // 表示専用（変更不可）
+    selData.setAttribute("disabled", "true");
   }
 
 /* ===== Apps ===== */
@@ -2880,29 +2865,86 @@ btnNewChat?.addEventListener("click", (e) => {
 
       wrap.innerHTML = `
         <div style="
-          width:min(560px, calc(100% - 24px));
-          background:rgba(20,21,22,.96);
-          border:1px solid rgba(255,255,255,.10);
+          width:min(760px, calc(100% - 24px));
+          background:rgba(20,21,22,96);
+          border:1px solid rgba(255,255,255,10);
           border-radius:18px;
-          box-shadow:0 10px 30px rgba(0,0,0,.45);
+          box-shadow:0 10px 30px rgba(0,0,0,45);
           overflow:hidden;
           backdrop-filter: blur(14px);
           -webkit-backdrop-filter: blur(14px);
-          color:rgba(255,255,255,.92);
+          color:rgba(255,255,255,92);
           font-family: -apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Hiragino Sans','Noto Sans JP',sans-serif;
         ">
-          <div style="padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.08);font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:space-between;">
+          <div style="padding:14px 16px;border-bottom:1px solid rgba(255,255,255,08);font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:space-between;">
             <span>プラン一覧</span>
-            <button id="aureaPlanClose" type="button" style="width:36px;height:36px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:rgba(255,255,255,.92);cursor:pointer;font-size:18px;line-height:34px;">×</button>
+            <button id="aureaPlanClose" type="button" style="width:36px;height:36px;border-radius:12px;border:1px solid rgba(255,255,255,12);background:rgba(255,255,255,06);color:rgba(255,255,255,92);cursor:pointer;font-size:18px;line-height:34px;">×</button>
           </div>
 
-          <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px;">
-            <button class="btn" type="button" data-plan="Free">Free</button>
-            <button class="btn" type="button" data-plan="Pro">Pro</button>
-            <button class="btn" type="button" data-plan="Team">Team</button>
-            <button class="btn" type="button" data-plan="Enterprise">Enterprise</button>
+          <div style="padding:14px 16px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;">
+            <div style="border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);border-radius:16px;padding:14px;min-width:0;">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
+                <div style="min-width:0;">
+                  <div style="font-weight:700;font-size:14px;line-height:1.2;">Free</div>
+                  <div style="margin-top:6px;font-size:12px;line-height:1.5;color:rgba(255,255,255,.70);">個人のライト利用</div>
+                </div>
+                <div style="text-align:right;">
+                  <div style="font-weight:700;font-size:14px;">¥0</div>
+                  <div style="font-size:11px;color:rgba(255,255,255,.65);">/month</div>
+                </div>
+              </div>
 
-            <div style="margin-top:6px;font-size:12px;line-height:1.6;color:rgba(255,255,255,.70);">
+              <button class="btn" type="button" data-plan="Free" style="margin-top:12px;width:100%;">選択</button>
+            </div>
+
+            <div style="border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);border-radius:16px;padding:14px;min-width:0;">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
+                <div style="min-width:0;">
+                  <div style="font-weight:700;font-size:14px;line-height:1.2;">Pro</div>
+                  <div style="margin-top:6px;font-size:12px;line-height:1.5;color:rgba(255,255,255,.70);">個人の本格利用</div>
+                </div>
+                <div style="text-align:right;">
+                  <div style="font-weight:700;font-size:14px;">¥--</div>
+                  <div style="font-size:11px;color:rgba(255,255,255,.65);">/month</div>
+                </div>
+              </div>
+
+              <button class="btn" type="button" data-plan="Pro" style="margin-top:12px;width:100%;">選択</button>
+            </div>
+
+            <div style="border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);border-radius:16px;padding:14px;min-width:0;">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
+                <div style="min-width:0;">
+                  <div style="font-weight:700;font-size:14px;line-height:1.2;">Team</div>
+                  <div style="margin-top:6px;font-size:12px;line-height:1.5;color:rgba(255,255,255,.70);">チーム運用</div>
+                </div>
+                <div style="text-align:right;">
+                  <div style="font-weight:700;font-size:14px;">¥--</div>
+                  <div style="font-size:11px;color:rgba(255,255,255,.65);">/month</div>
+                </div>
+              </div>
+
+              <button class="btn" type="button" data-plan="Team" style="margin-top:12px;width:100%;">選択</button>
+            </div>
+
+            <div style="border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);border-radius:16px;padding:14px;min-width:0;">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
+                <div style="min-width:0;">
+                  <div style="font-weight:700;font-size:14px;line-height:1.2;">Enterprise</div>
+                  <div style="margin-top:6px;font-size:12px;line-height:1.5;color:rgba(255,255,255,.70);">企業向け</div>
+                </div>
+                <div style="text-align:right;">
+                  <div style="font-weight:700;font-size:14px;">¥--</div>
+                  <div style="font-size:11px;color:rgba(255,255,255,.65);">/month</div>
+                </div>
+              </div>
+
+              <button class="btn" type="button" data-plan="Enterprise" style="margin-top:12px;width:100%;">選択</button>
+            </div>
+          </div>
+
+          <div style="padding:0 16px 14px;">
+            <div style="font-size:12px;line-height:1.6;color:rgba(255,255,255,.70);">
               Free 以外のプランは有料です。プランを選択すると料金に同意した上で変更されます
             </div>
           </div>
@@ -2967,40 +3009,20 @@ btnNewChat?.addEventListener("click", (e) => {
       saveUser();
     });
 
-    // Regulations tabs
-    const tabs = Array.from(document.querySelectorAll(".settings-modal .reg-tab"));
-    const panels = Array.from(document.querySelectorAll(".settings-modal .reg-panel"));
-
-    const openReg = (key) => {
-      tabs.forEach(b => b.setAttribute("aria-selected", (b.dataset.regTab === key) ? "true" : "false"));
-      panels.forEach(p => {
-        const on = (p.dataset.regPanel === key);
-        if (on) p.removeAttribute("hidden");
-        else p.setAttribute("hidden", "");
-      });
-    };
-
-    tabs.forEach((b) => {
-      b.addEventListener("click", (e) => {
-        e.preventDefault();
-        openReg(b.dataset.regTab || "tokusho");
-      });
-    });
-
-        const btnAddTrainerCase = document.getElementById("btnAddTrainerCase");
+    const btnAddTrainerCase = document.getElementById("btnAddTrainerCase");
     btnAddTrainerCase?.addEventListener("click", async (e) => {
       e.preventDefault();
       await confirmModal("ケース追加（AET）は次工程で実装します。");
     });
 
-        const fillRegulations = () => {
-      const set = (panelKey, html) => {
-        const panel = document.querySelector(`.settings-modal .reg-panel[data-reg-panel='${panelKey}'] .reg-card`);
-        if (!panel) return;
-        panel.innerHTML = html;
-      };
+    // Legal modal (3 items)
+    const legalOverlay = document.getElementById("legalOverlay");
+    const btnCloseLegalModal = document.getElementById("btnCloseLegalModal");
+    const legalModalTitle = document.getElementById("legalModalTitle");
+    const legalModalBody = document.getElementById("legalModalBody");
 
-      set("tokusho", `
+    const legalContent = {
+      tokusho: `
         <div class="reg-title">特定商取引法に基づく表記</div>
         <div class="reg-text">
           事業者名：AUREA<br>
@@ -3012,9 +3034,8 @@ btnNewChat?.addEventListener("click", (e) => {
           返品・キャンセル：デジタルサービスの性質上、原則不可（法令に基づく場合を除く）<br>
           お問い合わせ：アプリ内の「バグレポート」等からご連絡ください
         </div>
-      `);
-
-      set("terms", `
+      `,
+      terms: `
         <div class="reg-title">利用規約（概要）</div>
         <div class="reg-text">
           本サービスは、AIを用いて情報の整理・要約・提案を提供します。<br>
@@ -3022,21 +3043,50 @@ btnNewChat?.addEventListener("click", (e) => {
           不正利用、第三者の権利侵害、法令違反行為は禁止します。<br>
           当社は、必要に応じてサービス内容の変更・停止を行う場合があります。
         </div>
-      `);
-
-      set("privacy", `
+      `,
+      privacy: `
         <div class="reg-title">プライバシーポリシー（概要）</div>
         <div class="reg-text">
           当社は、アカウント情報（メール、表示名等）および利用ログ等を、サービス提供・改善・不正防止の目的で取り扱います。<br>
           法令に基づく場合を除き、本人の同意なく第三者へ提供しません。<br>
           収集・利用・保管の詳細は、本ポリシーおよび関連法令に従います。
         </div>
-      `);
+      `
     };
 
-    fillRegulations();
+    const openLegalModal = (key) => {
+      if (!legalOverlay || !legalModalTitle || !legalModalBody) return;
 
-    openReg("tokusho");
+      const k = (key === "terms" || key === "privacy" || key === "tokusho") ? key : "tokusho";
+      legalModalTitle.textContent =
+        (k === "tokusho") ? tr("tokusho")
+        : (k === "terms") ? tr("terms")
+        : tr("privacy");
+
+      legalModalBody.innerHTML = legalContent[k] || "";
+      legalOverlay.style.display = "flex";
+    };
+
+    const closeLegalModal = () => {
+      if (!legalOverlay) return;
+      legalOverlay.style.display = "none";
+    };
+
+    document.querySelectorAll(".settings-modal [data-legal]").forEach((b) => {
+      b.addEventListener("click", (e) => {
+        e.preventDefault();
+        openLegalModal(b.getAttribute("data-legal"));
+      });
+    });
+
+    btnCloseLegalModal?.addEventListener("click", (e) => {
+      e.preventDefault();
+      closeLegalModal();
+    });
+
+    legalOverlay?.addEventListener("click", (e) => {
+      if (e.target === legalOverlay) closeLegalModal();
+    });
   };
 
   ensureActiveThread();
@@ -3090,7 +3140,7 @@ btnNewChat?.addEventListener("click", (e) => {
       history.replaceState({}, document.title, "/");
 
       setTimeout(() => {
-        alert("Google アカウントの連携が完了しました");
+        alert(tr("googleConnectedAlert"));
       }, 0);
 
       return;
@@ -3100,7 +3150,7 @@ btnNewChat?.addEventListener("click", (e) => {
       const err = params.get("error") || "unknown";
       history.replaceState({}, document.title, "/");
       setTimeout(() => {
-        alert(`Google 連携に失敗しました: ${err}`);
+        alert(tr("googleConnectFailedAlert").replace("{err}", String(err || "unknown")));
       }, 0);
     }
   })();

@@ -383,16 +383,6 @@
                     <option value="enter" data-i18n="sendEnter">Enterで送信（Shift + Enterで改行）</option>
                   </select>
                 </div>
-
-                <div class="row">
-                  <div class="l">
-                    <div class="k" data-i18n="dataStorage">データ保存</div>
-                  </div>
-                  <select class="select" id="settingsDataStorage" aria-label="データ保存" data-i18n-aria="dataStorage">
-                    <option value="cloud" selected>クラウド</option>
-                    <option value="local">端末内</option>
-                  </select>
-                </div>
               </div>
             </div>
           </div>
@@ -560,24 +550,36 @@
               </div>
 
               <div class="section" aria-label="規約・規定">
-                <div class="reg-wrap" aria-label="規約・規定タブ">
-                  <div class="reg-head" data-i18n="regulations">規約・規定</div>
-                  <div class="reg-tabs" role="tablist" aria-label="規約・規定">
-                    <button class="reg-tab" type="button" role="tab" aria-selected="true" data-i18n="tokusho">特定商取引法</button>
-                    <button class="reg-tab" type="button" role="tab" aria-selected="false" data-i18n="terms">利用規約</button>
-                    <button class="reg-tab" type="button" role="tab" aria-selected="false" data-i18n="privacy">プライバシー</button>
+                <div class="row" style="border-top:0;padding-top:0;align-items:flex-start">
+                  <div class="l">
+                    <div class="k" data-i18n="regulations">規約・規定</div>
                   </div>
-                  <div class="reg-body" aria-label="規約・規定本文">
-                    <div class="reg-panel" data-reg-panel="tokusho">
-                      <div class="reg-card"></div>
-                    </div>
 
-                    <div class="reg-panel" data-reg-panel="terms" hidden>
-                      <div class="reg-card"></div>
-                    </div>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+                    <button class="btn secondary" type="button" data-legal="tokusho">
+                      <span data-i18n="tokusho">特定商取引法</span>
+                    </button>
+                    <button class="btn secondary" type="button" data-legal="terms">
+                      <span data-i18n="terms">利用規約</span>
+                    </button>
+                    <button class="btn secondary" type="button" data-legal="privacy">
+                      <span data-i18n="privacy">プライバシー</span>
+                    </button>
+                  </div>
+                </div>
 
-                    <div class="reg-panel" data-reg-panel="privacy" hidden>
-                      <div class="reg-card"></div>
+                <div class="overlay" id="legalOverlay" style="display:none">
+                  <div class="modal" style="width:min(760px, calc(100% - 24px));height:auto">
+                    <button class="close" type="button" aria-label="閉じる" id="btnCloseLegalModal">
+                      <i class="fa-solid fa-xmark"></i>
+                    </button>
+
+                    <div class="content" style="height:auto">
+                      <header class="content-hd">
+                        <div class="content-title" id="legalModalTitle"></div>
+                      </header>
+
+                      <div class="content-bd" id="legalModalBody"></div>
                     </div>
                   </div>
                 </div>
