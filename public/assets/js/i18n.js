@@ -225,6 +225,9 @@
 
       data: "Data",
       dataDesc: "Data management and storage",
+      dataStorage: "Chat & data storage",
+      storageCloud: "Cloud",
+      storageLocal: "Local",
 
       trainer: "AUREA Data Trainer",
       trainerDesc: "Train your internal AI to improve workflow efficiency",
