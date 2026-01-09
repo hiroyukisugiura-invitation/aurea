@@ -1673,6 +1673,48 @@ body.theme-light .images-empty{
 }
 
 /* ===============================
+   Legal Popup (規約・規定)
+=============================== */
+
+.settings-modal #legalOverlay{
+  position: fixed;
+  inset: 0;
+  display: none; /* JSで flex にする */
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(0,0,0,.45);
+  z-index: 10040;
+
+  /* animation */
+  opacity: 0;
+  transition: opacity .18s ease;
+}
+
+.settings-modal #legalOverlay.is-open{
+  opacity: 1;
+}
+
+.settings-modal #legalOverlay .modal{
+  width:min(760px, calc(100% - 24px));
+  height:auto;
+  background:var(--modalBg);
+  border:1px solid var(--modalBorder);
+  border-radius:18px;
+  box-shadow:var(--shadow);
+  font-family:var(--font);
+  position: relative;
+
+  /* animation */
+  transform: translateY(6px) scale(.98);
+  transition: transform .18s ease;
+}
+
+.settings-modal #legalOverlay.is-open .modal{
+  transform: translateY(0) scale(1);
+}
+
+/* ===============================
    AI Stack Popup (UI unified)
 =============================== */
 

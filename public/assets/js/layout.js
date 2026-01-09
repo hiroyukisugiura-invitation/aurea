@@ -268,7 +268,7 @@
     const onLocal = (state.settings?.dataStorage === "local");
 
     if (dataNow) {
-      dataNow.textContent = `現在：${onLocal ? "端末内" : "クラウド"}`;
+      dataNow.textContent = onLocal ? tr("dataNowLocal") : tr("dataNowCloud");
     }
 
     const bCloud = document.getElementById("btnStorageCloud");
@@ -1850,6 +1850,19 @@ btnNewChat?.addEventListener("click", (e) => {
   document.addEventListener("pointerdown", (e) => {
     const t = e.target;
 
+    // Legal popup close: 「特定商取引法 / 利用規約 / プライバシー」以外をタップで閉じる（背景タップも閉じる）
+    const legalOverlay = document.getElementById("legalOverlay");
+    if (legalOverlay && legalOverlay.style.display !== "none") {
+      const legalBtn = (t instanceof Element) ? t.closest(".settings-modal [data-legal]") : null;
+
+      const legalModal = legalOverlay.querySelector(".modal");
+      const insideLegalModal = isInside(legalModal, t);
+
+      if (!legalBtn && !insideLegalModal) {
+        legalOverlay.style.display = "none";
+      }
+    }
+
     // settings: 背景（overlay）を直接タップした時だけ閉じる
     // ※ radio(tab-input) や select option がモーダル外判定になって誤閉じするのを防止
     if (settingsModal && !settingsModal.hasAttribute("hidden")) {
@@ -2433,7 +2446,7 @@ btnNewChat?.addEventListener("click", (e) => {
       }
 
       {
-        const ok = await confirmModal(`${name} を解除しますか？`);
+        const ok = await confirmModal(tr("confirmDisconnectSaas").replace("{name}", name));
         if (!ok) return;
 
         if (isCustom) {
@@ -2727,6 +2740,9 @@ btnNewChat?.addEventListener("click", (e) => {
         if (sp) sp.remove();
         saasAddWrap = null;
 
+        const pm = document.getElementById("aureaPlanModal");
+        if (pm) pm.remove();
+
         saveSettings();
         applyI18n();
         renderSidebar();
@@ -2897,22 +2913,28 @@ btnNewChat?.addEventListener("click", (e) => {
         background:rgba(0,0,0,.45); z-index:99999; padding:18px;
       `;
 
+      const L_TITLE = tr("planListTitle");
+      const L_SELECT = tr("planSelect");
+      const L_PER = tr("perMonth");
+      const L_TBD = tr("planPriceTbd");
+      const L_NOTE = tr("planPaidNote");
+
       wrap.innerHTML = `
         <div style="
           width:min(760px, calc(100% - 24px));
-          background:rgba(20,21,22,96);
-          border:1px solid rgba(255,255,255,10);
+          background:rgba(20,21,22,.96);
+          border:1px solid rgba(255,255,255,.10);
           border-radius:18px;
-          box-shadow:0 10px 30px rgba(0,0,0,45);
+          box-shadow:0 10px 30px rgba(0,0,0,.45);
           overflow:hidden;
           backdrop-filter: blur(14px);
           -webkit-backdrop-filter: blur(14px);
-          color:rgba(255,255,255,92);
+          color:rgba(255,255,255,.92);
           font-family: -apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Hiragino Sans','Noto Sans JP',sans-serif;
         ">
-          <div style="padding:14px 16px;border-bottom:1px solid rgba(255,255,255,08);font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:space-between;">
-            <span>プラン一覧</span>
-            <button id="aureaPlanClose" type="button" style="width:36px;height:36px;border-radius:12px;border:1px solid rgba(255,255,255,12);background:rgba(255,255,255,06);color:rgba(255,255,255,92);cursor:pointer;font-size:18px;line-height:34px;">×</button>
+          <div style="padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.08);font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:space-between;">
+            <span>${escHtml(L_TITLE)}</span>
+            <button id="aureaPlanClose" type="button" style="width:36px;height:36px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:rgba(255,255,255,.92);cursor:pointer;font-size:18px;line-height:34px;">×</button>
           </div>
 
           <div style="padding:14px 16px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;">
@@ -2920,66 +2942,62 @@ btnNewChat?.addEventListener("click", (e) => {
               <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
                 <div style="min-width:0;">
                   <div style="font-weight:700;font-size:14px;line-height:1.2;">Free</div>
-                  <div style="margin-top:6px;font-size:12px;line-height:1.5;color:rgba(255,255,255,.70);">個人のライト利用</div>
+                  <div style="margin-top:6px;font-size:12px;line-height:1.5;color:rgba(255,255,255,.70);">${escHtml(tr("planFreeDesc"))}</div>
                 </div>
                 <div style="text-align:right;">
                   <div style="font-weight:700;font-size:14px;">¥0</div>
-                  <div style="font-size:11px;color:rgba(255,255,255,.65);">/month</div>
+                  <div style="font-size:11px;color:rgba(255,255,255,.65);">${escHtml(L_PER)}</div>
                 </div>
               </div>
-
-              <button class="btn" type="button" data-plan="Free" style="margin-top:12px;width:100%;">選択</button>
+              <button class="btn" type="button" data-plan="Free" style="margin-top:12px;width:100%;">${escHtml(L_SELECT)}</button>
             </div>
 
             <div style="border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);border-radius:16px;padding:14px;min-width:0;">
               <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
                 <div style="min-width:0;">
                   <div style="font-weight:700;font-size:14px;line-height:1.2;">Pro</div>
-                  <div style="margin-top:6px;font-size:12px;line-height:1.5;color:rgba(255,255,255,.70);">個人の本格利用</div>
+                  <div style="margin-top:6px;font-size:12px;line-height:1.5;color:rgba(255,255,255,.70);">${escHtml(tr("planProDesc"))}</div>
                 </div>
                 <div style="text-align:right;">
-                  <div style="font-weight:700;font-size:14px;">¥--</div>
-                  <div style="font-size:11px;color:rgba(255,255,255,.65);">/month</div>
+                  <div style="font-weight:700;font-size:14px;">${escHtml(L_TBD)}</div>
+                  <div style="font-size:11px;color:rgba(255,255,255,.65);">${escHtml(L_PER)}</div>
                 </div>
               </div>
-
-              <button class="btn" type="button" data-plan="Pro" style="margin-top:12px;width:100%;">選択</button>
+              <button class="btn" type="button" data-plan="Pro" style="margin-top:12px;width:100%;">${escHtml(L_SELECT)}</button>
             </div>
 
             <div style="border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);border-radius:16px;padding:14px;min-width:0;">
               <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
                 <div style="min-width:0;">
                   <div style="font-weight:700;font-size:14px;line-height:1.2;">Team</div>
-                  <div style="margin-top:6px;font-size:12px;line-height:1.5;color:rgba(255,255,255,.70);">チーム運用</div>
+                  <div style="margin-top:6px;font-size:12px;line-height:1.5;color:rgba(255,255,255,.70);">${escHtml(tr("planTeamDesc"))}</div>
                 </div>
                 <div style="text-align:right;">
-                  <div style="font-weight:700;font-size:14px;">¥--</div>
-                  <div style="font-size:11px;color:rgba(255,255,255,.65);">/month</div>
+                  <div style="font-weight:700;font-size:14px;">${escHtml(L_TBD)}</div>
+                  <div style="font-size:11px;color:rgba(255,255,255,.65);">${escHtml(L_PER)}</div>
                 </div>
               </div>
-
-              <button class="btn" type="button" data-plan="Team" style="margin-top:12px;width:100%;">選択</button>
+              <button class="btn" type="button" data-plan="Team" style="margin-top:12px;width:100%;">${escHtml(L_SELECT)}</button>
             </div>
 
             <div style="border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);border-radius:16px;padding:14px;min-width:0;">
               <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
                 <div style="min-width:0;">
                   <div style="font-weight:700;font-size:14px;line-height:1.2;">Enterprise</div>
-                  <div style="margin-top:6px;font-size:12px;line-height:1.5;color:rgba(255,255,255,.70);">企業向け</div>
+                  <div style="margin-top:6px;font-size:12px;line-height:1.5;color:rgba(255,255,255,.70);">${escHtml(tr("planEnterpriseDesc"))}</div>
                 </div>
                 <div style="text-align:right;">
-                  <div style="font-weight:700;font-size:14px;">¥--</div>
-                  <div style="font-size:11px;color:rgba(255,255,255,.65);">/month</div>
+                  <div style="font-weight:700;font-size:14px;">${escHtml(L_TBD)}</div>
+                  <div style="font-size:11px;color:rgba(255,255,255,.65);">${escHtml(L_PER)}</div>
                 </div>
               </div>
-
-              <button class="btn" type="button" data-plan="Enterprise" style="margin-top:12px;width:100%;">選択</button>
+              <button class="btn" type="button" data-plan="Enterprise" style="margin-top:12px;width:100%;">${escHtml(L_SELECT)}</button>
             </div>
           </div>
 
           <div style="padding:0 16px 14px;">
             <div style="font-size:12px;line-height:1.6;color:rgba(255,255,255,.70);">
-              Free 以外のプランは有料です。プランを選択すると料金に同意した上で変更されます
+              ${escHtml(L_NOTE)}
             </div>
           </div>
         </div>
@@ -3000,7 +3018,6 @@ btnNewChat?.addEventListener("click", (e) => {
         b.addEventListener("click", async () => {
           const plan = b.getAttribute("data-plan") || "Free";
 
-          // v1: UIのみ。Stripe連動は次工程で /api/billing に接続する。
           state.plan = plan;
           save(state);
           syncAccountUi();
@@ -3037,17 +3054,216 @@ btnNewChat?.addEventListener("click", (e) => {
     btnRevoke?.addEventListener("click", async (e) => {
       e.preventDefault();
       if (!state.user.deviceTrusted) return;
-      const ok1 = await confirmModal("この端末を解除しますか？");
+      const ok1 = await confirmModal(tr("confirmRevokeDevice"));
       if (!ok1) return;
       state.user.deviceTrusted = false;
       saveUser();
     });
 
+    /* ===== Trainer (AET) ===== */
+    const TRAINER_CASES_KEY = "aurea_trainer_cases_v1";
+
+    const loadTrainerCases = () => {
+      try {
+        const raw = localStorage.getItem(TRAINER_CASES_KEY);
+        if (!raw) return [];
+        const arr = JSON.parse(raw);
+        return Array.isArray(arr) ? arr : [];
+      } catch { return []; }
+    };
+
+    const saveTrainerCases = (arr) => {
+      try { localStorage.setItem(TRAINER_CASES_KEY, JSON.stringify(Array.isArray(arr) ? arr : [])); } catch {}
+    };
+
+    const renderTrainerCases = () => {
+      const mount = document.getElementById("trainerCases");
+      if (!mount) return;
+
+      const cases = loadTrainerCases();
+      if (!cases.length) {
+        mount.innerHTML = `<div style="font-size:12px;line-height:1.6;color:rgba(255,255,255,.55);">${escHtml(tr("trainerCaseEmpty"))}</div>`;
+        return;
+      }
+
+      mount.innerHTML = "";
+      cases.forEach((c) => {
+        const row = document.createElement("div");
+        row.style.cssText = `
+          border:1px solid rgba(255,255,255,.10);
+          background:rgba(255,255,255,.03);
+          border-radius:16px;
+          padding:12px 12px;
+          margin-top:10px;
+          display:flex;
+          flex-direction:column;
+          gap:10px;
+          min-width:0;
+        `;
+
+        row.innerHTML = `
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
+            <div style="min-width:0;">
+              <div style="font-size:12px;opacity:.72;margin-bottom:6px;">${escHtml(tr("trainerCaseQuestion"))}</div>
+              <div style="font-size:13px;line-height:1.6;color:rgba(255,255,255,.88);white-space:pre-wrap;">${escHtml(c.q || "")}</div>
+            </div>
+
+            <button type="button" data-action="delete" data-id="${escHtml(c.id)}" class="btn secondary" style="height:32px;padding:0 12px;border-radius:999px;">
+              <span>${escHtml(tr("trainerCaseDelete"))}</span>
+            </button>
+          </div>
+
+          <div style="border-top:1px solid rgba(255,255,255,.08);padding-top:10px;">
+            <div style="font-size:12px;opacity:.72;margin-bottom:6px;">${escHtml(tr("trainerCaseAnswer"))}</div>
+            <div style="font-size:13px;line-height:1.6;color:rgba(255,255,255,.82);white-space:pre-wrap;">${escHtml(c.a || "")}</div>
+          </div>
+        `;
+
+        mount.appendChild(row);
+      });
+
+      // delete
+      mount.querySelectorAll("button[data-action='delete']").forEach((b) => {
+        b.addEventListener("click", async (e) => {
+          e.preventDefault();
+          const id = b.getAttribute("data-id") || "";
+          const ok = await confirmModal(tr("trainerCaseDeleteConfirm"));
+          if (!ok) return;
+          const next = loadTrainerCases().filter(x => x.id !== id);
+          saveTrainerCases(next);
+          renderTrainerCases();
+        });
+      });
+    };
+
+    // add modal
+    let trainerWrap = null;
+
+    const ensureTrainerCaseModal = () => {
+      if (trainerWrap) return trainerWrap;
+
+      trainerWrap = document.createElement("div");
+      trainerWrap.id = "aureaTrainerCaseModal";
+      trainerWrap.setAttribute("aria-hidden", "true");
+      trainerWrap.style.cssText = `
+        position:fixed; inset:0; display:none; align-items:center; justify-content:center;
+        background:rgba(0,0,0,.45); z-index:10070; padding:18px;
+      `;
+
+      trainerWrap.innerHTML = `
+        <div style="
+          width:min(760px, calc(100% - 24px));
+          max-height:calc(100vh - 64px);
+          background:rgba(20,21,22,.96);
+          border:1px solid rgba(255,255,255,.10);
+          border-radius:18px;
+          box-shadow:0 10px 30px rgba(0,0,0,.45);
+          overflow:hidden;
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
+          color:rgba(255,255,255,.92);
+          font-family: -apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Hiragino Sans','Noto Sans JP',sans-serif;
+          display:flex;
+          flex-direction:column;
+          min-width:0;
+        ">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.08);">
+            <div style="font-size:14px;font-weight:600;">${escHtml(tr("trainerAddCase"))}</div>
+            <button type="button" data-action="close" style="
+              width:36px;height:36px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
+              background:rgba(255,255,255,.06);color:rgba(255,255,255,.92);
+              cursor:pointer; font-size:18px; line-height:34px;
+            ">×</button>
+          </div>
+
+          <div style="padding:14px 16px 16px;display:flex;flex-direction:column;gap:12px;min-height:0;">
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <div style="font-size:12px;opacity:.72;">${escHtml(tr("trainerCaseQuestion"))}</div>
+              <textarea id="aureaTrainerQ" rows="4" style="
+                width:100%;border-radius:14px;border:1px solid rgba(255,255,255,.12);
+                background:rgba(255,255,255,.05);color:rgba(255,255,255,.92);
+                outline:none;padding:10px 12px;font-size:13px;line-height:1.6;resize:vertical;
+              "></textarea>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:6px;min-height:0;">
+              <div style="font-size:12px;opacity:.72;">${escHtml(tr("trainerCaseAnswer"))}</div>
+              <textarea id="aureaTrainerA" rows="6" style="
+                width:100%;border-radius:14px;border:1px solid rgba(255,255,255,.12);
+                background:rgba(255,255,255,.05);color:rgba(255,255,255,.92);
+                outline:none;padding:10px 12px;font-size:13px;line-height:1.6;resize:vertical;
+              "></textarea>
+            </div>
+
+            <div style="display:flex;justify-content:flex-end;gap:10px;padding-top:6px;">
+              <button type="button" data-action="save" style="
+                height:40px;padding:0 14px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
+                background:rgba(255,255,255,.08);color:rgba(255,255,255,.92);cursor:pointer;font-size:13px;
+              ">${escHtml(tr("trainerCaseSave"))}</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(trainerWrap);
+
+      trainerWrap.addEventListener("click", (e) => {
+        if (e.target === trainerWrap) closeTrainerCaseModal();
+      });
+
+      trainerWrap.addEventListener("click", (e) => {
+        const t = e.target;
+
+        const closeBtn = t.closest("[data-action='close']");
+        if (closeBtn) { e.preventDefault(); closeTrainerCaseModal(); return; }
+
+        const saveBtn = t.closest("[data-action='save']");
+        if (!saveBtn) return;
+
+        e.preventDefault();
+
+        const q = (document.getElementById("aureaTrainerQ")?.value || "").trim();
+        const a = (document.getElementById("aureaTrainerA")?.value || "").trim();
+        if (!q || !a) return;
+
+        const arr = loadTrainerCases();
+        arr.unshift({ id: uid(), q, a, createdAt: nowISO() });
+        saveTrainerCases(arr);
+
+        closeTrainerCaseModal();
+        renderTrainerCases();
+      });
+
+      return trainerWrap;
+    };
+
+    const openTrainerCaseModal = () => {
+      ensureTrainerCaseModal();
+      const q = document.getElementById("aureaTrainerQ");
+      const a = document.getElementById("aureaTrainerA");
+      if (q) q.value = "";
+      if (a) a.value = "";
+
+      trainerWrap.style.display = "flex";
+      trainerWrap.setAttribute("aria-hidden", "false");
+
+      setTimeout(() => q?.focus(), 0);
+    };
+
+    const closeTrainerCaseModal = () => {
+      if (!trainerWrap) return;
+      trainerWrap.style.display = "none";
+      trainerWrap.setAttribute("aria-hidden", "true");
+    };
+
     const btnAddTrainerCase = document.getElementById("btnAddTrainerCase");
-    btnAddTrainerCase?.addEventListener("click", async (e) => {
+    btnAddTrainerCase?.addEventListener("click", (e) => {
       e.preventDefault();
-      await confirmModal("ケース追加（AET）は次工程で実装します。");
+      openTrainerCaseModal();
     });
+
+    // 初期描画
+    renderTrainerCases();
 
     // Legal modal (3 items)
     const legalOverlay = document.getElementById("legalOverlay");
@@ -3070,7 +3286,7 @@ btnNewChat?.addEventListener("click", (e) => {
         </div>
       `,
       terms: `
-        <div class="reg-title">利用規約（概要）</div>
+        <div class="reg-title">利用規約</div>
         <div class="reg-text">
           本サービスは、AIを用いて情報の整理・要約・提案を提供します。<br>
           提供される内容は正確性を保証しません。重要な判断は利用者が必ず追加確認を行ってください。<br>
@@ -3079,7 +3295,7 @@ btnNewChat?.addEventListener("click", (e) => {
         </div>
       `,
       privacy: `
-        <div class="reg-title">プライバシーポリシー（概要）</div>
+        <div class="reg-title">プライバシーポリシー</div>
         <div class="reg-text">
           当社は、アカウント情報（メール、表示名等）および利用ログ等を、サービス提供・改善・不正防止の目的で取り扱います。<br>
           法令に基づく場合を除き、本人の同意なく第三者へ提供しません。<br>
@@ -3097,13 +3313,25 @@ btnNewChat?.addEventListener("click", (e) => {
         : (k === "terms") ? tr("terms")
         : tr("privacy");
 
+      // スクロール問題対策：表示のたび必ず付与
+      legalModalBody.style.maxHeight = "min(60vh, 520px)";
+      legalModalBody.style.overflowY = "auto";
+      legalModalBody.style.paddingRight = "8px";
+
       legalModalBody.innerHTML = legalContent[k] || "";
+
       legalOverlay.style.display = "flex";
+      requestAnimationFrame(() => {
+        legalOverlay.classList.add("is-open");
+      });
     };
 
     const closeLegalModal = () => {
       if (!legalOverlay) return;
-      legalOverlay.style.display = "none";
+      legalOverlay.classList.remove("is-open");
+      setTimeout(() => {
+        legalOverlay.style.display = "none";
+      }, 180);
     };
 
     document.querySelectorAll(".settings-modal [data-legal]").forEach((b) => {

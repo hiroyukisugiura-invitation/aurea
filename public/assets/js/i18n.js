@@ -85,10 +85,20 @@
       projectName: "プロジェクト名",
 
       dataNowCloud: "現在：クラウド",
+      dataNowLocal: "現在：端末内",
       deleteAllChats: "すべてのチャットを削除する",
 
       trainerSection: "AUREAを育てる（AET）",
       trainerSectionDesc: "「こんな質問にはこれ」といったケースを登録し、社内AIの回答精度を育てます",
+
+      trainerAddCase: "ケースを追加",
+      trainerAddCaseDesc: "ケース（質問→最適回答）を登録",
+      trainerCaseQuestion: "質問",
+      trainerCaseAnswer: "最適回答",
+      trainerCaseSave: "保存",
+      trainerCaseEmpty: "まだケースがありません。",
+      trainerCaseDelete: "削除",
+      trainerCaseDeleteConfirm: "このケースを削除しますか？",
 
       theme: "テーマ",
       themeSystem: "システム",
@@ -127,6 +137,7 @@
       confirmDeleteImage: "この画像を削除しますか？",
       confirmCreateProject: "プロジェクトを作成しますか？",
       confirmDeleteAllChats: "すべてのチャットを削除しますか？",
+      confirmRevokeDevice: "この端末を解除しますか？",
 
       promptNewName: "新しい名前",
       promptSaasName: "SaaS名",
@@ -226,11 +237,22 @@
       data: "Data",
       dataDesc: "Data management and storage",
       dataStorage: "Chat & data storage",
+      dataNowCloud: "Now: Cloud",
+      dataNowLocal: "Now: Local",
       storageCloud: "Cloud",
       storageLocal: "Local",
 
       trainer: "AUREA Data Trainer",
       trainerDesc: "Train your internal AI to improve workflow efficiency",
+
+      trainerAddCase: "Add case",
+      trainerAddCaseDesc: "Register a case (question → best answer)",
+      trainerCaseQuestion: "Question",
+      trainerCaseAnswer: "Best answer",
+      trainerCaseSave: "Save",
+      trainerCaseEmpty: "No cases yet.",
+      trainerCaseDelete: "Delete",
+      trainerCaseDeleteConfirm: "Delete this case?",
 
       accountSecurity: "Account & security",
       accountDesc: "User information and security details",
@@ -248,6 +270,7 @@
       confirmConnectGoogle: "Connect Google account?",
       confirmConnectSaas: "Connect {name}?",
       confirmDisconnectSaas: "Disconnect {name}?",
+      confirmRevokeDevice: "Revoke this device?",
 
       saasName: "SaaS name",
       userName: "Username",
