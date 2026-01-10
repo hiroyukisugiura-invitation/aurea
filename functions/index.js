@@ -357,6 +357,30 @@ app.post("/api/billing/checkout", async (req, res) => {
   }
 });
 
+/* ================= TEMP: Force plan (remove later) ================= */
+app.post("/api/stripe/test-complete", async (req, res) => {
+  try {
+    const uid = String(req.body?.uid || "").trim();
+    const plan = String(req.body?.plan || "").trim();
+    if (!uid || !plan) {
+      res.status(400).json({ ok: false, reason: "missing_params" });
+      return;
+    }
+
+    await db.collection("users").doc(uid).set(
+      {
+        plan,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      },
+      { merge: true }
+    );
+
+    res.json({ ok: true });
+  } catch {
+    res.status(400).json({ ok: false, reason: "failed" });
+  }
+});
+
 app.get("/google/connect", connectGoogle("google"));
 app.get("/gmail/connect", connectGoogle("gmail"));
 app.get("/drive/connect", connectGoogle("drive"));
