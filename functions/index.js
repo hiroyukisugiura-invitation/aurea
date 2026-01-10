@@ -8,6 +8,7 @@ const STRIPE_SECRET_KEY = defineSecret("STRIPE_SECRET_KEY");
 const STRIPE_PRICE_PRO = defineSecret("STRIPE_PRICE_PRO");
 const STRIPE_PRICE_TEAM = defineSecret("STRIPE_PRICE_TEAM");
 const STRIPE_PRICE_ENTERPRISE = defineSecret("STRIPE_PRICE_ENTERPRISE");
+const STRIPE_WEBHOOK_SECRET = defineSecret("STRIPE_WEBHOOK_SECRET");
 
 // Secret が無い状態で Stripe を初期化しない（解析落ち防止）
 const getStripe = () => {
@@ -17,6 +18,8 @@ const getStripe = () => {
 };
 
 const app = express();
+
+// Webhook 以外は JSON
 app.use(express.json({ limit: "1mb" }));
 
 try { admin.initializeApp(); } catch (e) { void e; }
@@ -220,6 +223,40 @@ const consumeInvite = async (req, res) => {
   }
 };
 
+/* ================= Stripe Webhook ================= */
+app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async (req, res) => {
+  const stripe = getStripe();
+  if (!stripe) {
+    res.status(500).send("stripe_key_missing");
+    return;
+  }
+
+  const sig = req.headers["stripe-signature"];
+  const endpointSecret = String(STRIPE_WEBHOOK_SECRET.value() || "").trim();
+
+  let event;
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+  } catch (err) {
+    res.status(400).send(`Webhook Error: ${err.message}`);
+    return;
+  }
+
+  try {
+    await db.collection("stripe_events").doc(event.id).set({
+      type: event.type,
+      created: event.created,
+      livemode: event.livemode,
+      data: event.data.object,
+      receivedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    res.json({ received: true });
+  } catch {
+    res.status(500).send("webhook_handler_failed");
+  }
+});
+
 /* ================= Billing (Stripe) ================= */
 app.post("/api/billing/checkout", async (req, res) => {
   const stripe = getStripe();
@@ -258,8 +295,7 @@ app.post("/api/billing/checkout", async (req, res) => {
     });
 
     res.json({ ok: true, url: session.url });
-  } catch (e) {
-    void e;
+  } catch {
     res.status(400).json({ ok: false, reason: "checkout_failed" });
   }
 });
@@ -282,7 +318,13 @@ app.post("/api/company/invite/consume", consumeInvite);
 exports.api = onRequest(
   {
     region: "us-central1",
-    secrets: [STRIPE_SECRET_KEY, STRIPE_PRICE_PRO, STRIPE_PRICE_TEAM, STRIPE_PRICE_ENTERPRISE]
+    secrets: [
+      STRIPE_SECRET_KEY,
+      STRIPE_PRICE_PRO,
+      STRIPE_PRICE_TEAM,
+      STRIPE_PRICE_ENTERPRISE,
+      STRIPE_WEBHOOK_SECRET
+    ]
   },
   app
 );
