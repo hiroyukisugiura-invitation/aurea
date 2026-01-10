@@ -257,8 +257,25 @@ app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async
     if (event.type === "checkout.session.completed") {
       const session = event.data.object || {};
       const md = session.metadata || {};
-      const uid = String(md.uid || "").trim();
+
       const plan = String(md.plan || "").trim();
+      let uid = String(md.uid || "").trim();
+
+      // metadata.uid が無い場合は、email から Auth uid を取得する（テストイベントでも通す）
+      if (!uid) {
+        const email =
+          String((session.customer_details || {}).email || "").trim() ||
+          String(session.customer_email || "").trim();
+
+        if (email) {
+          try {
+            const u = await admin.auth().getUserByEmail(email);
+            uid = String(u.uid || "").trim();
+          } catch (e) {
+            void e;
+          }
+        }
+      }
 
       if (uid && plan) {
         await db.collection("users").doc(uid).set(
