@@ -2957,9 +2957,36 @@ btnNewChat?.addEventListener("click", (e) => {
 
       const rt = encodeURIComponent(`${window.location.origin}/`);
 
-      const goStripe = (plan) => {
-        const p = encodeURIComponent(String(plan || "Free"));
-        window.location.href = `/api/billing?plan=${p}&returnTo=${rt}`;
+      const goStripe = async (plan) => {
+        const p = String(plan || "Free");
+
+        // Free はStripeに行かない（モーダルを閉じるだけ）
+        if (p === "Free") {
+          wrap.style.display = "none";
+          wrap.setAttribute("aria-hidden", "true");
+          return;
+        }
+
+        const st = (typeof getAuthState === "function") ? (getAuthState() || {}) : {};
+        const uid = String(st.uid || "").trim();
+        const email = String(st.email || "").trim();
+        if (!uid || !email) return;
+
+        const successUrl = `${window.location.origin}/?billing=success`;
+        const cancelUrl = `${window.location.origin}/?billing=cancel`;
+
+        try {
+          const r = await fetch("/api/billing/checkout", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ plan: p, uid, email, successUrl, cancelUrl })
+          });
+
+          const j = await r.json().catch(() => null);
+          if (j && j.ok && j.url) {
+            window.location.href = j.url;
+          }
+        } catch {}
       };
 
       wrap.innerHTML = `
