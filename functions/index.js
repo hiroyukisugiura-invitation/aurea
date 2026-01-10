@@ -243,6 +243,7 @@ app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async
   }
 
   try {
+    // 監査用：全イベント保存（そのまま）
     await db.collection("stripe_events").doc(event.id).set({
       type: event.type,
       created: event.created,
@@ -250,6 +251,45 @@ app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async
       data: event.data.object,
       receivedAt: admin.firestore.FieldValue.serverTimestamp()
     });
+
+    // 本番用：ユーザーの plan を確定
+    // Firestore: users/{uid}
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object || {};
+      const md = session.metadata || {};
+      const uid = String(md.uid || "").trim();
+      const plan = String(md.plan || "").trim();
+
+      if (uid && plan) {
+        await db.collection("users").doc(uid).set(
+          {
+            plan,
+            stripeCustomerId: String(session.customer || session.customer_id || ""),
+            stripeSubscriptionId: String(session.subscription || ""),
+            stripeCheckoutSessionId: String(session.id || ""),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+          },
+          { merge: true }
+        );
+      }
+    }
+
+    // 解約時は Free に戻す（Enterprise は別運用なのでここでは触らない前提）
+    if (event.type === "customer.subscription.deleted") {
+      const sub = event.data.object || {};
+      const uid = String((sub.metadata || {}).uid || "").trim();
+
+      if (uid) {
+        await db.collection("users").doc(uid).set(
+          {
+            plan: "Free",
+            stripeSubscriptionId: String(sub.id || ""),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+          },
+          { merge: true }
+        );
+      }
+    }
 
     res.json({ received: true });
   } catch {
