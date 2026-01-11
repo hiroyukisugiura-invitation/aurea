@@ -19,11 +19,82 @@ const getStripe = () => {
 
 const app = express();
 
-// Stripe Webhook は raw 必須（署名検証のため）。それ以外だけ JSON を適用する
-app.use((req, res, next) => {
-  if (req.originalUrl === "/api/stripe/webhook") return next();
-  return express.json({ limit: "1mb" })(req, res, next);
-});
+// ===== Stripe Webhook（raw専用ルーター）=====
+const stripeWebhook = express.Router();
+
+// raw を最優先で適用（これが超重要）
+stripeWebhook.post(
+  "/api/stripe/webhook",
+  express.raw({ type: "application/json" }),
+  async (req, res) => {
+    const stripe = getStripe();
+    if (!stripe) {
+      res.status(500).send("stripe_key_missing");
+      return;
+    }
+
+    const sig = req.headers["stripe-signature"];
+    const endpointSecret = String(STRIPE_WEBHOOK_SECRET.value() || "").trim();
+
+    let event;
+    try {
+    event = stripe.webhooks.constructEvent(req.rawBody, sig, endpointSecret);
+  } catch (err) {
+    res.status(400).send(`Webhook Error: ${err.message}`);
+    return;
+  }
+
+    try {
+      // 監査ログ
+      await db.collection("stripe_events").doc(event.id).set({
+        type: event.type,
+        created: event.created,
+        livemode: event.livemode,
+        data: event.data.object,
+        receivedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      // プラン反映
+      if (event.type === "checkout.session.completed") {
+        const session = event.data.object || {};
+        const md = session.metadata || {};
+        const plan = String(md.plan || "").trim();
+        let uid = String(md.uid || "").trim();
+
+        const email =
+          String((session.customer_details || {}).email || "").trim() ||
+          String(session.customer_email || "").trim();
+
+        if ((!uid || uid === "<UID>") && email) {
+          const u = await admin.auth().getUserByEmail(email);
+          uid = u.uid;
+        }
+
+        if (uid && plan) {
+          await db.collection("users").doc(uid).set(
+            {
+              plan,
+              stripeCustomerId: String(session.customer || ""),
+              stripeSubscriptionId: String(session.subscription || ""),
+              updatedAt: admin.firestore.FieldValue.serverTimestamp()
+            },
+            { merge: true }
+          );
+        }
+      }
+
+      res.json({ received: true });
+    } catch (e) {
+      res.status(500).send("webhook_handler_failed");
+    }
+  }
+);
+
+// ★ これを必ず app に mount
+app.use(stripeWebhook);
+
+// ===== それ以外の API は JSON =====
+app.use(express.json({ limit: "1mb" }));
 
 try { admin.initializeApp(); } catch (e) { void e; }
 const db = admin.firestore();
@@ -225,127 +296,6 @@ const consumeInvite = async (req, res) => {
     void e;
   }
 };
-
-/* ================= Stripe Webhook ================= */
-app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async (req, res) => {
-  const stripe = getStripe();
-  if (!stripe) {
-    res.status(500).send("stripe_key_missing");
-    return;
-  }
-
-  const sig = req.headers["stripe-signature"];
-  const endpointSecret = String(STRIPE_WEBHOOK_SECRET.value() || "").trim();
-
-  let event;
-  try {
-    event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
-  } catch (err) {
-    res.status(400).send(`Webhook Error: ${err.message}`);
-    return;
-  }
-
-  try {
-    // 監査用：全イベント保存（そのまま）
-    await db.collection("stripe_events").doc(event.id).set({
-      type: event.type,
-      created: event.created,
-      livemode: event.livemode,
-      data: event.data.object,
-      receivedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    // 本番用：ユーザーの plan を確定
-    // Firestore: users/{uid}
-    if (event.type === "checkout.session.completed") {
-      const session = event.data.object || {};
-      const md = session.metadata || {};
-
-      const plan = String(md.plan || "").trim();
-      let uid = String(md.uid || "").trim();
-
-      // uid が固定文字列("<UID>")など不正な場合も email から Auth uid を再取得する
-      const looksInvalidUid = (s) => {
-        const v = String(s || "").trim();
-        if (!v) return true;
-        if (v === "<UID>") return true;
-        if (v.includes("<") || v.includes(">")) return true;
-        return false;
-      };
-
-      const email =
-        String((session.customer_details || {}).email || "").trim() ||
-        String(session.customer_email || "").trim();
-
-      if (looksInvalidUid(uid) && email) {
-        try {
-          const u = await admin.auth().getUserByEmail(email);
-          uid = String(u.uid || "").trim();
-        } catch (e) {
-          void e;
-        }
-      }
-
-      if (uid && plan) {
-        await db.collection("users").doc(uid).set(
-          {
-            plan,
-            stripeCustomerId: String(session.customer || session.customer_id || ""),
-            stripeSubscriptionId: String(session.subscription || ""),
-            stripeCheckoutSessionId: String(session.id || ""),
-            updatedAt: admin.firestore.FieldValue.serverTimestamp()
-          },
-          { merge: true }
-        );
-      }
-    }
-
-    // 解約時は Free に戻す（Enterprise は別運用なのでここでは触らない前提）
-    if (event.type === "customer.subscription.deleted") {
-      const sub = event.data.object || {};
-      let uid = String((sub.metadata || {}).uid || "").trim();
-
-      const looksInvalidUid = (s) => {
-        const v = String(s || "").trim();
-        if (!v) return true;
-        if (v === "<UID>") return true;
-        if (v.includes("<") || v.includes(">")) return true;
-        return false;
-      };
-
-      // metadata.uid が壊れている場合、users から subscriptionId で逆引き
-      if (looksInvalidUid(uid)) {
-        try {
-          const q = await db.collection("users")
-            .where("stripeSubscriptionId", "==", String(sub.id || ""))
-            .limit(1)
-            .get();
-
-          if (!q.empty) {
-            uid = String(q.docs[0].id || "").trim();
-          }
-        } catch (e) {
-          void e;
-        }
-      }
-
-      if (uid) {
-        await db.collection("users").doc(uid).set(
-          {
-            plan: "Free",
-            stripeSubscriptionId: String(sub.id || ""),
-            updatedAt: admin.firestore.FieldValue.serverTimestamp()
-          },
-          { merge: true }
-        );
-      }
-    }
-
-    res.json({ received: true });
-  } catch {
-    res.status(500).send("webhook_handler_failed");
-  }
-});
 
 /* ================= Billing (Stripe) ================= */
 app.post("/api/billing/checkout", async (req, res) => {
