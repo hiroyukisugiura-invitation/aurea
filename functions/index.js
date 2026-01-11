@@ -95,6 +95,7 @@ app.use(stripeWebhook);
 
 // ===== それ以外の API は JSON =====
 app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: false }));
 
 try { admin.initializeApp(); } catch (e) { void e; }
 const db = admin.firestore();
@@ -352,7 +353,24 @@ app.post("/api/billing/downgrade", async (req, res) => {
   }
 
   try {
-    const uid = String(req.body?.uid || "").trim();
+    // uid は body / query / Authorization(Bearer) の順で拾う（body が空でも落とさない）
+    let uid = String(req.body?.uid || "").trim();
+    if (!uid) uid = String(req.query?.uid || "").trim();
+
+    if (!uid) {
+      const authz = String(req.headers.authorization || "").trim();
+      const m = authz.match(/^Bearer\s+(.+)$/i);
+      const idToken = m ? String(m[1] || "").trim() : "";
+      if (idToken) {
+        try {
+          const decoded = await admin.auth().verifyIdToken(idToken);
+          uid = String(decoded?.uid || "").trim();
+        } catch (e) {
+          void e;
+        }
+      }
+    }
+
     if (!uid) {
       res.status(400).json({ ok: false, reason: "missing_uid" });
       return;
