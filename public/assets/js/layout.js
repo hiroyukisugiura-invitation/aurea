@@ -3536,7 +3536,15 @@ btnNewChat?.addEventListener("click", (e) => {
       const j = await r.json().catch(() => null);
       if (j && j.ok && j.plan) {
         state.plan = String(j.plan || "Free").trim() || "Free";
-        save(state);
+
+        try {
+          // save() は選択中の保存先に書く
+          save(state);
+
+          // 念のため両方へも書く（cloud/localズレ対策）
+          localStorage.setItem("aurea_main_v1_cloud", JSON.stringify(state));
+          localStorage.setItem("aurea_main_v1_local", JSON.stringify(state));
+        } catch {}
       }
     } catch {}
   };

@@ -381,7 +381,7 @@ app.post("/api/stripe/test-complete", async (req, res) => {
   }
 });
 
-/* ================= Plan fetch (UI) ================= */
+/* ================= User plan (UI) ================= */
 app.get("/api/user/plan", async (req, res) => {
   try {
     const uid = String(req.query?.uid || "").trim();
