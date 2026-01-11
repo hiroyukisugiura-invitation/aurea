@@ -428,7 +428,18 @@ app.post("/api/stripe/test-complete", async (req, res) => {
   }
 
   try {
-    const uid = String(req.body?.uid || "").trim();
+    let uid = String(req.body?.uid || "").trim();
+    if (!uid) {
+      const email = String(req.body?.email || "").trim();
+      if (email) {
+        try {
+          const u = await admin.auth().getUserByEmail(email);
+          uid = String(u.uid || "").trim();
+        } catch (e) {
+          void e;
+        }
+      }
+    }
     if (!uid) {
       res.status(400).json({ ok: false, reason: "missing_uid" });
       return;
