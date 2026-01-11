@@ -2970,7 +2970,10 @@ btnNewChat?.addEventListener("click", (e) => {
         const st = (typeof getAuthState === "function") ? (getAuthState() || {}) : {};
         const uid = String(st.uid || "").trim();
         const email = String(st.email || "").trim();
-        if (!uid || !email) return;
+        if (!uid || !email) {
+          alert("checkout_failed: missing_uid_or_email");
+          return;
+        }
 
         const successUrl = `${window.location.origin}/?billing=success`;
         const cancelUrl = `${window.location.origin}/?billing=cancel`;
