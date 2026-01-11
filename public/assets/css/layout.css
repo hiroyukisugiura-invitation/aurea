@@ -1191,13 +1191,21 @@ body.theme-light .images-empty{
   flex:0 0 auto;
 }
 
+/* 固定ブロック（「ケース（質問→最適回答）を登録」含む）の下に線 */
+.settings-modal #tab-trainer:checked ~ .overlay .modal .content .panel-trainer .content-bd > .section{
+  padding-bottom:16px;
+  border-bottom:1px solid var(--line);
+}
+
 /* 一覧マウント（renderTrainerCases が描画する場所） */
 .settings-modal #trainerCases{
   min-height:0;
   flex:1 1 0%;
   overflow:auto;   /* スクロールはここだけ */
   -webkit-overflow-scrolling:touch;
+  padding-top:16px;     /* 線の下の余白 */
   padding-right:4px;
+  overscroll-behavior:contain;
 }
 
 .settings-modal #tab-account:checked ~ .overlay .modal .content .panel-account{display:flex}
@@ -1260,6 +1268,14 @@ body.theme-light .images-empty{
   color:rgba(255,255,255,.60);
   line-height:1.55;
   margin-top:6px;
+}
+
+/* Trainer：説明文（「ケース（質問→最適回答）を登録」）の下に区切り線 */
+.settings-modal #tab-trainer:checked
+~ .overlay .modal .content .panel-trainer
+.section .sec-desc{
+  padding-bottom:14px;
+  border-bottom:1px solid var(--line);
 }
 
 .settings-modal .row{
@@ -1883,12 +1899,13 @@ body.theme-light .images-empty{
   white-space:nowrap;
 }
 
-/* Condition column（1行＋省略） */
+/* Condition column（折り返し可：英語でも見切れない） */
 .settings-modal #aiStackOverlay .table__body .table__row .table__cell:nth-child(3){
   color:rgba(255,255,255,.78);
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
+  white-space:normal;
+  overflow:visible;
+  text-overflow:clip;
+  word-break:break-word;
 }
 
 /* Editable condition text（1行＋省略） */
