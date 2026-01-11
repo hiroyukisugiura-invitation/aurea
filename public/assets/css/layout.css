@@ -1169,17 +1169,25 @@ body.theme-light .images-empty{
 .settings-modal #tab-trainer:checked ~ .overlay .modal .content .panel-trainer{
   display:flex;
   min-height:0;
+  height:100%;
+  flex:1 1 auto;
 }
 
-/* Trainer：上（見出し＋ケースを追加）は固定、#trainerCases だけスクロール */
+/* Trainer：上（AET説明＋ケースを追加）は固定、#trainerCases だけスクロール（UIは変えない） */
 .settings-modal #tab-trainer:checked ~ .overlay .modal .content .panel-trainer .content-bd{
+  padding:14px 18px 18px;
   min-height:0;
-  display:grid;
-  grid-template-rows: auto auto 1fr; /* 上2ブロック固定 + 一覧 */
+  flex:1 1 auto;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-start;
+  overflow:hidden; /* スクロールは content-bd ではなく一覧だけ */
 }
 
+/* 一覧マウント（renderTrainerCases が描画する場所） */
 .settings-modal #trainerCases{
   min-height:0;
+  flex:1 1 auto;
   overflow:auto;
   -webkit-overflow-scrolling:touch;
   padding-right:4px;
@@ -1218,40 +1226,6 @@ body.theme-light .images-empty{
   display:flex;
   flex-direction:column;
   justify-content:flex-start;
-}
-
-/* ===== Trainer: 「ケースを追加」より下だけスクロール ===== */
-.settings-modal #tab-trainer:checked ~ .overlay .modal .content .panel-trainer{
-  height:100%;
-  min-height:0;
-  flex:1 1 auto;
-}
-
-.settings-modal #tab-trainer:checked ~ .overlay .modal .content .panel-trainer .content-bd{
-  min-height:0;
-  flex:1 1 auto;
-}
-
-/* 一覧マウント（renderTrainerCases が描画する場所） */
-.settings-modal #trainerCases{
-  min-height:0;
-  flex:1 1 auto;
-  overflow:auto;
-  -webkit-overflow-scrolling:touch;
-  padding-right:4px;
-}
-
-/* ===== Trainer tab: fixed header + list scroll ===== */
-.settings-modal #tab-trainer:checked ~ .overlay .modal .content .panel-trainer{
-  height:100%;
-  min-height:0;
-  flex:1 1 auto;
-}
-
-.settings-modal #tab-trainer:checked ~ .overlay .modal .content .panel-trainer .content-bd{
-  overflow:visible;
-  min-height:0;
-  flex:1 1 auto;
 }
 
 /* Sections (あなたの現行settingsは「線で見せる」版) */
