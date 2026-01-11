@@ -1177,6 +1177,7 @@ body.theme-light .images-empty{
 .settings-modal #tab-trainer:checked ~ .overlay .modal .content .panel-trainer .content-bd{
   padding:14px 18px 18px;
   min-height:0;
+  height:100%;
   flex:1 1 auto;
   display:flex;
   flex-direction:column;
@@ -1192,8 +1193,9 @@ body.theme-light .images-empty{
 /* 一覧マウント（renderTrainerCases が描画する場所） */
 .settings-modal #trainerCases{
   min-height:0;
-  flex:1 1 auto; /* ここが残り高さを取る */
-  overflow:auto; /* スクロールはここだけ */
+  height:0;        /* ← これで flex 領域として確定し overflow が効く */
+  flex:1 1 0%;
+  overflow:auto;   /* スクロールはここだけ */
   -webkit-overflow-scrolling:touch;
   padding-right:4px;
 }
