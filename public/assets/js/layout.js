@@ -3441,7 +3441,8 @@ btnNewChat?.addEventListener("click", (e) => {
         ja: `
           <div class="reg-title">プライバシーポリシー</div>
           <div class="reg-text">
-            当社は、アカウント情報（メール、表示名等）および利用ログ等を、サービス提供・改善・不正防止の目的で取り扱います。<br>
+            当社は、アカウント情報（メール、表示名等）および利用ログ等を、<br>
+            サービス提供・改善・不正防止の目的で取り扱います。<br>
             法令に基づく場合を除き、本人の同意なく第三者へ提供しません。<br>
             収集・利用・保管の詳細は、本ポリシーおよび関連法令に従います。
           </div>
@@ -3467,17 +3468,25 @@ btnNewChat?.addEventListener("click", (e) => {
         : (k === "terms") ? tr("terms")
         : tr("privacy");
 
-      // スクロール問題対策：表示のたび必ず付与
-      legalModalBody.style.maxHeight = "min(60vh, 520px)";
-      legalModalBody.style.overflowY = "auto";
-      legalModalBody.style.paddingRight = "8px";
+      // 短文は枠を内容量に合わせる（固定maxHeightを外す）
+      legalModalBody.style.maxHeight = "";
+      legalModalBody.style.overflowY = "visible";
+      legalModalBody.style.paddingRight = "";
 
       const lang = ((state.settings?.language || "ja") === "en") ? "en" : "ja";
       const html = (legalContent[k] && legalContent[k][lang]) ? legalContent[k][lang] : "";
 
       legalModalBody.innerHTML = html;
       legalOverlay.style.display = "flex";
+
+      // 長文だけスクロールを付与
       requestAnimationFrame(() => {
+        const maxPx = Math.min(Math.round(window.innerHeight * 0.6), 520);
+        if (legalModalBody.scrollHeight > maxPx + 8) {
+          legalModalBody.style.maxHeight = "min(60vh, 520px)";
+          legalModalBody.style.overflowY = "auto";
+          legalModalBody.style.paddingRight = "8px";
+        }
         legalOverlay.classList.add("is-open");
       });
     };
