@@ -1201,6 +1201,17 @@ body.theme-light .images-empty{
   justify-content:flex-start;
 }
 
+/* ===== Trainer tab: scroll body ===== */
+.settings-modal #tab-trainer:checked ~ .overlay .modal .content .panel-trainer{
+  min-height:0;
+  flex:1 1 auto;
+}
+
+.settings-modal #tab-trainer:checked ~ .overlay .modal .content .panel-trainer .content-bd{
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+}
+
 /* Sections (あなたの現行settingsは「線で見せる」版) */
 .settings-modal .section{
   border:0;

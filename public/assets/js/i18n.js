@@ -170,7 +170,7 @@
       perMonth: "/month",
       planFreeDesc: "機能制限あり・お試し利用",
       planProDesc: "機能制限解放・個人クリエーター向け",
-      planTeamDesc: "チーム運用。３ライセンス分",
+      planTeamDesc: "チーム運用・３ライセンス分",
       planEnterpriseDesc: "企業向け・社内AI機能解放",
       planPriceTbd: "¥--",
       planPaidNote: "Free 以外のプランは有料です。\nプランを選択すると料金に同意した上で変更されます",
