@@ -399,7 +399,7 @@
 
 let suppressSettingsBackdropOnce = false;
 
-const openSettings = () => {
+const openSettings = async () => {
   const tabGeneral = document.getElementById("tab-general");
   if (tabGeneral) tabGeneral.checked = true;
 
@@ -410,6 +410,10 @@ const openSettings = () => {
   body.style.overflow = "hidden";
 
   ensureAppsGrid();
+
+  try {
+    await refreshPlanFromServer();
+  } catch {}
 
   syncAccountUi();
   syncSettingsUi();
