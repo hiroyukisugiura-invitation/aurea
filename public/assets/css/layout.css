@@ -1171,13 +1171,13 @@ body.theme-light .images-empty{
   min-height:0;
   height:100%;
   flex:1 1 auto;
+  overflow:hidden;
 }
 
 /* Trainer：上（AET説明＋ケースを追加）は固定、ケース一覧だけスクロール */
 .settings-modal #tab-trainer:checked ~ .overlay .modal .content .panel-trainer .content-bd{
   padding:14px 18px 18px;
   min-height:0;
-  height:100%;
   flex:1 1 auto;
   display:flex;
   flex-direction:column;
@@ -1606,6 +1606,7 @@ body.theme-light .images-empty{
     height:100%;
     min-height:0;
     flex:1 1 auto;
+    overflow:hidden;
   }
 
   .settings-modal #tab-trainer:checked ~ .overlay .modal .content .panel-trainer .content-bd{
@@ -1614,6 +1615,10 @@ body.theme-light .images-empty{
     flex:1 1 auto;
     display:flex;
     flex-direction:column;
+  }
+
+  .settings-modal #tab-trainer:checked ~ .overlay .modal .content .panel-trainer .content-bd > :not(#trainerCases){
+    flex:0 0 auto;
   }
 
   .settings-modal #tab-trainer:checked ~ .overlay .modal .content .panel-trainer #trainerCases{
