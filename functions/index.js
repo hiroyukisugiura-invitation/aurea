@@ -360,12 +360,51 @@ app.post("/api/billing/downgrade", async (req, res) => {
 
     const snap = await db.collection("users").doc(uid).get();
     const d = snap.exists ? (snap.data() || {}) : {};
-    const subId = String(d.stripeSubscriptionId || "").trim();
 
+    const subId = String(d.stripeSubscriptionId || "").trim();
+    const customerId = String(d.stripeCustomerId || "").trim();
+
+    // 1) subscriptionId があればそれをキャンセル
     if (subId) {
-      await stripe.subscriptions.del(subId);
+      try {
+        await stripe.subscriptions.del(subId);
+      } catch (e) {
+        // 既に消えている/存在しない等は「解約済み」とみなして先へ進む
+        const code = String(e && e.code ? e.code : "");
+        const msg = String(e && e.message ? e.message : e || "");
+        const isMissing = (code === "resource_missing") || msg.includes("No such subscription");
+        if (!isMissing) throw e;
+      }
     }
 
+    // 2) subscriptionId が無い場合は customerId から active/trialing を探してキャンセル
+    if (!subId && customerId) {
+      try {
+        const list = await stripe.subscriptions.list({
+          customer: customerId,
+          status: "all",
+          limit: 10
+        });
+
+        const cand = (list.data || []).find(s =>
+          s && (s.status === "active" || s.status === "trialing" || s.status === "past_due")
+        );
+
+        if (cand && cand.id) {
+          await stripe.subscriptions.del(String(cand.id));
+        }
+      } catch (e) {
+        // ここで止めると UI が Free にならないので、キャンセル失敗は明示的に返す
+        const msg = String(e && e.message ? e.message : e || "");
+        const type = String(e && e.type ? e.type : "");
+        const code = String(e && e.code ? e.code : "");
+        const param = String(e && e.param ? e.param : "");
+        res.status(400).json({ ok: false, reason: "cancel_failed", type, code, param, msg });
+        return;
+      }
+    }
+
+    // Firestore を Free に確定
     await db.collection("users").doc(uid).set(
       {
         plan: "Free",
