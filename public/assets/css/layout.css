@@ -1200,7 +1200,7 @@ body.theme-light .images-empty{
   -webkit-overflow-scrolling:touch;
 
   border-top:1px solid var(--line); /* ← 線の位置はここで固定 */
-  padding-top:0;                    /* ← 赤い余白を削除（線直下から開始） */
+  padding-top:0;                    /* ← 線直下から開始（赤い余白を削除） */
 
   padding-right:4px;
   overscroll-behavior:contain;
@@ -1637,9 +1637,14 @@ body.theme-light .images-empty{
 
   .settings-modal #tab-trainer:checked ~ .overlay .modal .content .panel-trainer #trainerCases{
     min-height:0;
-    flex:1 1 0%;
+    flex:1 1 auto;
     overflow:auto; /* スクロールはここだけ */
     -webkit-overflow-scrolling:touch;
+
+    border-top:1px solid var(--line);
+    padding-top:0;
+    padding-right:4px;
+    overscroll-behavior:contain;
   }
 
   .settings-modal .row{
