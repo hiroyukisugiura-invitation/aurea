@@ -394,13 +394,8 @@ app.post("/api/billing/downgrade", async (req, res) => {
           await stripe.subscriptions.del(String(cand.id));
         }
       } catch (e) {
-        // ここで止めると UI が Free にならないので、キャンセル失敗は明示的に返す
-        const msg = String(e && e.message ? e.message : e || "");
-        const type = String(e && e.type ? e.type : "");
-        const code = String(e && e.code ? e.code : "");
-        const param = String(e && e.param ? e.param : "");
-        res.status(400).json({ ok: false, reason: "cancel_failed", type, code, param, msg });
-        return;
+        // ★ 失敗しても続行（Free に戻すのが最優先）
+        console.warn("stripe downgrade skipped:", e?.message || e);
       }
     }
 
