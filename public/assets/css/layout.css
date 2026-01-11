@@ -1171,17 +1171,18 @@ body.theme-light .images-empty{
   min-height:0;
 }
 
-/* Trainer：上（見出し＋ケースを追加）は固定、最後のブロック（一覧）だけスクロール */
+/* Trainer：上（見出し＋ケースを追加）は固定、#trainerCases だけスクロール */
 .settings-modal #tab-trainer:checked ~ .overlay .modal .content .panel-trainer .content-bd{
   min-height:0;
-  display:flex;
-  flex-direction:column;
+  display:grid;
+  grid-template-rows: auto auto 1fr; /* 上2ブロック固定 + 一覧 */
 }
-.settings-modal #tab-trainer:checked ~ .overlay .modal .content .panel-trainer .content-bd > :last-child{
+
+.settings-modal #trainerCases{
   min-height:0;
-  flex:1 1 auto;
   overflow:auto;
   -webkit-overflow-scrolling:touch;
+  padding-right:4px;
 }
 
 .settings-modal #tab-account:checked ~ .overlay .modal .content .panel-account{display:flex}
