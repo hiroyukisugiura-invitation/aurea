@@ -2974,14 +2974,28 @@ btnNewChat?.addEventListener("click", (e) => {
 
         // Free は即時ダウングレード（Stripeを通さない）
         if (p === "Free") {
+          const msg = ((state.settings?.language || "ja") === "en")
+            ? "Downgrade to Free plan?"
+            : "Freeプランにダウングレードしますか？";
+          const ok = await confirmModal(msg);
+          if (!ok) return;
+
           try {
             const r = await fetch("/api/billing/downgrade", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ uid, email })
             });
+
+            const ct = String(r.headers.get("content-type") || "");
+            const j = ct.includes("application/json") ? await r.json().catch(() => null) : null;
+
             if (!r.ok) {
               alert(`downgrade_failed: http_${r.status}`);
+              return;
+            }
+            if (!j || !j.ok) {
+              alert("downgrade_failed: bad_response");
               return;
             }
           } catch (e) {
