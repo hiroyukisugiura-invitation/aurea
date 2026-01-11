@@ -1165,7 +1165,25 @@ body.theme-light .images-empty{
 .settings-modal #tab-general:checked ~ .overlay .modal .content .panel-general{display:flex}
 .settings-modal #tab-apps:checked ~ .overlay .modal .content .panel-apps{display:flex}
 .settings-modal #tab-data:checked ~ .overlay .modal .content .panel-data{display:flex}
-.settings-modal #tab-trainer:checked ~ .overlay .modal .content .panel-trainer{display:flex}
+
+.settings-modal #tab-trainer:checked ~ .overlay .modal .content .panel-trainer{
+  display:flex;
+  min-height:0;
+}
+
+/* Trainer：上（見出し＋ケースを追加）は固定、最後のブロック（一覧）だけスクロール */
+.settings-modal #tab-trainer:checked ~ .overlay .modal .content .panel-trainer .content-bd{
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+}
+.settings-modal #tab-trainer:checked ~ .overlay .modal .content .panel-trainer .content-bd > :last-child{
+  min-height:0;
+  flex:1 1 auto;
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+}
+
 .settings-modal #tab-account:checked ~ .overlay .modal .content .panel-account{display:flex}
 
 .settings-modal .content-hd{
