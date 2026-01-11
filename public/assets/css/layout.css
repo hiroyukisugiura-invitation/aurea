@@ -1174,7 +1174,7 @@ body.theme-light .images-empty{
   overflow:hidden;
 }
 
-/* Trainer：上（AET説明＋ケースを追加）は固定、ケース一覧だけスクロール */
+/* Trainer：上（AET説明＋ケースを追加）は固定、#trainerCases だけスクロール（UIは変えない） */
 .settings-modal #tab-trainer:checked ~ .overlay .modal .content .panel-trainer .content-bd{
   padding:14px 18px 18px;
   min-height:0;
@@ -1182,19 +1182,19 @@ body.theme-light .images-empty{
   display:flex;
   flex-direction:column;
   justify-content:flex-start;
-  overflow:hidden; /* スクロールは一覧だけ */
+  overflow:hidden; /* スクロールは content-bd ではなく一覧だけ */
 }
 
-/* Trainer：固定ブロック（説明/追加UI）は縮まない */
+/* Trainer：固定ブロックは縮まない */
 .settings-modal #tab-trainer:checked ~ .overlay .modal .content .panel-trainer .content-bd > :not(#trainerCases){
   flex:0 0 auto;
 }
 
-/* ケース一覧（ここだけスクロール） */
+/* 一覧マウント（renderTrainerCases が描画する場所） */
 .settings-modal #trainerCases{
   min-height:0;
   flex:1 1 auto;
-  overflow:auto;
+  overflow:auto;   /* スクロールはここだけ */
   -webkit-overflow-scrolling:touch;
   padding-right:4px;
 }
