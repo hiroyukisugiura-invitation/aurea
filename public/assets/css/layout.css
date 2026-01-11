@@ -1194,17 +1194,13 @@ body.theme-light .images-empty{
 /* 一覧マウント（renderTrainerCases が描画する場所） */
 .settings-modal #trainerCases{
   min-height:0;
-  flex:1 1 0%;
-
-  /* ここが“カセット”の肝：高さ制約を確定させる */
-  height:100%;
-  max-height:100%;
+  flex:1 1 auto;
 
   overflow:auto;   /* スクロールはここだけ */
   -webkit-overflow-scrolling:touch;
 
   border-top:1px solid var(--line); /* ← 線の位置はここで固定 */
-  padding-top:16px;                 /* 線の下の余白 */
+  padding-top:0;                    /* ← 赤い余白を削除（線直下から開始） */
 
   padding-right:4px;
   overscroll-behavior:contain;
