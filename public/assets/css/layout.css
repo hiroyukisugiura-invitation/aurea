@@ -1222,15 +1222,17 @@ body.theme-light .images-empty{
   padding-right:4px;
 }
 
-/* ===== Trainer tab: scroll body ===== */
+/* ===== Trainer tab: fixed header + list scroll ===== */
 .settings-modal #tab-trainer:checked ~ .overlay .modal .content .panel-trainer{
+  height:100%;
   min-height:0;
   flex:1 1 auto;
 }
 
 .settings-modal #tab-trainer:checked ~ .overlay .modal .content .panel-trainer .content-bd{
-  overflow:auto;
-  -webkit-overflow-scrolling:touch;
+  overflow:visible;
+  min-height:0;
+  flex:1 1 auto;
 }
 
 /* Sections (あなたの現行settingsは「線で見せる」版) */
@@ -1609,21 +1611,26 @@ body.theme-light .images-empty{
   .settings-modal .select{
     width:auto;
     min-width:0;
-    height:auto;
+    height:34px;
     min-height:34px;
-    line-height:1.2;
-    padding:8px 44px 8px 12px;
-    white-space:normal;
+    line-height:32px;
+    padding:0 44px 0 12px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
   }
 
   .settings-modal .btn{
     width:auto;
     min-width:0;
-    height:auto;
+    height:34px;
     min-height:34px;
-    line-height:1.2;
-    padding:8px 12px;
-    white-space:normal;
+    line-height:32px;
+    padding:0 12px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    justify-content:center;
   }
 }
 
