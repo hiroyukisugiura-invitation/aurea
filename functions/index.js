@@ -381,6 +381,25 @@ app.post("/api/stripe/test-complete", async (req, res) => {
   }
 });
 
+/* ================= Plan fetch (UI) ================= */
+app.get("/api/user/plan", async (req, res) => {
+  try {
+    const uid = String(req.query?.uid || "").trim();
+    if (!uid) {
+      res.status(400).json({ ok: false, reason: "missing_uid" });
+      return;
+    }
+
+    const snap = await db.collection("users").doc(uid).get();
+    const d = snap.exists ? (snap.data() || {}) : {};
+    const plan = String(d.plan || "Free").trim() || "Free";
+
+    res.json({ ok: true, plan });
+  } catch {
+    res.status(400).json({ ok: false, reason: "failed" });
+  }
+});
+
 app.get("/google/connect", connectGoogle("google"));
 app.get("/gmail/connect", connectGoogle("gmail"));
 app.get("/drive/connect", connectGoogle("drive"));

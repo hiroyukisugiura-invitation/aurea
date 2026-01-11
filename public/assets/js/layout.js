@@ -3526,11 +3526,32 @@ btnNewChat?.addEventListener("click", (e) => {
     }
   })();
 
+  const refreshPlanFromServer = async () => {
+    try {
+      const st = (typeof getAuthState === "function") ? (getAuthState() || {}) : {};
+      const uid = String(st.uid || "").trim();
+      if (!st.loggedIn || !uid) return;
+
+      const r = await fetch(`/api/user/plan?uid=${encodeURIComponent(uid)}`, { method: "GET" });
+      const j = await r.json().catch(() => null);
+      if (j && j.ok && j.plan) {
+        state.plan = String(j.plan || "Free").trim() || "Free";
+        save(state);
+      }
+    } catch {}
+  };
+
   // reflect immediately
   syncAccountUi();
   syncSettingsUi();
   applyI18n();
   bindSettings();
+
+  // Firestore(users/{uid}.plan) 追従
+  void refreshPlanFromServer().then(() => {
+    syncAccountUi();
+    syncSettingsUi();
+  });
 
   // centered ask (no thread selected / no messages)
   setHasChat(false);
