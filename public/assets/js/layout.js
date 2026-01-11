@@ -3251,24 +3251,25 @@ btnNewChat?.addEventListener("click", (e) => {
       });
     };
 
-    // add modal
-    let trainerWrap = null;
+    // case manager modal (Apple辞書UI風：左=一覧(スクロール) / 右=編集)
+    let trainerMgrWrap = null;
+    let trainerSelectedId = null; // null = 新規
 
-    const ensureTrainerCaseModal = () => {
-      if (trainerWrap) return trainerWrap;
+    const ensureTrainerCaseManagerModal = () => {
+      if (trainerMgrWrap) return trainerMgrWrap;
 
-      trainerWrap = document.createElement("div");
-      trainerWrap.id = "aureaTrainerCaseModal";
-      trainerWrap.setAttribute("aria-hidden", "true");
-      trainerWrap.style.cssText = `
+      trainerMgrWrap = document.createElement("div");
+      trainerMgrWrap.id = "aureaTrainerCaseManager";
+      trainerMgrWrap.setAttribute("aria-hidden", "true");
+      trainerMgrWrap.style.cssText = `
         position:fixed; inset:0; display:none; align-items:center; justify-content:center;
         background:rgba(0,0,0,.45); z-index:10070; padding:18px;
       `;
 
-      trainerWrap.innerHTML = `
+      trainerMgrWrap.innerHTML = `
         <div style="
-          width:min(760px, calc(100% - 24px));
-          max-height:calc(100vh - 64px);
+          width:min(920px, calc(100% - 24px));
+          height:min(640px, calc(100vh - 64px));
           background:rgba(20,21,22,.96);
           border:1px solid rgba(255,255,255,.10);
           border-radius:18px;
@@ -3291,90 +3292,243 @@ btnNewChat?.addEventListener("click", (e) => {
             ">×</button>
           </div>
 
-          <div style="padding:14px 16px 16px;display:flex;flex-direction:column;gap:12px;min-height:0;">
-            <div style="display:flex;flex-direction:column;gap:6px;">
-              <div style="font-size:12px;opacity:.72;">${escHtml(tr("trainerCaseQuestion"))}</div>
-              <textarea id="aureaTrainerQ" rows="4" style="
-                width:100%;border-radius:14px;border:1px solid rgba(255,255,255,.12);
-                background:rgba(255,255,255,.05);color:rgba(255,255,255,.92);
-                outline:none;padding:10px 12px;font-size:13px;line-height:1.6;resize:vertical;
-              "></textarea>
+          <div style="display:grid;grid-template-columns: 340px 1fr;min-height:0;flex:1 1 0%;">
+            <!-- Left list -->
+            <div style="border-right:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;min-height:0;">
+              <div style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;opacity:.72;">
+                ${escHtml(tr("trainerCaseQuestion"))}
+              </div>
+
+              <div id="aureaTrainerCaseList" style="min-height:0;flex:1 1 0%;overflow:auto;-webkit-overflow-scrolling:touch;">
+                <!-- rows -->
+              </div>
+
+              <div style="padding:10px 12px;border-top:1px solid rgba(255,255,255,.06);display:flex;gap:8px;align-items:center;">
+                <button type="button" data-action="plus" style="
+                  width:34px;height:34px;border-radius:10px;border:1px solid rgba(255,255,255,.12);
+                  background:rgba(255,255,255,.06);color:rgba(255,255,255,.92);cursor:pointer;
+                ">+</button>
+                <button type="button" data-action="minus" style="
+                  width:34px;height:34px;border-radius:10px;border:1px solid rgba(255,255,255,.12);
+                  background:transparent;color:rgba(255,255,255,.82);cursor:pointer;
+                ">−</button>
+              </div>
             </div>
 
-            <div style="display:flex;flex-direction:column;gap:6px;min-height:0;">
-              <div style="font-size:12px;opacity:.72;">${escHtml(tr("trainerCaseAnswer"))}</div>
-              <textarea id="aureaTrainerA" rows="6" style="
-                width:100%;border-radius:14px;border:1px solid rgba(255,255,255,.12);
-                background:rgba(255,255,255,.05);color:rgba(255,255,255,.92);
-                outline:none;padding:10px 12px;font-size:13px;line-height:1.6;resize:vertical;
-              "></textarea>
-            </div>
+            <!-- Right editor -->
+            <div style="display:flex;flex-direction:column;min-height:0;">
+              <div style="padding:12px 14px;display:flex;flex-direction:column;gap:12px;min-height:0;flex:1 1 0%;">
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                  <div style="font-size:12px;opacity:.72;">${escHtml(tr("trainerCaseQuestion"))}</div>
+                  <textarea id="aureaTrainerQ" rows="4" style="
+                    width:100%;border-radius:14px;border:1px solid rgba(255,255,255,.12);
+                    background:rgba(255,255,255,.05);color:rgba(255,255,255,.92);
+                    outline:none;padding:10px 12px;font-size:13px;line-height:1.6;resize:vertical;
+                  "></textarea>
+                </div>
 
-            <div style="display:flex;justify-content:flex-end;gap:10px;padding-top:6px;">
-              <button type="button" data-action="save" style="
-                height:40px;padding:0 14px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
-                background:rgba(255,255,255,.08);color:rgba(255,255,255,.92);cursor:pointer;font-size:13px;
-              ">${escHtml(tr("trainerCaseSave"))}</button>
+                <div style="display:flex;flex-direction:column;gap:6px;min-height:0;">
+                  <div style="font-size:12px;opacity:.72;">${escHtml(tr("trainerCaseAnswer"))}</div>
+                  <textarea id="aureaTrainerA" rows="8" style="
+                    width:100%;border-radius:14px;border:1px solid rgba(255,255,255,.12);
+                    background:rgba(255,255,255,.05);color:rgba(255,255,255,.92);
+                    outline:none;padding:10px 12px;font-size:13px;line-height:1.6;resize:vertical;
+                  "></textarea>
+                </div>
+
+                <div style="display:flex;justify-content:flex-end;gap:10px;">
+                  <button type="button" data-action="save" style="
+                    height:40px;padding:0 14px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
+                    background:rgba(255,255,255,.08);color:rgba(255,255,255,.92);cursor:pointer;font-size:13px;
+                  ">${escHtml(tr("trainerCaseSave"))}</button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       `;
 
-      document.body.appendChild(trainerWrap);
+      document.body.appendChild(trainerMgrWrap);
 
-      trainerWrap.addEventListener("click", (e) => {
-        if (e.target === trainerWrap) closeTrainerCaseModal();
+      trainerMgrWrap.addEventListener("click", (e) => {
+        if (e.target === trainerMgrWrap) closeTrainerCaseManagerModal();
       });
 
-      trainerWrap.addEventListener("click", (e) => {
+      document.addEventListener("keydown", (e) => {
+        if (e.key !== "Escape") return;
+        if (!trainerMgrWrap) return;
+        if (trainerMgrWrap.style.display !== "none") closeTrainerCaseManagerModal();
+      });
+
+      trainerMgrWrap.addEventListener("click", async (e) => {
         const t = e.target;
 
         const closeBtn = t.closest("[data-action='close']");
-        if (closeBtn) { e.preventDefault(); closeTrainerCaseModal(); return; }
+        if (closeBtn) { e.preventDefault(); closeTrainerCaseManagerModal(); return; }
+
+        const plusBtn = t.closest("[data-action='plus']");
+        if (plusBtn) {
+          e.preventDefault();
+          trainerSelectedId = null;
+          const q = document.getElementById("aureaTrainerQ");
+          const a = document.getElementById("aureaTrainerA");
+          if (q) q.value = "";
+          if (a) a.value = "";
+          renderTrainerCaseList();
+          setTimeout(() => q?.focus(), 0);
+          return;
+        }
+
+        const minusBtn = t.closest("[data-action='minus']");
+        if (minusBtn) {
+          e.preventDefault();
+          if (!trainerSelectedId) return;
+
+          const ok = await confirmModal(tr("trainerCaseDeleteConfirm"));
+          if (!ok) return;
+
+          const next = loadTrainerCases().filter(x => x.id !== trainerSelectedId);
+          saveTrainerCases(next);
+
+          trainerSelectedId = null;
+          const q = document.getElementById("aureaTrainerQ");
+          const a = document.getElementById("aureaTrainerA");
+          if (q) q.value = "";
+          if (a) a.value = "";
+
+          renderTrainerCaseList();
+          renderTrainerCases();
+          return;
+        }
 
         const saveBtn = t.closest("[data-action='save']");
-        if (!saveBtn) return;
+        if (saveBtn) {
+          e.preventDefault();
 
-        e.preventDefault();
+          const qv = (document.getElementById("aureaTrainerQ")?.value || "").trim();
+          const av = (document.getElementById("aureaTrainerA")?.value || "").trim();
+          if (!qv || !av) return;
 
-        const q = (document.getElementById("aureaTrainerQ")?.value || "").trim();
-        const a = (document.getElementById("aureaTrainerA")?.value || "").trim();
-        if (!q || !a) return;
+          const arr = loadTrainerCases();
 
-        const arr = loadTrainerCases();
-        arr.unshift({ id: uid(), q, a, createdAt: nowISO() });
-        saveTrainerCases(arr);
+          if (trainerSelectedId) {
+            const idx = arr.findIndex(x => x.id === trainerSelectedId);
+            if (idx >= 0) {
+              arr[idx] = { ...arr[idx], q: qv, a: av };
+            }
+          } else {
+            const id = uid();
+            arr.unshift({ id, q: qv, a: av, createdAt: nowISO() });
+            trainerSelectedId = id;
+          }
 
-        closeTrainerCaseModal();
-        renderTrainerCases();
+          saveTrainerCases(arr);
+          renderTrainerCaseList();
+          renderTrainerCases();
+          return;
+        }
+
+        const rowBtn = t.closest("[data-action='pick-case']");
+        if (rowBtn) {
+          e.preventDefault();
+          const id = rowBtn.getAttribute("data-id") || "";
+          pickTrainerCase(id);
+          return;
+        }
       });
 
-      return trainerWrap;
+      return trainerMgrWrap;
     };
 
-    const openTrainerCaseModal = () => {
-      ensureTrainerCaseModal();
+    const renderTrainerCaseList = () => {
+      const list = document.getElementById("aureaTrainerCaseList");
+      if (!list) return;
+
+      const cases = loadTrainerCases();
+
+      if (!cases.length) {
+        list.innerHTML = `<div style="padding:12px 12px;font-size:12px;line-height:1.6;color:rgba(255,255,255,.55);">${escHtml(tr("trainerCaseEmpty"))}</div>`;
+        return;
+      }
+
+      list.innerHTML = "";
+      cases.forEach((c) => {
+        const row = document.createElement("button");
+        row.type = "button";
+        row.setAttribute("data-action", "pick-case");
+        row.setAttribute("data-id", c.id);
+        row.style.cssText = `
+          width:100%;
+          text-align:left;
+          border:0;
+          border-bottom:1px solid rgba(255,255,255,.06);
+          background:${(trainerSelectedId === c.id) ? "rgba(255,255,255,.06)" : "transparent"};
+          color:rgba(255,255,255,.90);
+          padding:10px 12px;
+          cursor:pointer;
+          font-family:inherit;
+        `;
+
+        const title = String(c.q || "").split("\n")[0].slice(0, 120);
+        row.innerHTML = `
+          <div style="font-size:12.5px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(title || tr("trainerCaseQuestion"))}</div>
+        `;
+        list.appendChild(row);
+      });
+    };
+
+    const pickTrainerCase = (id) => {
+      const cases = loadTrainerCases();
+      const c = cases.find(x => x.id === id);
+      if (!c) return;
+
+      trainerSelectedId = c.id;
+
       const q = document.getElementById("aureaTrainerQ");
       const a = document.getElementById("aureaTrainerA");
-      if (q) q.value = "";
-      if (a) a.value = "";
+      if (q) q.value = c.q || "";
+      if (a) a.value = c.a || "";
 
-      trainerWrap.style.display = "flex";
-      trainerWrap.setAttribute("aria-hidden", "false");
-
-      setTimeout(() => q?.focus(), 0);
+      renderTrainerCaseList();
     };
 
-    const closeTrainerCaseModal = () => {
-      if (!trainerWrap) return;
-      trainerWrap.style.display = "none";
-      trainerWrap.setAttribute("aria-hidden", "true");
+    const openTrainerCaseManagerModal = () => {
+      ensureTrainerCaseManagerModal();
+
+      const cases = loadTrainerCases();
+      if (cases.length) {
+        trainerSelectedId = cases[0].id;
+      } else {
+        trainerSelectedId = null;
+      }
+
+      trainerMgrWrap.style.display = "flex";
+      trainerMgrWrap.setAttribute("aria-hidden", "false");
+
+      // 初期選択
+      setTimeout(() => {
+        renderTrainerCaseList();
+        if (trainerSelectedId) pickTrainerCase(trainerSelectedId);
+        else {
+          const q = document.getElementById("aureaTrainerQ");
+          const a = document.getElementById("aureaTrainerA");
+          if (q) q.value = "";
+          if (a) a.value = "";
+          q?.focus();
+        }
+      }, 0);
+    };
+
+    const closeTrainerCaseManagerModal = () => {
+      if (!trainerMgrWrap) return;
+      trainerMgrWrap.style.display = "none";
+      trainerMgrWrap.setAttribute("aria-hidden", "true");
     };
 
     const btnAddTrainerCase = document.getElementById("btnAddTrainerCase");
     btnAddTrainerCase?.addEventListener("click", (e) => {
       e.preventDefault();
-      openTrainerCaseModal();
+      openTrainerCaseManagerModal();
     });
 
     // 初期描画
