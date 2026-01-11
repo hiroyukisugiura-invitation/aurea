@@ -2964,18 +2964,34 @@ btnNewChat?.addEventListener("click", (e) => {
       const goStripe = async (plan) => {
         const p = String(plan || "Free");
 
-        // Free はStripeに行かない（モーダルを閉じるだけ）
-        if (p === "Free") {
-          wrap.style.display = "none";
-          wrap.setAttribute("aria-hidden", "true");
-          return;
-        }
-
         const st = (typeof getAuthState === "function") ? (getAuthState() || {}) : {};
         const uid = String(st.uid || "").trim();
         const email = String(st.email || "").trim();
         if (!uid || !email) {
           alert("checkout_failed: missing_uid_or_email");
+          return;
+        }
+
+        // Free は即時ダウングレード（Stripeを通さない）
+        if (p === "Free") {
+          try {
+            const r = await fetch("/api/billing/downgrade", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ uid, email })
+            });
+            if (!r.ok) {
+              alert(`downgrade_failed: http_${r.status}`);
+              return;
+            }
+          } catch (e) {
+            alert(`downgrade_failed: ${String(e && e.message ? e.message : e)}`);
+            return;
+          }
+
+          wrap.style.display = "none";
+          wrap.setAttribute("aria-hidden", "true");
+          try { await refreshPlanFromServer(); } catch {}
           return;
         }
 
