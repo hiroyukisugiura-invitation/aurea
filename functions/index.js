@@ -264,19 +264,25 @@ app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async
       const plan = String(md.plan || "").trim();
       let uid = String(md.uid || "").trim();
 
-      // metadata.uid が無い場合は、email から Auth uid を取得する（テストイベントでも通す）
-      if (!uid) {
-        const email =
-          String((session.customer_details || {}).email || "").trim() ||
-          String(session.customer_email || "").trim();
+      // uid が固定文字列("<UID>")など不正な場合も email から Auth uid を再取得する
+      const looksInvalidUid = (s) => {
+        const v = String(s || "").trim();
+        if (!v) return true;
+        if (v === "<UID>") return true;
+        if (v.includes("<") || v.includes(">")) return true;
+        return false;
+      };
 
-        if (email) {
-          try {
-            const u = await admin.auth().getUserByEmail(email);
-            uid = String(u.uid || "").trim();
-          } catch (e) {
-            void e;
-          }
+      const email =
+        String((session.customer_details || {}).email || "").trim() ||
+        String(session.customer_email || "").trim();
+
+      if (looksInvalidUid(uid) && email) {
+        try {
+          const u = await admin.auth().getUserByEmail(email);
+          uid = String(u.uid || "").trim();
+        } catch (e) {
+          void e;
         }
       }
 
@@ -297,7 +303,31 @@ app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async
     // 解約時は Free に戻す（Enterprise は別運用なのでここでは触らない前提）
     if (event.type === "customer.subscription.deleted") {
       const sub = event.data.object || {};
-      const uid = String((sub.metadata || {}).uid || "").trim();
+      let uid = String((sub.metadata || {}).uid || "").trim();
+
+      const looksInvalidUid = (s) => {
+        const v = String(s || "").trim();
+        if (!v) return true;
+        if (v === "<UID>") return true;
+        if (v.includes("<") || v.includes(">")) return true;
+        return false;
+      };
+
+      // metadata.uid が壊れている場合、users から subscriptionId で逆引き
+      if (looksInvalidUid(uid)) {
+        try {
+          const q = await db.collection("users")
+            .where("stripeSubscriptionId", "==", String(sub.id || ""))
+            .limit(1)
+            .get();
+
+          if (!q.empty) {
+            uid = String(q.docs[0].id || "").trim();
+          }
+        } catch (e) {
+          void e;
+        }
+      }
 
       if (uid) {
         await db.collection("users").doc(uid).set(
