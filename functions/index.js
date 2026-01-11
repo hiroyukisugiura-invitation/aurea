@@ -19,8 +19,11 @@ const getStripe = () => {
 
 const app = express();
 
-// Webhook 以外は JSON
-app.use(express.json({ limit: "1mb" }));
+// Stripe Webhook は raw 必須（署名検証のため）。それ以外だけ JSON を適用する
+app.use((req, res, next) => {
+  if (req.originalUrl === "/api/stripe/webhook") return next();
+  return express.json({ limit: "1mb" })(req, res, next);
+});
 
 try { admin.initializeApp(); } catch (e) { void e; }
 const db = admin.firestore();

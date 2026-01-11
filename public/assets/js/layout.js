@@ -2982,11 +2982,21 @@ btnNewChat?.addEventListener("click", (e) => {
             body: JSON.stringify({ plan: p, uid, email, successUrl, cancelUrl })
           });
 
-          const j = await r.json().catch(() => null);
-          if (j && j.ok && j.url) {
-            window.location.href = j.url;
+          const ct = String(r.headers.get("content-type") || "");
+          const j = ct.includes("application/json") ? await r.json().catch(() => null) : null;
+          if (!r.ok) {
+            alert(`checkout_failed: http_${r.status}`);
+            return;
           }
-        } catch {}
+          if (!j || !j.ok || !j.url) {
+            alert(`checkout_failed: bad_response`);
+            return;
+          }
+
+          window.location.href = j.url;
+        } catch (e) {
+          alert(`checkout_failed: ${String(e && e.message ? e.message : e)}`);
+        }
       };
 
       wrap.innerHTML = `
@@ -3528,7 +3538,10 @@ btnNewChat?.addEventListener("click", (e) => {
 
   const refreshPlanFromServer = async () => {
     try {
-      const st = (typeof getAuthState === "function") ? (getAuthState() || {}) : {};
+      // auth 未読込ページ（billing=success 等）は何もしない
+      if (typeof getAuthState !== "function") return;
+
+      const st = getAuthState() || {};
       const uid = String(st.uid || "").trim();
       if (!st.loggedIn || !uid) return;
 
@@ -3546,6 +3559,7 @@ btnNewChat?.addEventListener("click", (e) => {
           localStorage.setItem("aurea_main_v1_local", JSON.stringify(state));
         } catch {}
       }
+
     } catch {}
   };
 
