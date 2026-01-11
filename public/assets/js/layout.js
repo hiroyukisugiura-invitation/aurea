@@ -3554,6 +3554,7 @@ btnNewChat?.addEventListener("click", (e) => {
 
       const r = await fetch(`/api/user/plan?uid=${encodeURIComponent(uid)}`, { method: "GET" });
       const j = await r.json().catch(() => null);
+
       if (j && j.ok && j.plan) {
         state.plan = String(j.plan || "Free").trim() || "Free";
 
@@ -3564,6 +3565,12 @@ btnNewChat?.addEventListener("click", (e) => {
           // 念のため両方へも書く（cloud/localズレ対策）
           localStorage.setItem("aurea_main_v1_cloud", JSON.stringify(state));
           localStorage.setItem("aurea_main_v1_local", JSON.stringify(state));
+        } catch {}
+
+        // ★ ここが不足していた：state.plan 更新後に UI も即時反映
+        try {
+          syncAccountUi();
+          syncSettingsUi();
         } catch {}
       }
 
