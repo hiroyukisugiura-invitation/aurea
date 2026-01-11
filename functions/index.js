@@ -355,8 +355,12 @@ app.post("/api/billing/checkout", async (req, res) => {
     });
 
     res.json({ ok: true, url: session.url });
-  } catch {
-    res.status(400).json({ ok: false, reason: "checkout_failed" });
+  } catch (e) {
+    const msg = String(e && e.message ? e.message : e || "");
+    const type = String(e && e.type ? e.type : "");
+    const code = String(e && e.code ? e.code : "");
+    const param = String(e && e.param ? e.param : "");
+    res.status(400).json({ ok: false, reason: "checkout_failed", type, code, param, msg });
   }
 });
 

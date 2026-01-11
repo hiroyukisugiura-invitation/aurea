@@ -3582,7 +3582,20 @@ btnNewChat?.addEventListener("click", (e) => {
         await new Promise((r) => setTimeout(r, 250));
       }
 
+      // 初回ロード
       await refreshPlanFromServer();
+
+      // billing=success の直後は webhook 反映に遅延があるため追加で再取得
+      try {
+        const qs = new URLSearchParams(window.location.search);
+        if (qs.get("billing") === "success") {
+          for (let i = 0; i < 12; i++) {
+            await new Promise((r) => setTimeout(r, 500));
+            await refreshPlanFromServer();
+            if (String(state.plan || "") === "Pro") break;
+          }
+        }
+      } catch {}
 
       try {
         // save() は選択中の保存先に書く
