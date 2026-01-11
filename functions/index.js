@@ -394,6 +394,47 @@ app.post("/api/billing/checkout", async (req, res) => {
   }
 });
 
+app.post("/api/billing/downgrade", async (req, res) => {
+  const stripe = getStripe();
+  if (!stripe) {
+    res.status(500).json({ ok: false, reason: "stripe_key_missing" });
+    return;
+  }
+
+  try {
+    const uid = String(req.body?.uid || "").trim();
+    if (!uid) {
+      res.status(400).json({ ok: false, reason: "missing_uid" });
+      return;
+    }
+
+    const snap = await db.collection("users").doc(uid).get();
+    const d = snap.exists ? (snap.data() || {}) : {};
+    const subId = String(d.stripeSubscriptionId || "").trim();
+
+    if (subId) {
+      await stripe.subscriptions.del(subId);
+    }
+
+    await db.collection("users").doc(uid).set(
+      {
+        plan: "Free",
+        stripeSubscriptionId: "",
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      },
+      { merge: true }
+    );
+
+    res.json({ ok: true });
+  } catch (e) {
+    const msg = String(e && e.message ? e.message : e || "");
+    const type = String(e && e.type ? e.type : "");
+    const code = String(e && e.code ? e.code : "");
+    const param = String(e && e.param ? e.param : "");
+    res.status(400).json({ ok: false, reason: "downgrade_failed", type, code, param, msg });
+  }
+});
+
 /* ================= TEMP: Force plan (remove later) ================= */
 app.post("/api/stripe/test-complete", async (req, res) => {
   try {
