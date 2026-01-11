@@ -352,25 +352,11 @@ app.post("/api/billing/downgrade", async (req, res) => {
     return;
   }
 
+  let stripeSkipped = false;
+  let stripeError = "";
+
   try {
-    // uid は body / query / Authorization(Bearer) の順で拾う（body が空でも落とさない）
-    let uid = String(req.body?.uid || "").trim();
-    if (!uid) uid = String(req.query?.uid || "").trim();
-
-    if (!uid) {
-      const authz = String(req.headers.authorization || "").trim();
-      const m = authz.match(/^Bearer\s+(.+)$/i);
-      const idToken = m ? String(m[1] || "").trim() : "";
-      if (idToken) {
-        try {
-          const decoded = await admin.auth().verifyIdToken(idToken);
-          uid = String(decoded?.uid || "").trim();
-        } catch (e) {
-          void e;
-        }
-      }
-    }
-
+    const uid = String(req.body?.uid || "").trim();
     if (!uid) {
       res.status(400).json({ ok: false, reason: "missing_uid" });
       return;
@@ -382,42 +368,58 @@ app.post("/api/billing/downgrade", async (req, res) => {
     const subId = String(d.stripeSubscriptionId || "").trim();
     const customerId = String(d.stripeCustomerId || "").trim();
 
-    // 1) subscriptionId があればそれをキャンセル
-    if (subId) {
-      try {
-        await stripe.subscriptions.del(subId);
-      } catch (e) {
-        // 既に消えている/存在しない等は「解約済み」とみなして先へ進む
-        const code = String(e && e.code ? e.code : "");
-        const msg = String(e && e.message ? e.message : e || "");
-        const isMissing = (code === "resource_missing") || msg.includes("No such subscription");
-        if (!isMissing) throw e;
-      }
-    }
-
-    // 2) subscriptionId が無い場合は customerId から active/trialing を探してキャンセル
-    if (!subId && customerId) {
-      try {
-        const list = await stripe.subscriptions.list({
-          customer: customerId,
-          status: "all",
-          limit: 10
-        });
-
-        const cand = (list.data || []).find(s =>
-          s && (s.status === "active" || s.status === "trialing" || s.status === "past_due")
-        );
-
-        if (cand && cand.id) {
-          await stripe.subscriptions.del(String(cand.id));
+    // Stripe は「できたら解約」扱い：失敗しても throw しない（Free確定を最優先）
+    try {
+      // 1) subscriptionId があればそれをキャンセル
+      if (subId) {
+        try {
+          await stripe.subscriptions.del(subId);
+        } catch (e) {
+          const code = String(e && e.code ? e.code : "");
+          const msg = String(e && e.message ? e.message : e || "");
+          const isMissing = (code === "resource_missing") || msg.includes("No such subscription");
+          if (!isMissing) {
+            stripeSkipped = true;
+            stripeError = msg || code || "stripe_cancel_failed";
+          }
         }
-      } catch (e) {
-        // ★ 失敗しても続行（Free に戻すのが最優先）
-        console.warn("stripe downgrade skipped:", e?.message || e);
       }
+
+      // 2) subscriptionId が無い場合は customerId から active/trialing を探してキャンセル
+      if (!subId && customerId) {
+        try {
+          const list = await stripe.subscriptions.list({
+            customer: customerId,
+            status: "all",
+            limit: 10
+          });
+
+          const cand = (list.data || []).find(s =>
+            s && (s.status === "active" || s.status === "trialing" || s.status === "past_due")
+          );
+
+          if (cand && cand.id) {
+            try {
+              await stripe.subscriptions.del(String(cand.id));
+            } catch (e) {
+              const msg = String(e && e.message ? e.message : e || "");
+              stripeSkipped = true;
+              stripeError = msg || "stripe_cancel_failed";
+            }
+          }
+        } catch (e) {
+          const msg = String(e && e.message ? e.message : e || "");
+          stripeSkipped = true;
+          stripeError = msg || "stripe_list_failed";
+        }
+      }
+    } catch (e) {
+      const msg = String(e && e.message ? e.message : e || "");
+      stripeSkipped = true;
+      stripeError = msg || "stripe_failed";
     }
 
-    // Firestore を Free に確定
+    // Firestore を Free に確定（ここは必ず通す）
     await db.collection("users").doc(uid).set(
       {
         plan: "Free",
@@ -427,7 +429,7 @@ app.post("/api/billing/downgrade", async (req, res) => {
       { merge: true }
     );
 
-    res.json({ ok: true });
+    res.json({ ok: true, stripeSkipped, stripeError });
   } catch (e) {
     const msg = String(e && e.message ? e.message : e || "");
     const type = String(e && e.type ? e.type : "");
