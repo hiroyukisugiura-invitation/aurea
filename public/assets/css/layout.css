@@ -1173,7 +1173,7 @@ body.theme-light .images-empty{
   flex:1 1 auto;
 }
 
-/* Trainer：上（AET説明＋ケースを追加）は固定、#trainerCases だけスクロール（UIは変えない） */
+/* Trainer：上（AET説明＋ケースを追加）は固定、ケース一覧だけスクロール */
 .settings-modal #tab-trainer:checked ~ .overlay .modal .content .panel-trainer .content-bd{
   padding:14px 18px 18px;
   min-height:0;
@@ -1182,20 +1182,19 @@ body.theme-light .images-empty{
   display:flex;
   flex-direction:column;
   justify-content:flex-start;
-  overflow:hidden; /* スクロールは content-bd ではなく一覧だけ */
+  overflow:hidden; /* スクロールは一覧だけ */
 }
 
-/* Trainer：固定ブロックは縮まない */
+/* Trainer：固定ブロック（説明/追加UI）は縮まない */
 .settings-modal #tab-trainer:checked ~ .overlay .modal .content .panel-trainer .content-bd > :not(#trainerCases){
   flex:0 0 auto;
 }
 
-/* 一覧マウント（renderTrainerCases が描画する場所） */
+/* ケース一覧（ここだけスクロール） */
 .settings-modal #trainerCases{
   min-height:0;
-  height:0;        /* ← これで flex 領域として確定し overflow が効く */
-  flex:1 1 0%;
-  overflow:auto;   /* スクロールはここだけ */
+  flex:1 1 auto;
+  overflow:auto;
   -webkit-overflow-scrolling:touch;
   padding-right:4px;
 }
@@ -1613,6 +1612,8 @@ body.theme-light .images-empty{
     overflow:hidden; /* 上部固定 */
     min-height:0;
     flex:1 1 auto;
+    display:flex;
+    flex-direction:column;
   }
 
   .settings-modal #tab-trainer:checked ~ .overlay .modal .content .panel-trainer #trainerCases{
