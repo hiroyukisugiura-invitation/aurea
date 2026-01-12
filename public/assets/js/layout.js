@@ -3311,9 +3311,7 @@ const renderTrainerDictList = (autoPickFirst = false) => {
   const list = document.getElementById("trainerDictList");
   if (!list) return;
 
-  const cases = loadTrainerCases()
-    .slice()
-    .sort((a, b) => trainerDictCollator.compare(trainerDictSortKey(a?.q), trainerDictSortKey(b?.q)));
+  const cases = getTrainerCasesSorted();
 
   if (autoPickFirst && cases.length) {
     trainerSelectedId = cases[0].id;
@@ -3375,12 +3373,14 @@ const openTrainerDict = () => {
   ensureTrainerDict();
   bindTrainerDictHotkeysOnce();
 
-  trainerSelectedId = null;
+  const cases = getTrainerCasesSorted();
+  trainerSelectedId = cases.length ? cases[0].id : null;
 
   trainerDictWrap.style.display = "flex";
-  renderTrainerDictList(true);
-};
+  renderTrainerDictList(false);
 
+  if (trainerSelectedId) scrollTrainerDictRowIntoView(trainerSelectedId);
+};
 
 const closeTrainerDict = () => {
   trainerDictWrap.style.display = "none";
