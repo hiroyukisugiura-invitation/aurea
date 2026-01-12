@@ -3191,69 +3191,17 @@ btnNewChat?.addEventListener("click", (e) => {
       try { localStorage.setItem(TRAINER_CASES_KEY, JSON.stringify(Array.isArray(arr) ? arr : [])); } catch {}
     };
 
-    const renderTrainerCases = () => {
+const renderTrainerCases = () => {
       const mount = document.getElementById("trainerCases");
       if (!mount) return;
-
-      const cases = loadTrainerCases();
-      if (!cases.length) {
-        mount.innerHTML = `<div style="font-size:12px;line-height:1.6;color:rgba(255,255,255,.55);">${escHtml(tr("trainerCaseEmpty"))}</div>`;
-        return;
-      }
-
       mount.innerHTML = "";
-      cases.forEach((c) => {
-        const row = document.createElement("div");
-        row.style.cssText = `
-          border:1px solid rgba(255,255,255,.10);
-          background:rgba(255,255,255,.03);
-          border-radius:16px;
-          padding:12px 12px;
-          margin-top:10px;
-          display:flex;
-          flex-direction:column;
-          gap:10px;
-          min-width:0;
-        `;
-
-        row.innerHTML = `
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
-            <div style="min-width:0;">
-              <div style="font-size:12px;opacity:.72;margin-bottom:6px;">${escHtml(tr("trainerCaseQuestion"))}</div>
-              <div style="font-size:13px;line-height:1.6;color:rgba(255,255,255,.88);white-space:pre-wrap;">${escHtml(c.q || "")}</div>
-            </div>
-
-            <button type="button" data-action="delete" data-id="${escHtml(c.id)}" class="btn secondary" style="height:32px;padding:0 12px;border-radius:999px;">
-              <span>${escHtml(tr("trainerCaseDelete"))}</span>
-            </button>
-          </div>
-
-          <div style="border-top:1px solid rgba(255,255,255,.08);padding-top:10px;">
-            <div style="font-size:12px;opacity:.72;margin-bottom:6px;">${escHtml(tr("trainerCaseAnswer"))}</div>
-            <div style="font-size:13px;line-height:1.6;color:rgba(255,255,255,.82);white-space:pre-wrap;">${escHtml(c.a || "")}</div>
-          </div>
-        `;
-
-        mount.appendChild(row);
-      });
-
-      // delete
-      mount.querySelectorAll("button[data-action='delete']").forEach((b) => {
-        b.addEventListener("click", async (e) => {
-          e.preventDefault();
-          const id = b.getAttribute("data-id") || "";
-          const ok = await confirmModal(tr("trainerCaseDeleteConfirm"));
-          if (!ok) return;
-          const next = loadTrainerCases().filter(x => x.id !== id);
-          saveTrainerCases(next);
-          renderTrainerCases();
-        });
-      });
-    };
+    }
 
 // ===== Trainer Case Dictionary (Apple辞書UI風) =====
 let trainerDictWrap = null;
 let trainerSelectedId = null;
+let trainerDictTwoLine = false; // false=1行 / true=2行
+let trainerDictQuery = "";
 
 const ensureTrainerDict = () => {
   if (trainerDictWrap) return trainerDictWrap;
@@ -3275,6 +3223,10 @@ const ensureTrainerDict = () => {
       overflow:hidden;
       display:flex; flex-direction:column;
       box-shadow:0 20px 60px rgba(0,0,0,.5);
+      font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Hiragino Sans','Noto Sans JP',sans-serif;
+      font-size:13px;
+      line-height:1.5;
+      color:rgba(255,255,255,.92);
     ">
       <!-- header -->
       <div style="
@@ -3285,7 +3237,25 @@ const ensureTrainerDict = () => {
         border-bottom:1px solid rgba(255,255,255,.08);
       ">
         <div>質問</div>
-        <div>回答</div>
+        <div>最適回答</div>
+      </div>
+
+      <!-- search -->
+      <div style="
+        padding:10px 12px;
+        border-bottom:1px solid rgba(255,255,255,.08);
+      ">
+        <input id="trainerDictSearch" type="text" placeholder="検索（あいうえお / A-Z）" style="
+          width:100%;
+          height:34px;
+          border-radius:10px;
+          border:1px solid rgba(255,255,255,.12);
+          background:rgba(255,255,255,.06);
+          color:rgba(255,255,255,.92);
+          outline:none;
+          padding:0 10px;
+          font-size:13px;
+        ">
       </div>
 
       <!-- list -->
@@ -3295,12 +3265,25 @@ const ensureTrainerDict = () => {
 
       <!-- footer -->
       <div style="
-        display:flex; gap:8px;
+        display:flex; gap:8px; align-items:center;
         padding:10px 12px;
         border-top:1px solid rgba(255,255,255,.08);
       ">
         <button id="trainerDictAdd">＋</button>
         <button id="trainerDictDel">−</button>
+
+        <div style="flex:1;"></div>
+
+        <button id="trainerDictView" style="
+          height:32px;
+          padding:0 10px;
+          border-radius:10px;
+          border:1px solid rgba(255,255,255,.15);
+          background:rgba(255,255,255,.08);
+          color:#fff;
+          cursor:pointer;
+          font-size:12.5px;
+        ">2行</button>
       </div>
     </div>
   `;
@@ -3319,6 +3302,24 @@ const ensureTrainerDict = () => {
 
   // delete
   trainerDictWrap.querySelector("#trainerDictDel").onclick = async () => {
+      // view (1行/2行)
+  const viewBtn = trainerDictWrap.querySelector("#trainerDictView");
+  if (viewBtn) {
+    viewBtn.onclick = () => {
+      trainerDictTwoLine = !trainerDictTwoLine;
+      viewBtn.textContent = trainerDictTwoLine ? "1行" : "2行";
+      renderTrainerDictList();
+    };
+  }
+
+      const searchEl = trainerDictWrap.querySelector("#trainerDictSearch");
+  if (searchEl) {
+    searchEl.addEventListener("input", () => {
+      trainerDictQuery = String(searchEl.value || "").trim();
+      trainerSelectedId = null;
+      renderTrainerDictList(true);
+    });
+  }
     if (!trainerSelectedId) return;
     const ok = await confirmModal("削除しますか？");
     if (!ok) return;
@@ -3332,44 +3333,222 @@ const ensureTrainerDict = () => {
   return trainerDictWrap;
 };
 
-const renderTrainerDictList = () => {
+const getTrainerCasesSorted = () => {
+  return loadTrainerCases()
+    .slice()
+    .sort((a, b) => String(a?.q || "").localeCompare(String(b?.q || ""), "ja", { numeric: true, sensitivity: "base" }));
+};
+
+const renderTrainerDictList = (autoPickFirst = false) => {
   const list = document.getElementById("trainerDictList");
   if (!list) return;
 
-  const cases = loadTrainerCases();
+  const q = String(trainerDictQuery || "").toLowerCase();
+
+  const cases = loadTrainerCases()
+    .slice()
+    .sort((a, b) => String(a?.q || "").localeCompare(String(b?.q || ""), "ja", { numeric: true, sensitivity: "base" }))
+    .filter((c) => {
+      if (!q) return true;
+      const qq = String(c?.q || "").toLowerCase();
+      const aa = String(c?.a || "").toLowerCase();
+      return qq.includes(q) || aa.includes(q);
+    });
+
+  if (autoPickFirst && cases.length) {
+    trainerSelectedId = cases[0].id;
+  }
+
   list.innerHTML = "";
 
-  cases.forEach(c => {
+  cases.forEach((c) => {
+    const qRaw = String(c?.q || "");
+    const aRaw = String(c?.a || "");
+
+    const q1 = qRaw.split("\n")[0] || "";
+    const a1 = aRaw.split("\n")[0] || "";
+
+    const q2 = qRaw.replace(/\s+/g, " ").trim();
+    const a2 = aRaw.replace(/\s+/g, " ").trim();
+
     const row = document.createElement("div");
+    row.setAttribute("data-id", c.id);
+
     row.style.cssText = `
       display:grid;
       grid-template-columns:1fr 1fr;
-      padding:10px 16px;
+      padding:${trainerDictTwoLine ? "10px 16px" : "9px 16px"};
       cursor:pointer;
       background:${trainerSelectedId === c.id ? "rgba(255,255,255,.06)" : "transparent"};
       border-bottom:1px solid rgba(255,255,255,.05);
     `;
-    row.innerHTML = `
-      <div>${escHtml(c.q)}</div>
-      <div>${escHtml(c.a)}</div>
-    `;
+
+    // hoverで全文プレビュー（軽量）
+    row.title = `Q: ${q2}\nA: ${a2}`;
+
+    if (trainerDictTwoLine) {
+      row.innerHTML = `
+        <div style="min-width:0;">
+          <div style="font-size:13px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(q1)}</div>
+          <div style="margin-top:2px;font-size:12px;opacity:.72;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(q2)}</div>
+        </div>
+        <div style="min-width:0;">
+          <div style="font-size:13px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.92;">${escHtml(a1)}</div>
+          <div style="margin-top:2px;font-size:12px;opacity:.66;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(a2)}</div>
+        </div>
+      `;
+    } else {
+      row.innerHTML = `
+        <div style="font-size:13px;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(q1)}</div>
+        <div style="font-size:13px;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.92;">${escHtml(a1)}</div>
+      `;
+    }
+
     row.onclick = () => {
       trainerSelectedId = c.id;
-      renderTrainerDictList();
+      renderTrainerDictList(false);
+
+      const el = list.querySelector('[data-id="' + CSS.escape(String(c.id)) + '"]');
+      if (el) {
+        try { el.scrollIntoView({ block: "nearest" }); } catch {}
+      }
     };
+
     list.appendChild(row);
   });
+
+  if (trainerSelectedId) {
+    const el = list.querySelector('[data-id="' + CSS.escape(String(trainerSelectedId)) + '"]');
+    if (el) {
+      try { el.scrollIntoView({ block: "nearest" }); } catch {}
+    }
+  }
 };
 
 const openTrainerDict = () => {
   ensureTrainerDict();
+
   trainerSelectedId = null;
+  trainerDictQuery = "";
+
+  const searchEl = trainerDictWrap?.querySelector("#trainerDictSearch");
+  if (searchEl) searchEl.value = "";
+
   trainerDictWrap.style.display = "flex";
-  renderTrainerDictList();
+  renderTrainerDictList(true);
+
+  if (searchEl) setTimeout(() => searchEl.focus(), 0);
 };
 
 const closeTrainerDict = () => {
   trainerDictWrap.style.display = "none";
+};
+const isTrainerDictOpen = () => {
+  return !!trainerDictWrap && trainerDictWrap.style.display !== "none";
+};
+
+const isTrainerAddOpen = () => {
+  return !!trainerAddWrap && trainerAddWrap.style.display !== "none";
+};
+
+const isTypingTarget = (el) => {
+  if (!(el instanceof Element)) return false;
+  const tag = (el.tagName || "").toLowerCase();
+  if (tag === "textarea" || tag === "input") return true;
+  return el.isContentEditable === true;
+};
+
+const scrollTrainerDictRowIntoView = (id) => {
+  const list = document.getElementById("trainerDictList");
+  if (!list) return;
+  const row = list.querySelector(`[data-id="${CSS.escape(String(id || ""))}"]`);
+  if (!row) return;
+  try { row.scrollIntoView({ block: "nearest" }); } catch {}
+};
+
+const selectTrainerDictByDelta = (delta) => {
+  const cases = getTrainerCasesSorted();
+  if (!cases.length) return;
+
+  const ids = cases.map(c => c.id);
+  let idx = trainerSelectedId ? ids.indexOf(trainerSelectedId) : -1;
+
+  if (idx < 0) idx = (delta >= 0) ? -1 : 0;
+  idx = idx + delta;
+
+  if (idx < 0) idx = 0;
+  if (idx >= ids.length) idx = ids.length - 1;
+
+  trainerSelectedId = ids[idx];
+  renderTrainerDictList();
+  scrollTrainerDictRowIntoView(trainerSelectedId);
+};
+
+let trainerHotkeysBound = false;
+
+const bindTrainerDictHotkeysOnce = () => {
+  if (trainerHotkeysBound) return;
+  trainerHotkeysBound = true;
+
+  document.addEventListener("keydown", async (e) => {
+    if (!isTrainerDictOpen() && !isTrainerAddOpen()) return;
+
+    // 追加ポップが開いている時：⌘+Enter で「追加」
+    if (isTrainerAddOpen()) {
+      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        e.stopPropagation();
+        const btn = trainerAddWrap?.querySelector("[data-action='add']");
+        btn?.click();
+        return;
+      }
+      // 追加ポップ中は一覧操作しない（カーソル/編集優先）
+      return;
+    }
+
+    // 辞書ポップが開いている時
+    if (!isTrainerDictOpen()) return;
+
+    // 入力中は邪魔しない
+    if (isTypingTarget(document.activeElement)) return;
+
+    // ↑↓で選択移動
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      e.stopPropagation();
+      selectTrainerDictByDelta(+1);
+      return;
+    }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      e.stopPropagation();
+      selectTrainerDictByDelta(-1);
+      return;
+    }
+
+    // Delete または ⌘+⌫ で削除（確認あり）
+    const wantDelete =
+      (e.key === "Delete")
+      || (e.key === "Backspace" && (e.metaKey || e.ctrlKey));
+
+    if (wantDelete) {
+      if (!trainerSelectedId) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      const ok = await confirmModal("削除しますか？");
+      if (!ok) return;
+
+      const next = loadTrainerCases().filter(c => c.id !== trainerSelectedId);
+      saveTrainerCases(next);
+
+      trainerSelectedId = null;
+      renderTrainerDictList();
+      renderTrainerCases();
+      return;
+    }
+  }, true);
 };
 
 // ---- add popup (スクショ2：質問/最適回答 + キャンセル/追加) ----
