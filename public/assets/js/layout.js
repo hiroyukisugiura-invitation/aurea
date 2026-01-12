@@ -263,7 +263,7 @@
       selSend.value = (mode === "enter") ? "enter" : "cmdEnter";
     }
 
-    // Data storage (Data panel buttons)
+    // Data storage (dropdown)
     const dataNow = document.getElementById("dataStorageNow");
     const onLocal = (state.settings?.dataStorage === "local");
 
@@ -274,6 +274,40 @@
     const bCloud = document.getElementById("btnStorageCloud");
     const bLocal = document.getElementById("btnStorageLocal");
 
+    const ensureStorageSelect = () => {
+      const cloudBtn = document.getElementById("btnStorageCloud");
+      const localBtn = document.getElementById("btnStorageLocal");
+      const host = cloudBtn?.parentElement || localBtn?.parentElement;
+      if (!host) return null;
+
+      let sel = document.getElementById("dataStorageSelect");
+      if (sel) return sel;
+
+      const cloudLabel = (cloudBtn?.textContent || "").trim() || "クラウド";
+      const localLabel = (localBtn?.textContent || "").trim() || "端末内";
+
+      sel = document.createElement("select");
+      sel.id = "dataStorageSelect";
+      sel.className = "select";
+      sel.setAttribute("aria-label", "データの保存先");
+      sel.innerHTML = `
+        <option value="cloud">${escHtml(cloudLabel)}</option>
+        <option value="local">${escHtml(localLabel)}</option>
+      `;
+
+      if (cloudBtn) cloudBtn.style.display = "none";
+      if (localBtn) localBtn.style.display = "none";
+
+      host.appendChild(sel);
+      return sel;
+    };
+
+    const storageSelect = ensureStorageSelect();
+    if (storageSelect) {
+      storageSelect.value = onLocal ? "local" : "cloud";
+    }
+
+    // （互換）ボタン状態は残す
     if (bCloud) {
       bCloud.setAttribute("aria-pressed", onLocal ? "false" : "true");
       bCloud.style.opacity = onLocal ? ".65" : "1";
@@ -2799,7 +2833,7 @@ btnNewChat?.addEventListener("click", (e) => {
       });
     }
 
-    // Data storage buttons (cloud/local)
+    // Data storage dropdown (cloud/local)
     const setStorageMode = (nextMode) => {
       const mode = (nextMode === "local") ? "local" : "cloud";
       const prevKey = getStorageKey();
@@ -2818,6 +2852,7 @@ btnNewChat?.addEventListener("click", (e) => {
     const btnCloud = document.getElementById("btnStorageCloud");
     const btnLocal = document.getElementById("btnStorageLocal");
 
+    // 互換：既存ボタン（非表示でも残してOK）
     btnCloud?.addEventListener("click", (e) => {
       e.preventDefault();
       setStorageMode("cloud");
@@ -2826,6 +2861,21 @@ btnNewChat?.addEventListener("click", (e) => {
     btnLocal?.addEventListener("click", (e) => {
       e.preventDefault();
       setStorageMode("local");
+    });
+
+    // 新：プルダウン
+    const storageSelect = document.getElementById("dataStorageSelect");
+    storageSelect?.addEventListener("change", (e) => {
+      const v = String(e.target?.value || "cloud").trim();
+      setStorageMode(v === "local" ? "local" : "cloud");
+      syncSettingsUi();
+    });
+
+    // 新：プルダウン
+    const storageSelect = document.getElementById("dataStorageSelect");
+    storageSelect?.addEventListener("change", (e) => {
+      const v = String(e.target?.value || "cloud").trim();
+      setStorageMode(v === "local" ? "local" : "cloud");
     });
 
 /* ===== Apps ===== */
