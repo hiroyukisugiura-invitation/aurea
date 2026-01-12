@@ -244,6 +244,53 @@
   };
 
   const syncSettingsUi = () => {
+    const autoSizeSelect = (sel) => {
+      if (!sel) return;
+
+      // 選択中文字列（selectは最長option幅になりやすいので、選択中だけで測る）
+      const opt = sel.options?.[sel.selectedIndex];
+      const text = String(opt ? opt.text : sel.value || "").trim();
+      if (!text) return;
+
+      const cs = window.getComputedStyle(sel);
+
+      // 測定用span
+      const span = document.createElement("span");
+      span.style.position = "fixed";
+      span.style.left = "-99999px";
+      span.style.top = "-99999px";
+      span.style.visibility = "hidden";
+      span.style.whiteSpace = "pre";
+      span.style.fontFamily = cs.fontFamily;
+      span.style.fontSize = cs.fontSize;
+      span.style.fontWeight = cs.fontWeight;
+      span.style.letterSpacing = cs.letterSpacing;
+      span.style.textTransform = cs.textTransform;
+      span.textContent = text;
+
+      document.body.appendChild(span);
+
+      const pl = parseFloat(cs.paddingLeft || "0") || 0;
+      const pr = parseFloat(cs.paddingRight || "0") || 0;
+      const bwL = parseFloat(cs.borderLeftWidth || "0") || 0;
+      const bwR = parseFloat(cs.borderRightWidth || "0") || 0;
+
+      // ENは最低幅を少しだけ確保（崩れ防止）
+      const isEn = (state.settings?.language || "ja") === "en";
+      const minW = isEn ? 120 : 88;
+
+      // 画面に収める上限（右側に寄せるUIなので控えめ）
+      const maxW = Math.min(520, Math.max(240, window.innerWidth - 240));
+
+      const raw = Math.ceil(span.getBoundingClientRect().width + pl + pr + bwL + bwR);
+      const w = clamp(raw, minW, maxW);
+
+      document.body.removeChild(span);
+
+      sel.style.width = `${w}px`;
+      sel.style.inlineSize = `${w}px`;
+    };
+
     // Theme
     const selTheme = document.querySelector(".settings-modal #settingsTheme");
     if (selTheme) {
@@ -316,6 +363,11 @@
       bLocal.setAttribute("aria-pressed", onLocal ? "true" : "false");
       bLocal.style.opacity = onLocal ? "1" : ".65";
     }
+
+    // 選択ボタンの空白を除去（選択中文字幅へ追従）
+    try {
+      document.querySelectorAll(".settings-modal select.select").forEach((s) => autoSizeSelect(s));
+    } catch {}
 
     // Apps status
     const appCards = Array.from(document.querySelectorAll(".panel-apps .apps-grid .saas"));
