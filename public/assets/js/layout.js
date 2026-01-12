@@ -1683,15 +1683,6 @@ const closeSettings = () => {
           inner.className = "pj-inner";
           inner.dataset.projectId = p.id;
 
-          // PJ内：新しいチャット（作成）
-          const newA = document.createElement("a");
-          newA.href = "#";
-          newA.className = "pj-thread pj-new-thread";
-          newA.dataset.action = "pj-new-thread";
-          newA.dataset.projectId = p.id;
-          newA.innerHTML = `<div class="t">${escHtml(tr("threadNew"))}</div>`;
-          inner.appendChild(newA);
-
           // PJ threads（PJ内チャットのみ表示）
           const list = (state.threads.projects[p.id] || []).slice()
             .sort((a,b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
@@ -2535,11 +2526,29 @@ btnNewChat?.addEventListener("click", (e) => {
 
       if (t.closest(".sb-more") || t.classList.contains("sb-dots")) return;
 
-      // PJ選択＝展開のみ（会話は切り替えない）
+      // PJ選択＝PJ内チャットを開く（GPT同様：直近があれば開く、無ければ新規作成）
       e.preventDefault();
+
       state.activeProjectId = id;
-      save(state);
-      renderSidebar();
+
+      if (!state.threads.projects[id]) state.threads.projects[id] = [];
+      if (!state.activeThreadIdByScope.projects) state.activeThreadIdByScope.projects = {};
+
+      const tid = state.activeThreadIdByScope.projects[id] || null;
+      const exists = tid && state.threads.projects[id].some(t => t.id === tid);
+
+      if (exists) {
+        state.context = { type: "project", projectId: id };
+        state.view = "chat";
+        save(state);
+
+        renderSidebar();
+        renderView();
+        askInput?.focus();
+        return;
+      }
+
+      createProjectThread(id);
       return;
     }
 
