@@ -2051,6 +2051,22 @@ const closeSettings = () => {
 
     const targets = MULTI_AI.filter((a) => a.name !== "GPT" && (a.name !== "Sora" || usedSora));
 
+    // ===== /api/chat (dummy v1) =====
+    let apiMap = null;
+    try {
+      const r = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: userText })
+      });
+      const j = await r.json().catch(() => null);
+      if (r.ok && j && j.ok && j.result && typeof j.result === "object") {
+        apiMap = j.result;
+      }
+    } catch {
+      apiMap = null;
+    }
+
     // run in parallel, update status per AI
     const tasks = targets.map(async (ai) => {
       if (multiAiAbort || streamAbort || runId !== multiAiRunId) return;
@@ -2059,12 +2075,17 @@ const closeSettings = () => {
       renderProgress("");
 
       try {
-        const out = await runOneAi({ ai, text: userText });
+        const out =
+          (apiMap && apiMap[ai.name] != null)
+            ? apiMap[ai.name]
+            : await runOneAi({ ai, text: userText });
+
         if (multiAiAbort || streamAbort || runId !== multiAiRunId) {
           statuses[ai.name] = "aborted";
           renderProgress("");
           return;
         }
+
         reports[ai.name] = String(out || "");
         statuses[ai.name] = "done";
         renderProgress("");
