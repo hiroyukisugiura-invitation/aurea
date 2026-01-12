@@ -1278,7 +1278,7 @@ body.theme-light .images-empty{
 .settings-modal .row{
   display:flex;
   align-items:center;
-  justify-content:flex-start;
+  justify-content:space-between; /* ←左右分離を復旧 */
   gap:12px;
   padding:10px 0;
   border-top:1px solid rgba(255,255,255,.08);
@@ -1288,8 +1288,8 @@ body.theme-light .images-empty{
 .settings-modal .row > .select,
 .settings-modal .row > .btn{
   flex:0 0 auto;
-  width:max-content;
-  inline-size:max-content;
+  width:fit-content;          /* ←文字幅に追従 */
+  inline-size:fit-content;    /* ←同上 */
   max-width:100%;
   min-width:0;
 }
