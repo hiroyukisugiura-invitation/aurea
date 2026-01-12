@@ -3304,9 +3304,8 @@ const ensureTrainerDict = () => {
     openTrainerAddPopup();
   };
 
-  // delete
-  trainerDictWrap.querySelector("#trainerDictDel").onclick = async () => {
-      const searchEl = trainerDictWrap.querySelector("#trainerDictSearch");
+  // search（ここで一度だけ登録）
+  const searchEl = trainerDictWrap.querySelector("#trainerDictSearch");
   if (searchEl) {
     searchEl.addEventListener("input", () => {
       trainerDictQuery = String(searchEl.value || "").trim();
@@ -3314,13 +3313,19 @@ const ensureTrainerDict = () => {
       renderTrainerDictList(true);
     });
   }
+
+  // delete
+  trainerDictWrap.querySelector("#trainerDictDel").onclick = async () => {
     if (!trainerSelectedId) return;
+
     const ok = await confirmModal("削除しますか？");
     if (!ok) return;
+
     const next = loadTrainerCases().filter(c => c.id !== trainerSelectedId);
     saveTrainerCases(next);
+
     trainerSelectedId = null;
-    renderTrainerDictList();
+    renderTrainerDictList(true);
     renderTrainerCases();
   };
 
@@ -3330,7 +3335,7 @@ const ensureTrainerDict = () => {
 const getTrainerCasesSorted = () => {
   return loadTrainerCases()
     .slice()
-    .sort((a, b) => String(a?.q || "").localeCompare(String(b?.q || ""), "ja", { numeric: true, sensitivity: "base" }));
+    .sort((a, b) => trainerDictCollator.compare(trainerDictSortKey(a?.q), trainerDictSortKey(b?.q)));
 };
 
 const renderTrainerDictList = (autoPickFirst = false) => {
@@ -3341,7 +3346,7 @@ const renderTrainerDictList = (autoPickFirst = false) => {
 
   const cases = loadTrainerCases()
     .slice()
-    .sort((a, b) => trainerDictCollator.compare(trainerDictSortKey(a?.q), trainerDictSortKey(b?.q)));
+    .sort((a, b) => trainerDictCollator.compare(trainerDictSortKey(a?.q), trainerDictSortKey(b?.q)))
     .filter((c) => {
       if (!q) return true;
       const qq = String(c?.q || "").toLowerCase();
@@ -3377,7 +3382,6 @@ const renderTrainerDictList = (autoPickFirst = false) => {
       border-bottom:1px solid rgba(255,255,255,.05);
     `;
 
-    // hoverで全文プレビュー（軽量）
     row.title = `Q: ${q2}\nA: ${a2}`;
 
     row.innerHTML = `
@@ -3408,6 +3412,7 @@ const renderTrainerDictList = (autoPickFirst = false) => {
 
 const openTrainerDict = () => {
   ensureTrainerDict();
+  bindTrainerDictHotkeysOnce();
 
   trainerSelectedId = null;
   trainerDictQuery = "";
