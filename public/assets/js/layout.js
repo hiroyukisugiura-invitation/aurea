@@ -3251,288 +3251,298 @@ btnNewChat?.addEventListener("click", (e) => {
       });
     };
 
-    // case manager modal (Apple辞書UI風：左=一覧(スクロール) / 右=編集)
-    let trainerMgrWrap = null;
-    let trainerSelectedId = null; // null = 新規
+// ===== Trainer Case Dictionary (Apple辞書UI風) =====
+let trainerDictWrap = null;
+let trainerSelectedId = null;
 
-    const ensureTrainerCaseManagerModal = () => {
-      if (trainerMgrWrap) return trainerMgrWrap;
+const ensureTrainerDict = () => {
+  if (trainerDictWrap) return trainerDictWrap;
 
-      trainerMgrWrap = document.createElement("div");
-      trainerMgrWrap.id = "aureaTrainerCaseManager";
-      trainerMgrWrap.setAttribute("aria-hidden", "true");
-      trainerMgrWrap.style.cssText = `
-        position:fixed; inset:0; display:none; align-items:center; justify-content:center;
-        background:rgba(0,0,0,.45); z-index:10070; padding:18px;
-      `;
+  trainerDictWrap = document.createElement("div");
+  trainerDictWrap.id = "trainerDict";
+  trainerDictWrap.style.cssText = `
+    position:fixed; inset:0;
+    background:rgba(0,0,0,.45);
+    display:none; align-items:center; justify-content:center;
+    z-index:10080;
+  `;
 
-      trainerMgrWrap.innerHTML = `
-        <div style="
-          width:min(920px, calc(100% - 24px));
-          height:min(640px, calc(100vh - 64px));
-          background:rgba(20,21,22,.96);
-          border:1px solid rgba(255,255,255,.10);
-          border-radius:18px;
-          box-shadow:0 10px 30px rgba(0,0,0,.45);
-          overflow:hidden;
-          backdrop-filter: blur(14px);
-          -webkit-backdrop-filter: blur(14px);
-          color:rgba(255,255,255,.92);
-          font-family: -apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Hiragino Sans','Noto Sans JP',sans-serif;
-          display:flex;
-          flex-direction:column;
-          min-width:0;
-        ">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.08);">
-            <div style="font-size:14px;font-weight:600;">${escHtml(tr("trainerAddCase"))}</div>
-            <button type="button" data-action="close" style="
-              width:36px;height:36px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
-              background:rgba(255,255,255,.06);color:rgba(255,255,255,.92);
-              cursor:pointer; font-size:18px; line-height:34px;
-            ">×</button>
-          </div>
+  trainerDictWrap.innerHTML = `
+    <div style="
+      width:760px; max-height:80vh;
+      background:#1c1d1f;
+      border-radius:16px;
+      overflow:hidden;
+      display:flex; flex-direction:column;
+      box-shadow:0 20px 60px rgba(0,0,0,.5);
+    ">
+      <!-- header -->
+      <div style="
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        padding:12px 16px;
+        font-weight:600;
+        border-bottom:1px solid rgba(255,255,255,.08);
+      ">
+        <div>質問</div>
+        <div>回答</div>
+      </div>
 
-          <div style="display:grid;grid-template-columns: 340px 1fr;min-height:0;flex:1 1 0%;">
-            <!-- Left list -->
-            <div style="border-right:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;min-height:0;">
-              <div style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;opacity:.72;">
-                ${escHtml(tr("trainerCaseQuestion"))}
-              </div>
+      <!-- list -->
+      <div id="trainerDictList" style="
+        flex:1; overflow:auto;
+      "></div>
 
-              <div id="aureaTrainerCaseList" style="min-height:0;flex:1 1 0%;overflow:auto;-webkit-overflow-scrolling:touch;">
-                <!-- rows -->
-              </div>
+      <!-- footer -->
+      <div style="
+        display:flex; gap:8px;
+        padding:10px 12px;
+        border-top:1px solid rgba(255,255,255,.08);
+      ">
+        <button id="trainerDictAdd">＋</button>
+        <button id="trainerDictDel">−</button>
+      </div>
+    </div>
+  `;
 
-              <div style="padding:10px 12px;border-top:1px solid rgba(255,255,255,.06);display:flex;gap:8px;align-items:center;">
-                <button type="button" data-action="plus" style="
-                  width:34px;height:34px;border-radius:10px;border:1px solid rgba(255,255,255,.12);
-                  background:rgba(255,255,255,.06);color:rgba(255,255,255,.92);cursor:pointer;
-                ">+</button>
-                <button type="button" data-action="minus" style="
-                  width:34px;height:34px;border-radius:10px;border:1px solid rgba(255,255,255,.12);
-                  background:transparent;color:rgba(255,255,255,.82);cursor:pointer;
-                ">−</button>
-              </div>
-            </div>
+  document.body.appendChild(trainerDictWrap);
 
-            <!-- Right editor -->
-            <div style="display:flex;flex-direction:column;min-height:0;">
-              <div style="padding:12px 14px;display:flex;flex-direction:column;gap:12px;min-height:0;flex:1 1 0%;">
-                <div style="display:flex;flex-direction:column;gap:6px;">
-                  <div style="font-size:12px;opacity:.72;">${escHtml(tr("trainerCaseQuestion"))}</div>
-                  <textarea id="aureaTrainerQ" rows="4" style="
-                    width:100%;border-radius:14px;border:1px solid rgba(255,255,255,.12);
-                    background:rgba(255,255,255,.05);color:rgba(255,255,255,.92);
-                    outline:none;padding:10px 12px;font-size:13px;line-height:1.6;resize:vertical;
-                  "></textarea>
-                </div>
+  // close on outside
+  trainerDictWrap.addEventListener("click", e => {
+    if (e.target === trainerDictWrap) closeTrainerDict();
+  });
 
-                <div style="display:flex;flex-direction:column;gap:6px;min-height:0;">
-                  <div style="font-size:12px;opacity:.72;">${escHtml(tr("trainerCaseAnswer"))}</div>
-                  <textarea id="aureaTrainerA" rows="8" style="
-                    width:100%;border-radius:14px;border:1px solid rgba(255,255,255,.12);
-                    background:rgba(255,255,255,.05);color:rgba(255,255,255,.92);
-                    outline:none;padding:10px 12px;font-size:13px;line-height:1.6;resize:vertical;
-                  "></textarea>
-                </div>
+  // add
+  trainerDictWrap.querySelector("#trainerDictAdd").onclick = () => {
+    openTrainerAddPopup();
+  };
 
-                <div style="display:flex;justify-content:flex-end;gap:10px;">
-                  <button type="button" data-action="save" style="
-                    height:40px;padding:0 14px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
-                    background:rgba(255,255,255,.08);color:rgba(255,255,255,.92);cursor:pointer;font-size:13px;
-                  ">${escHtml(tr("trainerCaseSave"))}</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      `;
-
-      document.body.appendChild(trainerMgrWrap);
-
-      trainerMgrWrap.addEventListener("click", (e) => {
-        if (e.target === trainerMgrWrap) closeTrainerCaseManagerModal();
-      });
-
-      document.addEventListener("keydown", (e) => {
-        if (e.key !== "Escape") return;
-        if (!trainerMgrWrap) return;
-        if (trainerMgrWrap.style.display !== "none") closeTrainerCaseManagerModal();
-      });
-
-      trainerMgrWrap.addEventListener("click", async (e) => {
-        const t = e.target;
-
-        const closeBtn = t.closest("[data-action='close']");
-        if (closeBtn) { e.preventDefault(); closeTrainerCaseManagerModal(); return; }
-
-        const plusBtn = t.closest("[data-action='plus']");
-        if (plusBtn) {
-          e.preventDefault();
-          trainerSelectedId = null;
-          const q = document.getElementById("aureaTrainerQ");
-          const a = document.getElementById("aureaTrainerA");
-          if (q) q.value = "";
-          if (a) a.value = "";
-          renderTrainerCaseList();
-          setTimeout(() => q?.focus(), 0);
-          return;
-        }
-
-        const minusBtn = t.closest("[data-action='minus']");
-        if (minusBtn) {
-          e.preventDefault();
-          if (!trainerSelectedId) return;
-
-          const ok = await confirmModal(tr("trainerCaseDeleteConfirm"));
-          if (!ok) return;
-
-          const next = loadTrainerCases().filter(x => x.id !== trainerSelectedId);
-          saveTrainerCases(next);
-
-          trainerSelectedId = null;
-          const q = document.getElementById("aureaTrainerQ");
-          const a = document.getElementById("aureaTrainerA");
-          if (q) q.value = "";
-          if (a) a.value = "";
-
-          renderTrainerCaseList();
-          renderTrainerCases();
-          return;
-        }
-
-        const saveBtn = t.closest("[data-action='save']");
-        if (saveBtn) {
-          e.preventDefault();
-
-          const qv = (document.getElementById("aureaTrainerQ")?.value || "").trim();
-          const av = (document.getElementById("aureaTrainerA")?.value || "").trim();
-          if (!qv || !av) return;
-
-          const arr = loadTrainerCases();
-
-          if (trainerSelectedId) {
-            const idx = arr.findIndex(x => x.id === trainerSelectedId);
-            if (idx >= 0) {
-              arr[idx] = { ...arr[idx], q: qv, a: av };
-            }
-          } else {
-            const id = uid();
-            arr.unshift({ id, q: qv, a: av, createdAt: nowISO() });
-            trainerSelectedId = id;
-          }
-
-          saveTrainerCases(arr);
-          renderTrainerCaseList();
-          renderTrainerCases();
-          return;
-        }
-
-        const rowBtn = t.closest("[data-action='pick-case']");
-        if (rowBtn) {
-          e.preventDefault();
-          const id = rowBtn.getAttribute("data-id") || "";
-          pickTrainerCase(id);
-          return;
-        }
-      });
-
-      return trainerMgrWrap;
-    };
-
-    const renderTrainerCaseList = () => {
-      const list = document.getElementById("aureaTrainerCaseList");
-      if (!list) return;
-
-      const cases = loadTrainerCases();
-
-      if (!cases.length) {
-        list.innerHTML = `<div style="padding:12px 12px;font-size:12px;line-height:1.6;color:rgba(255,255,255,.55);">${escHtml(tr("trainerCaseEmpty"))}</div>`;
-        return;
-      }
-
-      list.innerHTML = "";
-      cases.forEach((c) => {
-        const row = document.createElement("button");
-        row.type = "button";
-        row.setAttribute("data-action", "pick-case");
-        row.setAttribute("data-id", c.id);
-        row.style.cssText = `
-          width:100%;
-          text-align:left;
-          border:0;
-          border-bottom:1px solid rgba(255,255,255,.06);
-          background:${(trainerSelectedId === c.id) ? "rgba(255,255,255,.06)" : "transparent"};
-          color:rgba(255,255,255,.90);
-          padding:10px 12px;
-          cursor:pointer;
-          font-family:inherit;
-        `;
-
-        const title = String(c.q || "").split("\n")[0].slice(0, 120);
-        row.innerHTML = `
-          <div style="font-size:12.5px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(title || tr("trainerCaseQuestion"))}</div>
-        `;
-        list.appendChild(row);
-      });
-    };
-
-    const pickTrainerCase = (id) => {
-      const cases = loadTrainerCases();
-      const c = cases.find(x => x.id === id);
-      if (!c) return;
-
-      trainerSelectedId = c.id;
-
-      const q = document.getElementById("aureaTrainerQ");
-      const a = document.getElementById("aureaTrainerA");
-      if (q) q.value = c.q || "";
-      if (a) a.value = c.a || "";
-
-      renderTrainerCaseList();
-    };
-
-    const openTrainerCaseManagerModal = () => {
-      ensureTrainerCaseManagerModal();
-
-      const cases = loadTrainerCases();
-      if (cases.length) {
-        trainerSelectedId = cases[0].id;
-      } else {
-        trainerSelectedId = null;
-      }
-
-      trainerMgrWrap.style.display = "flex";
-      trainerMgrWrap.setAttribute("aria-hidden", "false");
-
-      // 初期選択
-      setTimeout(() => {
-        renderTrainerCaseList();
-        if (trainerSelectedId) pickTrainerCase(trainerSelectedId);
-        else {
-          const q = document.getElementById("aureaTrainerQ");
-          const a = document.getElementById("aureaTrainerA");
-          if (q) q.value = "";
-          if (a) a.value = "";
-          q?.focus();
-        }
-      }, 0);
-    };
-
-    const closeTrainerCaseManagerModal = () => {
-      if (!trainerMgrWrap) return;
-      trainerMgrWrap.style.display = "none";
-      trainerMgrWrap.setAttribute("aria-hidden", "true");
-    };
-
-    const btnAddTrainerCase = document.getElementById("btnAddTrainerCase");
-    btnAddTrainerCase?.addEventListener("click", (e) => {
-      e.preventDefault();
-      openTrainerCaseManagerModal();
-    });
-
-    // 初期描画
+  // delete
+  trainerDictWrap.querySelector("#trainerDictDel").onclick = async () => {
+    if (!trainerSelectedId) return;
+    const ok = await confirmModal("削除しますか？");
+    if (!ok) return;
+    const next = loadTrainerCases().filter(c => c.id !== trainerSelectedId);
+    saveTrainerCases(next);
+    trainerSelectedId = null;
+    renderTrainerDictList();
     renderTrainerCases();
+  };
+
+  return trainerDictWrap;
+};
+
+const renderTrainerDictList = () => {
+  const list = document.getElementById("trainerDictList");
+  if (!list) return;
+
+  const cases = loadTrainerCases();
+  list.innerHTML = "";
+
+  cases.forEach(c => {
+    const row = document.createElement("div");
+    row.style.cssText = `
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      padding:10px 16px;
+      cursor:pointer;
+      background:${trainerSelectedId === c.id ? "rgba(255,255,255,.06)" : "transparent"};
+      border-bottom:1px solid rgba(255,255,255,.05);
+    `;
+    row.innerHTML = `
+      <div>${escHtml(c.q)}</div>
+      <div>${escHtml(c.a)}</div>
+    `;
+    row.onclick = () => {
+      trainerSelectedId = c.id;
+      renderTrainerDictList();
+    };
+    list.appendChild(row);
+  });
+};
+
+const openTrainerDict = () => {
+  ensureTrainerDict();
+  trainerSelectedId = null;
+  trainerDictWrap.style.display = "flex";
+  renderTrainerDictList();
+};
+
+const closeTrainerDict = () => {
+  trainerDictWrap.style.display = "none";
+};
+
+// ---- add popup (スクショ2：質問/最適回答 + キャンセル/追加) ----
+let trainerAddWrap = null;
+
+const ensureTrainerAddPopup = () => {
+  if (trainerAddWrap) return trainerAddWrap;
+
+  trainerAddWrap = document.createElement("div");
+  trainerAddWrap.id = "trainerAddPopup";
+  trainerAddWrap.setAttribute("aria-hidden", "true");
+  trainerAddWrap.style.cssText = `
+    position:fixed; inset:0;
+    display:none; align-items:center; justify-content:center;
+    background:rgba(0,0,0,.35);
+    z-index:10090;
+    padding:18px;
+  `;
+
+  trainerAddWrap.innerHTML = `
+    <div style="
+      width:min(860px, calc(100% - 24px));
+      max-height:calc(100vh - 64px);
+      background:rgba(20,21,22,.96);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:22px;
+      box-shadow:0 10px 30px rgba(0,0,0,.45);
+      overflow:hidden;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      color:rgba(255,255,255,.92);
+      font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Hiragino Sans','Noto Sans JP',sans-serif;
+      display:flex;
+      flex-direction:column;
+      min-width:0;
+      padding:18px 18px 14px;
+      gap:14px;
+    ">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+        <div style="font-size:14px;font-weight:600;opacity:.92;">ケースを追加</div>
+        <button type="button" data-action="close" style="
+          width:36px;height:36px;border-radius:12px;
+          border:1px solid rgba(255,255,255,.12);
+          background:rgba(255,255,255,.06);
+          color:rgba(255,255,255,.92);
+          cursor:pointer;
+          font-size:18px;
+          line-height:34px;
+        ">×</button>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-size:13px;font-weight:600;opacity:.92;">質問</div>
+        <textarea id="trainerAddQ" rows="3" style="
+          width:100%;
+          border-radius:18px;
+          border:1px solid rgba(255,255,255,.10);
+          background:rgba(255,255,255,.04);
+          color:rgba(255,255,255,.92);
+          outline:none;
+          padding:12px 14px;
+          font-size:13px;
+          line-height:1.7;
+          resize:vertical;
+          min-height:84px;
+        "></textarea>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;min-height:0;">
+        <div style="font-size:13px;font-weight:600;opacity:.92;">最適回答</div>
+        <textarea id="trainerAddA" rows="8" style="
+          width:100%;
+          border-radius:18px;
+          border:1px solid rgba(255,255,255,.10);
+          background:rgba(255,255,255,.04);
+          color:rgba(255,255,255,.92);
+          outline:none;
+          padding:12px 14px;
+          font-size:13px;
+          line-height:1.7;
+          resize:vertical;
+          min-height:240px;
+        "></textarea>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:12px;padding-top:4px;">
+        <button type="button" data-action="cancel" style="
+          height:44px;
+          padding:0 18px;
+          border-radius:14px;
+          border:1px solid rgba(255,255,255,.12);
+          background:rgba(255,255,255,.05);
+          color:rgba(255,255,255,.90);
+          cursor:pointer;
+          font-size:13px;
+        ">キャンセル</button>
+
+        <button type="button" data-action="add" style="
+          height:44px;
+          padding:0 18px;
+          border-radius:14px;
+          border:1px solid rgba(255,255,255,.12);
+          background:rgba(255,255,255,.10);
+          color:rgba(255,255,255,.92);
+          cursor:pointer;
+          font-size:13px;
+          font-weight:600;
+        ">追加</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(trainerAddWrap);
+
+  trainerAddWrap.addEventListener("click", (e) => {
+    if (e.target === trainerAddWrap) closeTrainerAddPopup();
+  });
+
+  trainerAddWrap.addEventListener("click", (e) => {
+    const t = e.target;
+
+    if (t.closest("[data-action='close']")) { e.preventDefault(); closeTrainerAddPopup(); return; }
+    if (t.closest("[data-action='cancel']")) { e.preventDefault(); closeTrainerAddPopup(); return; }
+
+    const addBtn = t.closest("[data-action='add']");
+    if (!addBtn) return;
+
+    e.preventDefault();
+
+    const q = (document.getElementById("trainerAddQ")?.value || "").trim();
+    const a = (document.getElementById("trainerAddA")?.value || "").trim();
+    if (!q || !a) return;
+
+    const arr = loadTrainerCases();
+    arr.unshift({ id: uid(), q, a, createdAt: nowISO() });
+    saveTrainerCases(arr);
+
+    closeTrainerAddPopup();
+    renderTrainerDictList();
+    renderTrainerCases();
+  });
+
+  return trainerAddWrap;
+};
+
+const openTrainerAddPopup = () => {
+  ensureTrainerAddPopup();
+
+  const q = document.getElementById("trainerAddQ");
+  const a = document.getElementById("trainerAddA");
+  if (q) q.value = "";
+  if (a) a.value = "";
+
+  trainerAddWrap.style.display = "flex";
+  trainerAddWrap.setAttribute("aria-hidden", "false");
+  setTimeout(() => q?.focus(), 0);
+};
+
+const closeTrainerAddPopup = () => {
+  if (!trainerAddWrap) return;
+  trainerAddWrap.style.display = "none";
+  trainerAddWrap.setAttribute("aria-hidden", "true");
+};
+
+// button bind
+document.getElementById("btnAddTrainerCase")
+  ?.addEventListener("click", e => {
+    e.preventDefault();
+    openTrainerDict();
+  });
+
+// 初期描画
+renderTrainerCases();
 
     // Legal modal (3 items)
     const legalOverlay = document.getElementById("legalOverlay");
