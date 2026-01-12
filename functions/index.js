@@ -558,10 +558,6 @@ app.post("/api/company/invite/consume", consumeInvite);
 
 const OPENAI_API_KEY = defineSecret("OPENAI_API_KEY");
 // （将来用：各社キー。未設定でも落ちない）
-const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
-const ANTHROPIC_API_KEY = defineSecret("ANTHROPIC_API_KEY");
-const PERPLEXITY_API_KEY = defineSecret("PERPLEXITY_API_KEY");
-const MISTRAL_API_KEY = defineSecret("MISTRAL_API_KEY");
 
 const getOpenAIKey = () => {
   const k = String(OPENAI_API_KEY.value() || "").trim();
@@ -678,10 +674,6 @@ exports.api = onRequest(
       STRIPE_PRICE_ENTERPRISE,
       STRIPE_WEBHOOK_SECRET,
       OPENAI_API_KEY,
-      GEMINI_API_KEY,
-      ANTHROPIC_API_KEY,
-      PERPLEXITY_API_KEY,
-      MISTRAL_API_KEY
     ]
   },
   app
