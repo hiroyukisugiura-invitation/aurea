@@ -2505,38 +2505,6 @@ btnNewChat?.addEventListener("click", (e) => {
       return;
     }
 
-        // ===== Project title click (force open project chat) =====
-    const pLink = t.closest(".sb-row[data-kind='project'] .sb-link");
-    if (pLink && projectList && projectList.contains(pLink)) {
-      e.preventDefault();
-      e.stopPropagation();
-
-      const pRow = pLink.closest(".sb-row[data-kind='project']");
-      const id = pRow?.dataset?.id;
-      if (!id) return;
-
-      state.activeProjectId = id;
-
-      if (!state.threads.projects[id]) state.threads.projects[id] = [];
-      if (!state.activeThreadIdByScope.projects) state.activeThreadIdByScope.projects = {};
-
-      const tid = state.activeThreadIdByScope.projects[id] || null;
-      const exists = tid && state.threads.projects[id].some(t => t.id === tid);
-
-      if (exists) {
-        state.context = { type: "project", projectId: id };
-        state.view = "chat";
-        save(state);
-        renderSidebar();
-        renderView();
-        askInput?.focus();
-        return;
-      }
-
-      createProjectThread(id);
-      return;
-    }
-
     // project row click / menu
     const pRow = t.closest(".sb-row[data-kind='project']");
     if (pRow && projectList && projectList.contains(pRow)) {
@@ -2558,18 +2526,26 @@ btnNewChat?.addEventListener("click", (e) => {
 
       if (t.closest(".sb-more") || t.classList.contains("sb-dots")) return;
 
-      // PJ選択＝PJ内チャットを開く（GPT同様：直近があれば開く、無ければ新規作成）
+      // PJ選択＝展開のみ（会話コンテキストは切り替えない）
       e.preventDefault();
-
-      state.activeProjectId = id;
+      selectProjectScope(id);
+      return;
 
       if (!state.threads.projects[id]) state.threads.projects[id] = [];
       if (!state.activeThreadIdByScope.projects) state.activeThreadIdByScope.projects = {};
 
-      const tid = state.activeThreadIdByScope.projects[id] || null;
-      const exists = tid && state.threads.projects[id].some(t => t.id === tid);
+      const threads = (state.threads.projects[id] || []).slice()
+        .sort((a,b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
 
-      if (exists) {
+      let tid = state.activeThreadIdByScope.projects[id] || null;
+      const exists = tid && threads.some(t => t.id === tid);
+
+      if (!exists && threads.length) {
+        tid = threads[0].id;
+        state.activeThreadIdByScope.projects[id] = tid;
+      }
+
+      if (tid) {
         state.context = { type: "project", projectId: id };
         state.view = "chat";
         save(state);
