@@ -477,6 +477,53 @@
       selLang.setAttribute("aria-label", tr("language"));
     }
 
+    // ===== Settings selects: option text normalize (ja/en) =====
+    const isEn = (lang === "en");
+
+    // Theme select options
+    const themeSel = document.querySelector(".settings-modal #settingsTheme");
+    if (themeSel) {
+      Array.from(themeSel.options || []).forEach((o) => {
+        const v = String(o.value || "").trim();
+        if (v === "dark")   o.text = isEn ? "Dark" : "ダーク";
+        if (v === "light")  o.text = isEn ? "Light" : "ライト";
+        if (v === "system") o.text = isEn ? "System" : "システム";
+      });
+    }
+
+    // Language select options
+    if (selLang) {
+      Array.from(selLang.options || []).forEach((o) => {
+        const v = String(o.value || "").trim();
+        if (v === "ja") o.text = isEn ? "Japanese" : "日本語";
+        if (v === "en") o.text = isEn ? "English" : "英語";
+      });
+    }
+
+    // Send mode select options
+    const sendSel = document.querySelector(".settings-modal #settingsSendMode");
+    if (sendSel) {
+      Array.from(sendSel.options || []).forEach((o) => {
+        const v = String(o.value || "").trim();
+        if (v === "cmdEnter") o.text = isEn ? "⌘ + Enter to send (Enter for newline)" : "⌘ + Enterで送信（Enterは改行）";
+        if (v === "enter")    o.text = isEn ? "Enter to send (Shift + Enter for newline)" : "Enterで送信（Shift + Enterで改行）";
+      });
+    }
+
+    // Data storage dropdown options (cloud/local)
+    const ds = document.getElementById("dataStorageSelect");
+    if (ds) {
+      Array.from(ds.options || []).forEach((o) => {
+        const v = String(o.value || "").trim();
+        if (v === "cloud") o.text = isEn ? "Cloud" : "クラウド";
+        if (v === "local") o.text = isEn ? "On device" : "端末内";
+      });
+    }
+
+    // Delete-all button label (Data panel)
+    const delAll = document.getElementById("btnDeleteAllChats");
+    if (delAll) delAll.textContent = isEn ? "Delete" : "削除";
+
     // data-i18n / data-i18n-aria 全反映（HTML属性ベース）
     applyI18nAttrs();
   };
@@ -2866,6 +2913,9 @@ btnNewChat?.addEventListener("click", (e) => {
         // 強制再描画（混在防止）
         clearBoardViewNodes();
         renderView();
+
+        // Lang反映後の select 表示幅も追従（見切れ/余白ズレ防止）
+        syncSettingsUi();
 
         // Trainer: 「まだケースがありません。」等を言語に追従させるため再描画
         try { renderTrainerCases(); } catch {}
