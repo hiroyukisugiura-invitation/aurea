@@ -1360,7 +1360,7 @@ body.theme-light .images-empty{
 /* Controls */
 .settings-modal .btn{
   height:34px;
-  padding:0 12px;
+  padding:0 10px; /* 余白を詰める */
   border-radius:10px;
   border:1px solid rgba(255,255,255,.12);
   background:rgba(255,255,255,.05);
@@ -1377,6 +1377,7 @@ body.theme-light .images-empty{
   overflow:hidden;
   text-overflow:ellipsis;
 }
+
 .settings-modal .btn:hover{background:rgba(255,255,255,.08)}
 .settings-modal .btn i{font-size:14px;opacity:.92;flex:0 0 auto}
 
@@ -1409,7 +1410,7 @@ body.theme-light .images-empty{
   border:1px solid rgba(255,255,255,.12);
   background:rgba(255,255,255,.05);
   color:rgba(255,255,255,.86);
-  padding:0 34px 0 12px; /* 右側矢印分 */
+  padding:0 30px 0 10px; /* 余白を詰める（右矢印領域は残す） */
   font-size:13px;
   line-height:32px;
   outline:0;
