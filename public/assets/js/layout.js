@@ -192,6 +192,44 @@
   const chatRoot = $(".chat");
   const board = $(".board");
 
+  // ===== scroll state (GPT-like) + scroll-to-bottom indicator =====
+  let userNearBottom = true;
+  let scrollDownBtnEl = null;
+
+  const ensureScrollDownButton = () => {
+    if (scrollDownBtnEl) return scrollDownBtnEl;
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "scroll-down-btn";
+    btn.setAttribute("aria-label", "Scroll to bottom");
+    btn.textContent = "↓";
+    btn.hidden = true;
+
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (board) board.scrollTo({ top: board.scrollHeight, behavior: "smooth" });
+    });
+
+    document.body.appendChild(btn);
+    scrollDownBtnEl = btn;
+    return btn;
+  };
+
+  const isNearBottom = () => {
+    if (!board) return true;
+    const gap = board.scrollHeight - board.scrollTop - board.clientHeight;
+    return gap < 140;
+  };
+
+  const syncScrollState = () => {
+    userNearBottom = isNearBottom();
+    const btn = ensureScrollDownButton();
+    btn.hidden = userNearBottom;
+  };
+
+  board?.addEventListener("scroll", syncScrollState, { passive: true });
+
   // ask
   const askInput = document.querySelector(".ask .in");
   const sendBtn = $(".ask [data-action='send']");
@@ -1395,8 +1433,18 @@ const closeSettings = () => {
       chatRoot.appendChild(wrap);
     }
 
-    // scroll bottom
-    if (board) board.scrollTo({ top: board.scrollHeight, behavior: "smooth" });
+    // scroll bottom (GPT-like boundary)
+    const lastMsg = msgs[msgs.length - 1];
+    const shouldFollow =
+      userNearBottom
+      || (lastMsg && lastMsg.role === "user");
+
+    if (board && shouldFollow) {
+      board.scrollTo({ top: board.scrollHeight, behavior: "smooth" });
+    }
+
+    // indicator sync
+    syncScrollState();
   };
 
   const renderImagesView = () => {
@@ -4211,6 +4259,10 @@ renderTrainerCases();
 
   // sidebar search（render 後に必ず mount）
   mountSidebarSearch();
+
+  // scroll indicator init
+  ensureScrollDownButton();
+  syncScrollState();
 
   /* ================= OAuth return (v1) ================= */
   (() => {
