@@ -530,7 +530,8 @@ details > summary::-webkit-details-marker{ display:none; }
 }
 
 body.view-images .brand-rail,
-body.view-search .brand-rail{
+body.view-search .brand-rail,
+body.view-project .brand-rail{
   display:none;
 }
 .brand-rail .brand-logo-wrap{
@@ -735,6 +736,12 @@ body:not(.has-chat) .ask-wrap{
 }
 body:not(.has-chat) .board{ padding-bottom:0; }
 
+/* Project home: ask should be near top (GPT like) */
+body.view-project:not(.has-chat) .ask-wrap{
+  top:132px;
+  transform:none;
+}
+
 /* ================= Modals (project only) ================= */
 .project-modal{
   position:fixed;
@@ -811,6 +818,80 @@ body.project-open .project-modal{ display:flex; }
   width:min(980px, calc(100% - 64px));
   margin:0 auto;
   padding:18px 0 0;
+}
+
+/* ===== Project home (GPT-like) ===== */
+.view-project{
+  padding-top:10px;
+}
+
+.pj-home-head{
+  margin:8px 0 12px;
+}
+
+.pj-home-title{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-size:24px;
+  font-weight:700;
+  letter-spacing:.01em;
+  color:rgba(255,255,255,.94);
+}
+
+.pj-home-ic{
+  width:18px;
+  height:18px;
+  display:inline-block;
+  border-radius:4px;
+  background:rgba(255,255,255,.10);
+  position:relative;
+}
+.pj-home-ic::before{
+  content:"";
+  position:absolute;
+  inset:4px 3px 5px 3px;
+  border:1.6px solid rgba(255,255,255,.72);
+  border-top-left-radius:3px;
+  border-top-right-radius:3px;
+  border-bottom-left-radius:2px;
+  border-bottom-right-radius:2px;
+}
+
+.pj-home-list{
+  display:flex;
+  flex-direction:column;
+  border-top:1px solid var(--line);
+}
+
+.pj-home-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  padding:14px 2px;
+  border-bottom:1px solid var(--line);
+  cursor:pointer;
+}
+.pj-home-row:hover{
+  background:rgba(255,255,255,.03);
+}
+.pj-home-row__main{
+  min-width:0;
+  flex:1 1 auto;
+}
+.pj-home-row__ttl{
+  font-size:14px;
+  color:rgba(255,255,255,.92);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.pj-home-row__date{
+  flex:0 0 auto;
+  font-size:12px;
+  color:rgba(255,255,255,.60);
+  white-space:nowrap;
 }
 
 /* Search results view */

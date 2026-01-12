@@ -1585,23 +1585,24 @@ const closeSettings = () => {
     const rows = list.map((t) => {
       const d = String(t.updatedAt || "").slice(0, 10);
       return `
-        <div class="search-card" data-thread-id="${escHtml(t.id)}" data-scope-type="project" data-project-id="${escHtml(pid)}">
-          <div class="top">
-            <div class="ttl">${escHtml(t.title || tr("threadNew"))}</div>
-            <div class="meta">${escHtml(d)}</div>
+        <div class="pj-home-row" data-thread-id="${escHtml(t.id)}" data-scope-type="project" data-project-id="${escHtml(pid)}">
+          <div class="pj-home-row__main">
+            <div class="pj-home-row__ttl">${escHtml(t.title || tr("threadNew"))}</div>
           </div>
+          <div class="pj-home-row__date">${escHtml(d)}</div>
         </div>
       `;
     }).join("");
 
     wrap.innerHTML = `
-      <div class="search-head">
-        <div>
-          <div class="search-title">${escHtml(name)}</div>
+      <div class="pj-home-head">
+        <div class="pj-home-title">
+          <span class="pj-home-ic" aria-hidden="true"></span>
+          <span class="pj-home-name">${escHtml(name)}</span>
         </div>
       </div>
 
-      <div class="search-results" id="aureaProjectHomeThreads">
+      <div class="pj-home-list" id="aureaProjectHomeThreads">
         ${rows || `<div class="images-empty">${escHtml(tr("searchPrompt"))}</div>`}
       </div>
     `;
@@ -2641,8 +2642,8 @@ btnNewChat?.addEventListener("click", (e) => {
       return;
     }
 
-    // search card click
-    const sCard = t.closest(".search-card");
+    // search card click / project home row click
+    const sCard = t.closest(".search-card, .pj-home-row");
     if (sCard && sCard.dataset.threadId) {
       e.preventDefault();
       openThreadFromSearchHit({
