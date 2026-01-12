@@ -554,16 +554,35 @@ body.view-search .brand-rail{
   pointer-events:none;
 }
 
+/* Ask下の背景（GPT同様：下部は履歴を“見せない”） */
+.ask-wrap::before{
+  content:"";
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:-22px;
+  top:-140px;
+  background:linear-gradient(
+    to top,
+    rgba(14,15,16,1) 0%,
+    rgba(14,15,16,.98) 45%,
+    rgba(14,15,16,0) 100%
+  );
+  pointer-events:none;
+  z-index:-1;
+}
+
 /* 画像ビューでは Ask を消す（一覧のみ） */
 body.view-images .ask-wrap{
   display:none;
 }
+
 body.view-images .board{
   padding-bottom:0;
 }
 .ask{
   width:min(860px, calc(100% - 64px));
-  background:rgba(35,36,37,.92);
+  background:rgba(35,36,37,.98);
   border:1px solid rgba(255,255,255,.10);
   border-radius:22px;
   display:flex;
