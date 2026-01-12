@@ -1568,10 +1568,56 @@ const closeSettings = () => {
     }
   };
 
+  const renderProjectHomeView = () => {
+    clearBoardViewNodes();
+
+    const pid = String(state.activeProjectId || "");
+    const proj = state.projects.find(p => p.id === pid) || null;
+    const name = proj ? (proj.name || tr("project")) : tr("project");
+
+    const wrap = document.createElement("div");
+    wrap.id = "aureaView";
+    wrap.className = "view view-project";
+
+    const list = (state.threads.projects?.[pid] || []).slice()
+      .sort((a,b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
+
+    const rows = list.map((t) => {
+      const d = String(t.updatedAt || "").slice(0, 10);
+      return `
+        <div class="search-card" data-thread-id="${escHtml(t.id)}" data-scope-type="project" data-project-id="${escHtml(pid)}">
+          <div class="top">
+            <div class="ttl">${escHtml(t.title || tr("threadNew"))}</div>
+            <div class="meta">${escHtml(d)}</div>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    wrap.innerHTML = `
+      <div class="search-head">
+        <div>
+          <div class="search-title">${escHtml(name)}</div>
+        </div>
+      </div>
+
+      <div class="search-results" id="aureaProjectHomeThreads">
+        ${rows || `<div class="images-empty">${escHtml(tr("searchPrompt"))}</div>`}
+      </div>
+    `;
+
+    board?.appendChild(wrap);
+
+    if (askInput) {
+      askInput.placeholder = `${name} 内の新しいチャット`;
+    }
+  };
+
   const applyBodyViewClass = () => {
     body.classList.toggle("view-chat", state.view === "chat");
     body.classList.toggle("view-images", state.view === "images");
     body.classList.toggle("view-search", state.view === "search");
+    body.classList.toggle("view-project", state.view === "project");
   };
 
   const renderView = () => {
@@ -1595,6 +1641,14 @@ const closeSettings = () => {
       if (chatRoot) chatRoot.style.display = "none";
       renderSearchView(sbSearchInput?.value || "");
       setHasChat(false);
+      return;
+    }
+
+    if (state.view === "project") {
+      if (chatRoot) chatRoot.style.display = "none";
+      renderProjectHomeView();
+      setHasChat(false);
+      applyI18n();
       return;
     }
 
@@ -1636,8 +1690,10 @@ const closeSettings = () => {
         // isExpanded: PJの展開状態（入れ物）
         const isExpanded = (state.activeProjectId === p.id);
 
-        // isActive: いま表示している会話コンテキスト（実体）
-        const isActive = (state.context?.type === "project" && state.context?.projectId === p.id);
+        // isActive: PJトップ表示中 or PJ会話表示中
+        const isActive =
+          (state.view === "project" && state.activeProjectId === p.id)
+          || (state.context?.type === "project" && state.context?.projectId === p.id);
 
         if (isActive) link.setAttribute("data-active","1");
         else link.removeAttribute("data-active");
@@ -2129,6 +2185,11 @@ const closeSettings = () => {
     const text = askInput.value.trim();
     if (!text) return;
 
+    // PJトップからの送信は、PJ内の新規トークを作ってから送る（GPT仕様）
+    if (state.view === "project" && state.activeProjectId) {
+      createProjectThread(state.activeProjectId);
+    }
+
     state.view = "chat";
     save(state);
 
@@ -2526,9 +2587,24 @@ btnNewChat?.addEventListener("click", (e) => {
 
       if (t.closest(".sb-more") || t.classList.contains("sb-dots")) return;
 
-      // PJ名クリック＝PJ内で「新しいチャット」を作成して即オープン（GPTと同じ）
       e.preventDefault();
-      createProjectThread(id);
+
+      // 1回目：PJトップ（プロジェクト名＋新規Ask＋履歴）を表示するための状態へ
+      // 2回目（同PJ再クリック）：PJ内で新規トーク作成→即オープン
+      const same = (state.view === "project" && state.activeProjectId === id);
+
+      if (same) {
+        createProjectThread(id);
+        return;
+      }
+
+      state.activeProjectId = id;
+      state.view = "project";
+      save(state);
+
+      renderSidebar();
+      renderView();
+      askInput?.focus();
       return;
     }
 
