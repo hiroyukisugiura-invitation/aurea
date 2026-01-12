@@ -290,10 +290,10 @@
 
       const raw = textW + pl + pr + bwL + bwR + safety;
 
-      // 短すぎる「ダ…」「日…」防止の最小幅（ただし文字幅がそれ以上なら文字幅優先）
-      const minW = 120;
+      // 最小幅は「▼領域＋padding＋枠」だけ確保（固定120pxは撤去＝余白が出ない）
+      const minW = Math.ceil(pl + pr + bwL + bwR + safety + 4);
 
-      const w = clamp(Math.max(raw, minW), minW, maxW);
+      const w = clamp(raw, minW, maxW);
 
       sel.style.width = `${w}px`;
       sel.style.inlineSize = `${w}px`;
