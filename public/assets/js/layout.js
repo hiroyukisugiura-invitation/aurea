@@ -1289,7 +1289,86 @@ const closeSettings = () => {
 
       const bubble = document.createElement("div");
       bubble.className = "bubble";
-      bubble.innerHTML = escHtml(m.content);
+
+      const renderReportsAsDetails = (raw) => {
+        if (!raw.includes("\nReports:\n")) {
+          return escHtml(raw).replace(/\n/g, "<br>");
+        }
+
+        const parts = raw.split("\nReports:\n");
+        const head = parts[0] || "";
+        const tail = parts.slice(1).join("\nReports:\n");
+
+        const lines = tail.split("\n");
+        const blocks = [];
+        let cur = null;
+
+        const flush = () => {
+          if (cur) {
+            cur.body = (cur.body || []).join("\n").trim();
+            blocks.push(cur);
+            cur = null;
+          }
+        };
+
+        for (const line of lines) {
+          const m1 = /^---\s*(.+?)\s*---\s*$/.exec(line);
+          if (m1) {
+            flush();
+            cur = { name: m1[1], body: [] };
+            continue;
+          }
+          if (cur) cur.body.push(line);
+        }
+        flush();
+
+        const headHtml = escHtml(head).replace(/\n/g, "<br>");
+
+        const detailsHtml = blocks.map((b) => {
+          const nm = String(b.name || "").trim();
+          const body = String(b.body || "").trim();
+          return `
+              <details class="ai-report">
+                <summary class="ai-report__sum">${escHtml(nm)}</summary>
+                <div class="ai-report__body">${escHtml(body).replace(/\n/g, "<br>")}</div>
+              </details>
+            `.trim();
+        }).join("");
+
+        return `${headHtml}<br><br>${detailsHtml}`;
+      };
+
+      const renderMessageHtml = (msg) => {
+        const raw0 = String(msg?.content || "");
+
+        // Assistant only: fold "AI Stack" progress into details
+        if (msg?.role === "assistant" && raw0.startsWith("AI Stack\n")) {
+          const sep = raw0.indexOf("\n\n");
+          const head = (sep >= 0) ? raw0.slice(0, sep) : raw0;
+          const rest = (sep >= 0) ? raw0.slice(sep + 2) : "";
+
+          const headBody = escHtml(head).replace(/\n/g, "<br>");
+          const restHtml = renderReportsAsDetails(rest);
+
+          const stackHtml = `
+              <details class="ai-stack" open>
+                <summary class="ai-stack__sum">AI Stack</summary>
+                <div class="ai-stack__body">${headBody}</div>
+              </details>
+            `.trim();
+
+          return rest ? `${stackHtml}<br><br>${restHtml}` : stackHtml;
+        }
+
+        // Assistant only: fold Reports into details
+        if (msg?.role === "assistant") {
+          return renderReportsAsDetails(raw0);
+        }
+
+        return escHtml(raw0).replace(/\n/g, "<br>");
+      };
+
+      bubble.innerHTML = renderMessageHtml(m);
 
       wrap.appendChild(bubble);
 
@@ -1766,9 +1845,27 @@ const closeSettings = () => {
     renderView();
   };
 
-  /* ================= streaming (UI-only placeholder) ================= */
+/* ================= streaming (UI-only placeholder) ================= */
   let streamTimer = null;
   let streamAbort = false;
+
+  // multi-AI run control
+  let multiAiAbort = false;
+  let multiAiRunId = 0;
+
+  const MULTI_AI = [
+    { name: "GPT",        role: "final" },
+    { name: "Gemini",     role: "research" },
+    { name: "Claude",     role: "analysis" },
+    { name: "Perplexity", role: "verify" },
+    { name: "Mistral",    role: "fast" },
+    { name: "Sora",       role: "image" }
+  ];
+
+  const shouldUseSora = (userText) => {
+    const s = String(userText || "");
+    return /\b(image|render|illustration|photo|png|jpg|webp)\b/i.test(s) || /画像|イラスト|写真|生成|レンダ/.test(s);
+  };
 
   const setStreaming = (on) => {
     if (stopBtn) stopBtn.style.display = on ? "" : "none";
@@ -1784,28 +1881,183 @@ const closeSettings = () => {
 
   const stopStreaming = () => {
     streamAbort = true;
+    multiAiAbort = true;
     if (streamTimer) { clearInterval(streamTimer); streamTimer = null; }
     setStreaming(false);
   };
 
-  const fakeReply = async (userText) => {
-    const reply = `${tr("aureaPrefix")}\n${userText}\n\n${tr("replyPlaceholder")}`;
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+  const statusText = (s) => {
+    // stable labels (no new i18n keys)
+    if (s === "queued") return "queued";
+    if (s === "running") return "running";
+    if (s === "done") return "done";
+    if (s === "skipped") return "skipped";
+    if (s === "aborted") return "aborted";
+    if (s === "error") return "error";
+    return String(s || "");
+  };
+
+  const buildMultiAiHeader = (statuses) => {
+    const lines = [];
+    lines.push("AI Stack");
+    for (const a of MULTI_AI) {
+      const st = statuses[a.name] || "queued";
+      lines.push(`• ${a.name}: ${statusText(st)}`);
+    }
+    return lines.join("\n");
+  };
+
+  const pickBackend = () => {
+    // Optional backend injection:
+    // window.__AUREA_MULTI_AI_BACKEND__ = { run: async ({ ai, text, role }) => "..." }
+    try {
+      const b = window.__AUREA_MULTI_AI_BACKEND__;
+      if (b && typeof b.run === "function") return b;
+    } catch {}
+    return null;
+  };
+
+  const runOneAi = async ({ ai, text }) => {
+    const backend = pickBackend();
+    if (backend) {
+      return await backend.run({ ai, text, role: ai.role });
+    }
+
+    // UI-only stub (deterministic, ready to be replaced by API)
+    await sleep(140 + (ai.name.length * 40));
+    if (ai.name === "Gemini") {
+      return `Key points to research:\n- Clarify requirements\n- Collect relevant info\n- Note constraints`;
+    }
+    if (ai.name === "Claude") {
+      return `Structure / issues:\n- Break into steps\n- Identify risks\n- Propose safe plan`;
+    }
+    if (ai.name === "Perplexity") {
+      return `Verification checklist:\n- Confirm assumptions\n- Cross-check critical facts\n- Add sources when backend is connected`;
+    }
+    if (ai.name === "Mistral") {
+      return `Fast draft:\n- Short actionable answer\n- Minimal steps\n- Next action`;
+    }
+    if (ai.name === "Sora") {
+      return `Image generation route active. (UI stub)`;
+    }
+    return `OK (stub)`;
+  };
+
+  const integrateFinal = ({ userText, reports, usedSora }) => {
+    // UI-only: GPT final synthesis placeholder (backend will replace)
+    const lines = [];
+    lines.push(`${tr("aureaPrefix")}`);
+    lines.push("");
+    lines.push(userText);
+    lines.push("");
+    lines.push(tr("replyPlaceholder"));
+
+    // Attach full reports (UI will render as expandable details)
+    const names = Object.keys(reports || {});
+    if (names.length) {
+      lines.push("");
+      lines.push("Reports:");
+      for (const n of names) {
+        lines.push(`--- ${n} ---`);
+        lines.push(String(reports[n] || "").trim());
+      }
+    }
+
+    if (usedSora) {
+      lines.push("");
+      lines.push("Sora: active (image)");
+    }
+
+    return lines.join("\n");
+  };
+
+  const multiAiReply = async (userText) => {
     const m = appendMessage("assistant", "");
     if (!m) return;
 
     streamAbort = false;
+    multiAiAbort = false;
     setStreaming(true);
 
-    let i = 0;
-    streamTimer = setInterval(() => {
-      if (streamAbort) { stopStreaming(); return; }
-      i += 2;
-      updateMessage(m.id, reply.slice(0, i));
+    const runId = ++multiAiRunId;
+
+    const statuses = {};
+    MULTI_AI.forEach((a) => (statuses[a.name] = "queued"));
+
+    const usedSora = shouldUseSora(userText);
+    if (!usedSora) statuses.Sora = "skipped";
+
+    const reports = {};
+
+    const renderProgress = (finalText = "") => {
+      if (multiAiAbort || streamAbort || runId !== multiAiRunId) return;
+      const header = buildMultiAiHeader(statuses);
+      const content = finalText ? `${header}\n\n${finalText}` : `${header}\n\n`;
+      updateMessage(m.id, content);
       renderChat();
-      if (i >= reply.length) {
+    };
+
+    renderProgress("");
+
+    const targets = MULTI_AI.filter((a) => a.name !== "GPT" && (a.name !== "Sora" || usedSora));
+
+    // run in parallel, update status per AI
+    const tasks = targets.map(async (ai) => {
+      if (multiAiAbort || streamAbort || runId !== multiAiRunId) return;
+
+      statuses[ai.name] = "running";
+      renderProgress("");
+
+      try {
+        const out = await runOneAi({ ai, text: userText });
+        if (multiAiAbort || streamAbort || runId !== multiAiRunId) {
+          statuses[ai.name] = "aborted";
+          renderProgress("");
+          return;
+        }
+        reports[ai.name] = String(out || "");
+        statuses[ai.name] = "done";
+        renderProgress("");
+      } catch {
+        statuses[ai.name] = "error";
+        renderProgress("");
+      }
+    });
+
+    await Promise.all(tasks);
+
+    if (multiAiAbort || streamAbort || runId !== multiAiRunId) {
+      setStreaming(false);
+      return;
+    }
+
+    // GPT final synthesis (UI stub for now)
+    statuses.GPT = "running";
+    renderProgress("");
+
+    const final = integrateFinal({ userText, reports, usedSora });
+
+    // stream final text
+    let i = 0;
+    const step = Math.max(1, Math.floor(final.length / 180));
+    streamTimer = setInterval(() => {
+      if (multiAiAbort || streamAbort || runId !== multiAiRunId) {
+        if (streamTimer) { clearInterval(streamTimer); streamTimer = null; }
+        setStreaming(false);
+        return;
+      }
+
+      i += step;
+      const chunk = final.slice(0, i);
+      renderProgress(chunk);
+
+      if (i >= final.length) {
         clearInterval(streamTimer);
         streamTimer = null;
+        statuses.GPT = "done";
+        renderProgress(final);
         setStreaming(false);
         renderSidebar();
       }
@@ -1825,7 +2077,7 @@ const closeSettings = () => {
     autosizeTextarea();
     updateSendButtonVisibility();
 
-    await fakeReply(text);
+    await multiAiReply(text);
   };
 
   /* ================= special: create image (store to library) ================= */
