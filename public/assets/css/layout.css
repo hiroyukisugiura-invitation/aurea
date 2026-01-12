@@ -1278,7 +1278,7 @@ body.theme-light .images-empty{
 .settings-modal .row{
   display:flex;
   align-items:center;
-  justify-content:space-between;
+  justify-content:flex-start;
   gap:12px;
   padding:10px 0;
   border-top:1px solid rgba(255,255,255,.08);
@@ -1798,7 +1798,11 @@ body.theme-light .images-empty{
 }
 
 .settings-modal #legalOverlay .modal{
-  width:min(760px, calc(100% - 24px));
+  /* 内容に追従しつつ、最大幅は制限（英語でも崩れない） */
+  width:fit-content;
+  max-width:min(760px, calc(100% - 24px));
+  min-width:min(520px, calc(100% - 24px));
+
   height:auto;
   background:var(--modalBg);
   border:1px solid var(--modalBorder);
@@ -1813,6 +1817,14 @@ body.theme-light .images-empty{
   /* animation */
   transform: translateY(6px) scale(.98);
   transition: transform .18s ease;
+}
+
+/* モバイル：横幅は画面にフィット */
+@media (max-width: 560px){
+  .settings-modal #legalOverlay .modal{
+    width:calc(100% - 24px);
+    min-width:0;
+  }
 }
 
 .settings-modal #legalOverlay.is-open .modal{

@@ -2808,7 +2808,6 @@ btnNewChat?.addEventListener("click", (e) => {
         // Trainer: 既に生成済みの「ケース追加」モーダルも破棄（言語固定化対策）
         const tm = document.getElementById("aureaTrainerCaseModal");
         if (tm) tm.remove();
-        trainerWrap = null;
 
         saveSettings();
         applyI18n();
