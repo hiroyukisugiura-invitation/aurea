@@ -172,13 +172,14 @@ body.theme-light .ask-note{
 .sb-item{
   display:flex;
   align-items:center;
-  gap:10px;
-  padding:10px 10px;
+  gap:8px;
+  padding:8px 10px;
   border-radius:12px;
   color:var(--text);
   text-decoration:none;
   user-select:none;
 }
+
 .sb-item:hover{ background:var(--soft); }
 .sb-item[data-active="1"]{ background:var(--soft); }
 .sb-item .ic{ width:18px;height:18px;opacity:.92;flex:0 0 auto; }
@@ -209,20 +210,21 @@ details > summary::-webkit-details-marker{ display:none; }
 .sb-group[open] .caret{ transform:rotate(180deg); }
 
 .sb-group .group-body{
-  padding:4px 4px 8px;
+  padding:2px 4px 6px;
   display:flex;
   flex-direction:column;
-  gap:4px;
+  gap:2px;
 }
 
 /* Project inner */
 .pj-inner{
-  margin:2px 0 10px;
+  margin:2px 0 8px;
   padding-left:10px;
   display:flex;
   flex-direction:column;
-  gap:4px;
+  gap:2px;
 }
+
 /* pj-newchat removed */
 
 .pj-subhead{
@@ -235,8 +237,8 @@ details > summary::-webkit-details-marker{ display:none; }
   position:relative;
   display:flex;
   align-items:center;
-  gap:8px;
-  padding:6px 6px;
+  gap:6px;
+  padding:4px 6px;
   border-radius:12px;
 }
 
@@ -246,8 +248,8 @@ details > summary::-webkit-details-marker{ display:none; }
   min-width:0;
   display:flex;
   align-items:center;
-  gap:10px;
-  padding:8px 10px;
+  gap:8px;
+  padding:6px 10px;
   border-radius:12px;
   color:rgba(255,255,255,.92);
   text-decoration:none;
@@ -255,15 +257,18 @@ details > summary::-webkit-details-marker{ display:none; }
 
 /* GPT-like chat icon for project threads */
 .pj-thread::before{
-  content:"";
   width:16px;
   height:16px;
   flex:0 0 auto;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-family:"Font Awesome 6 Free";
+  font-weight:900;
+  font-size:14px;
+  line-height:1;
   opacity:.9;
-  background-repeat:no-repeat;
-  background-size:16px 16px;
-  background-position:center;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z'/%3E%3C/svg%3E");
+  content:"\f27a";
 }
 
 .pj-thread:hover{ background:rgba(255,255,255,.05); }
@@ -301,6 +306,7 @@ details > summary::-webkit-details-marker{ display:none; }
   padding:6px 6px;
   border-radius:12px;
 }
+
 .sb-link{
   flex:1;
   min-width:0;
@@ -313,20 +319,35 @@ details > summary::-webkit-details-marker{ display:none; }
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
-
-  background-repeat:no-repeat;
-  background-size:16px 16px;
-  background-position:10px center;
+  position:relative;
 }
 
-/* Project rows: file icon */
-.sb-row[data-kind="project"] .sb-link{
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/%3E%3Cpath d='M14 2v6h6'/%3E%3C/svg%3E");
+.sb-link::before{
+  position:absolute;
+  left:10px;
+  top:50%;
+  transform:translateY(-50%);
+  width:16px;
+  height:16px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-family:"Font Awesome 6 Free";
+  font-weight:900;
+  font-size:14px;
+  line-height:1;
+  opacity:.9;
+  content:"";
 }
 
-/* Chat history rows: chat bubble icon */
-.sb-row[data-kind="thread"] .sb-link{
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z'/%3E%3C/svg%3E");
+/* Project rows: file icon (fa-file) */
+.sb-row[data-kind="project"] .sb-link::before{
+  content:"\f15b";
+}
+
+/* Chat history rows: chat icon (fa-message) */
+.sb-row[data-kind="thread"] .sb-link::before{
+  content:"\f27a";
 }
 
 .sb-link[data-active="1"]{ background:rgba(255,255,255,.06); }
