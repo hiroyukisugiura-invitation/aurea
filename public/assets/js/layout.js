@@ -2871,6 +2871,13 @@ btnNewChat?.addEventListener("click", (e) => {
       syncSettingsUi();
     });
 
+    // 新：プルダウン
+    const storageSelect = document.getElementById("dataStorageSelect");
+    storageSelect?.addEventListener("change", (e) => {
+      const v = String(e.target?.value || "cloud").trim();
+      setStorageMode(v === "local" ? "local" : "cloud");
+    });
+
 /* ===== Apps ===== */
     const btnAddSaas = document.querySelector(".panel-apps .apps-header .btn");
     btnAddSaas?.addEventListener("click", (e) => {
