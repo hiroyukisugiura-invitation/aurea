@@ -2505,6 +2505,38 @@ btnNewChat?.addEventListener("click", (e) => {
       return;
     }
 
+        // ===== Project title click (force open project chat) =====
+    const pLink = t.closest(".sb-row[data-kind='project'] .sb-link");
+    if (pLink && projectList && projectList.contains(pLink)) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const pRow = pLink.closest(".sb-row[data-kind='project']");
+      const id = pRow?.dataset?.id;
+      if (!id) return;
+
+      state.activeProjectId = id;
+
+      if (!state.threads.projects[id]) state.threads.projects[id] = [];
+      if (!state.activeThreadIdByScope.projects) state.activeThreadIdByScope.projects = {};
+
+      const tid = state.activeThreadIdByScope.projects[id] || null;
+      const exists = tid && state.threads.projects[id].some(t => t.id === tid);
+
+      if (exists) {
+        state.context = { type: "project", projectId: id };
+        state.view = "chat";
+        save(state);
+        renderSidebar();
+        renderView();
+        askInput?.focus();
+        return;
+      }
+
+      createProjectThread(id);
+      return;
+    }
+
     // project row click / menu
     const pRow = t.closest(".sb-row[data-kind='project']");
     if (pRow && projectList && projectList.contains(pRow)) {
