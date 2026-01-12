@@ -3200,7 +3200,24 @@ const renderTrainerCases = () => {
 // ===== Trainer Case Dictionary (Apple辞書UI風) =====
 let trainerDictWrap = null;
 let trainerSelectedId = null;
-let trainerDictTwoLine = false; // false=1行 / true=2行
+
+const trainerDictCollator = new Intl.Collator("ja", { numeric: true, sensitivity: "base" });
+
+const trainerDictToHiragana = (s) => {
+  // カタカナ → ひらがな
+  return s.replace(/[\u30A1-\u30F6]/g, (ch) => {
+    return String.fromCharCode(ch.charCodeAt(0) - 0x60);
+  });
+};
+
+const trainerDictSortKey = (s) => {
+  const t = String(s || "").trim().normalize("NFKC");
+  // 英字は大文字化してA-Zで揃える
+  const up = t.toUpperCase();
+  // かなはひらがなへ揃える
+  return trainerDictToHiragana(up);
+};
+
 let trainerDictQuery = "";
 
 const ensureTrainerDict = () => {
@@ -3271,19 +3288,6 @@ const ensureTrainerDict = () => {
       ">
         <button id="trainerDictAdd">＋</button>
         <button id="trainerDictDel">−</button>
-
-        <div style="flex:1;"></div>
-
-        <button id="trainerDictView" style="
-          height:32px;
-          padding:0 10px;
-          border-radius:10px;
-          border:1px solid rgba(255,255,255,.15);
-          background:rgba(255,255,255,.08);
-          color:#fff;
-          cursor:pointer;
-          font-size:12.5px;
-        ">2行</button>
       </div>
     </div>
   `;
@@ -3302,16 +3306,6 @@ const ensureTrainerDict = () => {
 
   // delete
   trainerDictWrap.querySelector("#trainerDictDel").onclick = async () => {
-      // view (1行/2行)
-  const viewBtn = trainerDictWrap.querySelector("#trainerDictView");
-  if (viewBtn) {
-    viewBtn.onclick = () => {
-      trainerDictTwoLine = !trainerDictTwoLine;
-      viewBtn.textContent = trainerDictTwoLine ? "1行" : "2行";
-      renderTrainerDictList();
-    };
-  }
-
       const searchEl = trainerDictWrap.querySelector("#trainerDictSearch");
   if (searchEl) {
     searchEl.addEventListener("input", () => {
@@ -3347,7 +3341,7 @@ const renderTrainerDictList = (autoPickFirst = false) => {
 
   const cases = loadTrainerCases()
     .slice()
-    .sort((a, b) => String(a?.q || "").localeCompare(String(b?.q || ""), "ja", { numeric: true, sensitivity: "base" }))
+    .sort((a, b) => trainerDictCollator.compare(trainerDictSortKey(a?.q), trainerDictSortKey(b?.q)));
     .filter((c) => {
       if (!q) return true;
       const qq = String(c?.q || "").toLowerCase();
@@ -3377,7 +3371,7 @@ const renderTrainerDictList = (autoPickFirst = false) => {
     row.style.cssText = `
       display:grid;
       grid-template-columns:1fr 1fr;
-      padding:${trainerDictTwoLine ? "10px 16px" : "9px 16px"};
+      padding:9px 16px;
       cursor:pointer;
       background:${trainerSelectedId === c.id ? "rgba(255,255,255,.06)" : "transparent"};
       border-bottom:1px solid rgba(255,255,255,.05);
@@ -3386,23 +3380,10 @@ const renderTrainerDictList = (autoPickFirst = false) => {
     // hoverで全文プレビュー（軽量）
     row.title = `Q: ${q2}\nA: ${a2}`;
 
-    if (trainerDictTwoLine) {
-      row.innerHTML = `
-        <div style="min-width:0;">
-          <div style="font-size:13px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(q1)}</div>
-          <div style="margin-top:2px;font-size:12px;opacity:.72;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(q2)}</div>
-        </div>
-        <div style="min-width:0;">
-          <div style="font-size:13px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.92;">${escHtml(a1)}</div>
-          <div style="margin-top:2px;font-size:12px;opacity:.66;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(a2)}</div>
-        </div>
-      `;
-    } else {
-      row.innerHTML = `
-        <div style="font-size:13px;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(q1)}</div>
-        <div style="font-size:13px;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.92;">${escHtml(a1)}</div>
-      `;
-    }
+    row.innerHTML = `
+      <div style="font-size:13px;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(q1)}</div>
+      <div style="font-size:13px;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.92;">${escHtml(a1)}</div>
+    `;
 
     row.onclick = () => {
       trainerSelectedId = c.id;
