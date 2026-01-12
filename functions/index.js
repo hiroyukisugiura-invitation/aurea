@@ -566,6 +566,124 @@ app.post("/api/chat", async (req, res) => {
   });
 });
 
+/* ================= AI Chat (v1) =================
+  - 6大AIを /api/chat で一括実行して返す
+  - 各AIの個別APIキーが無い場合は OpenAI で代替（ある場合は後で差し替え可能）
+  - OpenAI: Responses API を使用（/v1/responses）
+*/
+
+const OPENAI_API_KEY = defineSecret("OPENAI_API_KEY");
+// （将来用：各社キー。未設定でも落ちない）
+const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
+const ANTHROPIC_API_KEY = defineSecret("ANTHROPIC_API_KEY");
+const PERPLEXITY_API_KEY = defineSecret("PERPLEXITY_API_KEY");
+const MISTRAL_API_KEY = defineSecret("MISTRAL_API_KEY");
+
+const getOpenAIKey = () => {
+  const k = String(OPENAI_API_KEY.value() || "").trim();
+  return k ? k : null;
+};
+
+const callOpenAIText = async ({ system, user, model }) => {
+  const key = getOpenAIKey();
+  if (!key) return null;
+
+  const m = String(model || "gpt-5.2").trim() || "gpt-5.2";
+
+  const payload = {
+    model: m,
+    input: [
+      {
+        role: "system",
+        content: [{ type: "text", text: String(system || "").trim() }]
+      },
+      {
+        role: "user",
+        content: [{ type: "text", text: String(user || "").trim() }]
+      }
+    ]
+  };
+
+  const r = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${key}`
+    },
+    body: JSON.stringify(payload)
+  });
+
+  const j = await r.json().catch(() => null);
+  if (!r.ok || !j) return null;
+
+  const out = String(j.output_text || "").trim();
+  return out || null;
+};
+
+const buildSystemPrompt = (aiName) => {
+  const n = String(aiName || "").trim();
+
+  if (n === "Gemini") {
+    return "You are Gemini. Do broad research-style exploration. Return concise bullet points.";
+  }
+  if (n === "Claude") {
+    return "You are Claude. Do long-form analysis and structure. Return a clear outline and risks.";
+  }
+  if (n === "Perplexity") {
+    return "You are Perplexity. Verify claims and list what should be checked. Return a verification checklist.";
+  }
+  if (n === "Mistral") {
+    return "You are Mistral. Produce a fast concise answer and next actions.";
+  }
+  if (n === "Sora") {
+    return "You are Sora. If the user requests an image, return an image prompt and style notes.";
+  }
+  return "You are GPT. Provide the final integrated answer and recommendations.";
+};
+
+const shouldUseSora = (text) => {
+  const s = String(text || "");
+  return /\b(image|render|illustration|photo|png|jpg|webp)\b/i.test(s) || /画像|イラスト|写真|生成|レンダ/.test(s);
+};
+
+app.post("/api/chat", async (req, res) => {
+  try {
+    const text = String(req.body?.text || "").trim();
+
+    // 6AIの結果を返す（まずは全てOpenAIで稼働させる）
+    // ※ 各社キー（Gemini/Anthropic/Perplexity/Mistral）へは次工程で差し替え
+    const useSora = shouldUseSora(text);
+
+    const names = ["GPT", "Gemini", "Claude", "Perplexity", "Mistral", "Sora"];
+
+    const tasks = names.map(async (name) => {
+      if (name === "Sora" && !useSora) return { name, out: null };
+
+      const system = buildSystemPrompt(name);
+      const out = await callOpenAIText({
+        system,
+        user: text,
+        model: "gpt-5.2"
+      });
+
+      // OpenAIキー未設定時のフォールバック（落とさない）
+      if (!out) return { name, out: `${name} received: ${text}` };
+
+      return { name, out };
+    });
+
+    const results = await Promise.all(tasks);
+
+    const map = {};
+    for (const r of results) map[r.name] = r.out;
+
+    res.json({ ok: true, result: map });
+  } catch (e) {
+    const msg = String(e && e.message ? e.message : e || "");
+    res.status(500).json({ ok: false, reason: "chat_failed", msg });
+  }
+});
+
 exports.api = onRequest(
   {
     region: "us-central1",
@@ -574,8 +692,14 @@ exports.api = onRequest(
       STRIPE_PRICE_PRO,
       STRIPE_PRICE_TEAM,
       STRIPE_PRICE_ENTERPRISE,
-      STRIPE_WEBHOOK_SECRET
+      STRIPE_WEBHOOK_SECRET,
+      OPENAI_API_KEY,
+      GEMINI_API_KEY,
+      ANTHROPIC_API_KEY,
+      PERPLEXITY_API_KEY,
+      MISTRAL_API_KEY
     ]
   },
   app
 );
+
