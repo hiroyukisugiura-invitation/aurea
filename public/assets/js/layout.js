@@ -247,14 +247,17 @@
     const autoSizeSelect = (sel) => {
       if (!sel) return;
 
-      // 選択中文字列（selectは最長option幅になりやすいので、選択中だけで測る）
+      // いったん自動幅に戻してから計測（縮みすぎ事故防止）
+      sel.style.width = "";
+      sel.style.inlineSize = "";
+
       const opt = sel.options?.[sel.selectedIndex];
-      const text = String(opt ? opt.text : sel.value || "").trim();
+      const text = String(opt ? opt.text : (sel.value || "")).trim();
       if (!text) return;
 
       const cs = window.getComputedStyle(sel);
 
-      // 測定用span
+      // 計測用
       const span = document.createElement("span");
       span.style.position = "fixed";
       span.style.left = "-99999px";
@@ -265,27 +268,32 @@
       span.style.fontSize = cs.fontSize;
       span.style.fontWeight = cs.fontWeight;
       span.style.letterSpacing = cs.letterSpacing;
-      span.style.textTransform = cs.textTransform;
       span.textContent = text;
 
       document.body.appendChild(span);
+
+      const textW = Math.ceil(span.getBoundingClientRect().width);
+      document.body.removeChild(span);
 
       const pl = parseFloat(cs.paddingLeft || "0") || 0;
       const pr = parseFloat(cs.paddingRight || "0") || 0;
       const bwL = parseFloat(cs.borderLeftWidth || "0") || 0;
       const bwR = parseFloat(cs.borderRightWidth || "0") || 0;
 
-      // ENは最低幅を少しだけ確保（崩れ防止）
-      const isEn = (state.settings?.language || "ja") === "en";
-      const minW = isEn ? 120 : 88;
+      // 右の▼領域・OS差分の安全マージン
+      const safety = 10;
 
-      // 画面に収める上限（右側に寄せるUIなので控えめ）
-      const maxW = Math.min(520, Math.max(240, window.innerWidth - 240));
+      // モーダル幅に収める
+      const modal = document.querySelector(".settings-modal .modal");
+      const modalW = modal ? modal.getBoundingClientRect().width : window.innerWidth;
+      const maxW = Math.max(220, Math.min(560, Math.floor(modalW * 0.72)));
 
-      const raw = Math.ceil(span.getBoundingClientRect().width + pl + pr + bwL + bwR);
-      const w = clamp(raw, minW, maxW);
+      const raw = textW + pl + pr + bwL + bwR + safety;
 
-      document.body.removeChild(span);
+      // 短すぎる「ダ…」「日…」防止の最小幅（ただし文字幅がそれ以上なら文字幅優先）
+      const minW = 120;
+
+      const w = clamp(Math.max(raw, minW), minW, maxW);
 
       sel.style.width = `${w}px`;
       sel.style.inlineSize = `${w}px`;
@@ -295,12 +303,14 @@
     const selTheme = document.querySelector(".settings-modal #settingsTheme");
     if (selTheme) {
       selTheme.value = (state.settings?.theme || "dark");
+      autoSizeSelect(selTheme);
     }
 
     // Language
     const selLang = document.querySelector(".settings-modal #settingsLang");
     if (selLang) {
       selLang.value = (state.settings?.language || "ja");
+      autoSizeSelect(selLang);
     }
 
     // Send mode
@@ -308,9 +318,10 @@
     if (selSend) {
       const mode = state.settings?.sendMode || (localStorage.getItem("aurea_send_mode") || "cmdEnter");
       selSend.value = (mode === "enter") ? "enter" : "cmdEnter";
+      autoSizeSelect(selSend);
     }
 
-    // Data storage (dropdown)
+    // Data storage (Data panel buttons)
     const dataNow = document.getElementById("dataStorageNow");
     const onLocal = (state.settings?.dataStorage === "local");
 
@@ -321,40 +332,6 @@
     const bCloud = document.getElementById("btnStorageCloud");
     const bLocal = document.getElementById("btnStorageLocal");
 
-    const ensureStorageSelect = () => {
-      const cloudBtn = document.getElementById("btnStorageCloud");
-      const localBtn = document.getElementById("btnStorageLocal");
-      const host = cloudBtn?.parentElement || localBtn?.parentElement;
-      if (!host) return null;
-
-      let sel = document.getElementById("dataStorageSelect");
-      if (sel) return sel;
-
-      const cloudLabel = (cloudBtn?.textContent || "").trim() || "クラウド";
-      const localLabel = (localBtn?.textContent || "").trim() || "端末内";
-
-      sel = document.createElement("select");
-      sel.id = "dataStorageSelect";
-      sel.className = "select";
-      sel.setAttribute("aria-label", "データの保存先");
-      sel.innerHTML = `
-        <option value="cloud">${escHtml(cloudLabel)}</option>
-        <option value="local">${escHtml(localLabel)}</option>
-      `;
-
-      if (cloudBtn) cloudBtn.style.display = "none";
-      if (localBtn) localBtn.style.display = "none";
-
-      host.appendChild(sel);
-      return sel;
-    };
-
-    const storageSelect = ensureStorageSelect();
-    if (storageSelect) {
-      storageSelect.value = onLocal ? "local" : "cloud";
-    }
-
-    // （互換）ボタン状態は残す
     if (bCloud) {
       bCloud.setAttribute("aria-pressed", onLocal ? "false" : "true");
       bCloud.style.opacity = onLocal ? ".65" : "1";
@@ -363,11 +340,6 @@
       bLocal.setAttribute("aria-pressed", onLocal ? "true" : "false");
       bLocal.style.opacity = onLocal ? "1" : ".65";
     }
-
-    // 選択ボタンの空白を除去（選択中文字幅へ追従）
-    try {
-      document.querySelectorAll(".settings-modal select.select").forEach((s) => autoSizeSelect(s));
-    } catch {}
 
     // Apps status
     const appCards = Array.from(document.querySelectorAll(".panel-apps .apps-grid .saas"));

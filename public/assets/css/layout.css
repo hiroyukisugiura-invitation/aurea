@@ -1416,10 +1416,15 @@ body.theme-light .images-empty{
   outline:0;
   cursor:pointer;
   max-width:100%;
-  min-width:0;
+  min-width:120px; /* ←短すぎて「ダ…」「日…」にならないよう最小幅 */
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
+}
+
+/* 送信方法は文言が長いので別で最小幅を確保（見切れ防止） */
+.settings-modal #settingsSendMode{
+  min-width:320px;
 }
 
 .settings-modal .input{
