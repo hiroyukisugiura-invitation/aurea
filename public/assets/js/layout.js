@@ -3218,8 +3218,6 @@ const trainerDictSortKey = (s) => {
   return trainerDictToHiragana(up);
 };
 
-let trainerDictQuery = "";
-
 const ensureTrainerDict = () => {
   if (trainerDictWrap) return trainerDictWrap;
 
@@ -3257,25 +3255,6 @@ const ensureTrainerDict = () => {
         <div>最適回答</div>
       </div>
 
-      <!-- search -->
-      <div style="
-        padding:10px 12px;
-        border-bottom:1px solid rgba(255,255,255,.08);
-      ">
-        <input id="trainerDictSearch" type="text" placeholder="検索（あいうえお / A-Z）" style="
-          width:100%;
-          height:34px;
-          border-radius:10px;
-          border:1px solid rgba(255,255,255,.12);
-          background:rgba(255,255,255,.06);
-          color:rgba(255,255,255,.92);
-          outline:none;
-          padding:0 10px;
-          font-size:13px;
-        ">
-      </div>
-
-      <!-- list -->
       <div id="trainerDictList" style="
         flex:1; overflow:auto;
       "></div>
@@ -3295,7 +3274,7 @@ const ensureTrainerDict = () => {
   document.body.appendChild(trainerDictWrap);
 
   // close on outside
-  trainerDictWrap.addEventListener("click", e => {
+  trainerDictWrap.addEventListener("click", (e) => {
     if (e.target === trainerDictWrap) closeTrainerDict();
   });
 
@@ -3304,16 +3283,6 @@ const ensureTrainerDict = () => {
     openTrainerAddPopup();
   };
 
-  // search（ここで一度だけ登録）
-  const searchEl = trainerDictWrap.querySelector("#trainerDictSearch");
-  if (searchEl) {
-    searchEl.addEventListener("input", () => {
-      trainerDictQuery = String(searchEl.value || "").trim();
-      trainerSelectedId = null;
-      renderTrainerDictList(true);
-    });
-  }
-
   // delete
   trainerDictWrap.querySelector("#trainerDictDel").onclick = async () => {
     if (!trainerSelectedId) return;
@@ -3321,7 +3290,7 @@ const ensureTrainerDict = () => {
     const ok = await confirmModal("削除しますか？");
     if (!ok) return;
 
-    const next = loadTrainerCases().filter(c => c.id !== trainerSelectedId);
+    const next = loadTrainerCases().filter((c) => c.id !== trainerSelectedId);
     saveTrainerCases(next);
 
     trainerSelectedId = null;
@@ -3342,17 +3311,9 @@ const renderTrainerDictList = (autoPickFirst = false) => {
   const list = document.getElementById("trainerDictList");
   if (!list) return;
 
-  const q = String(trainerDictQuery || "").toLowerCase();
-
   const cases = loadTrainerCases()
     .slice()
-    .sort((a, b) => trainerDictCollator.compare(trainerDictSortKey(a?.q), trainerDictSortKey(b?.q)))
-    .filter((c) => {
-      if (!q) return true;
-      const qq = String(c?.q || "").toLowerCase();
-      const aa = String(c?.a || "").toLowerCase();
-      return qq.includes(q) || aa.includes(q);
-    });
+    .sort((a, b) => trainerDictCollator.compare(trainerDictSortKey(a?.q), trainerDictSortKey(b?.q)));
 
   if (autoPickFirst && cases.length) {
     trainerSelectedId = cases[0].id;
@@ -3415,16 +3376,11 @@ const openTrainerDict = () => {
   bindTrainerDictHotkeysOnce();
 
   trainerSelectedId = null;
-  trainerDictQuery = "";
-
-  const searchEl = trainerDictWrap?.querySelector("#trainerDictSearch");
-  if (searchEl) searchEl.value = "";
 
   trainerDictWrap.style.display = "flex";
   renderTrainerDictList(true);
-
-  if (searchEl) setTimeout(() => searchEl.focus(), 0);
 };
+
 
 const closeTrainerDict = () => {
   trainerDictWrap.style.display = "none";
