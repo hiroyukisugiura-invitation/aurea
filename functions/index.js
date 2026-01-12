@@ -550,22 +550,6 @@ app.get("/api/google/callback", oauthCallback);
 app.post("/company/invite/consume", consumeInvite);
 app.post("/api/company/invite/consume", consumeInvite);
 
-/* ================= AI Chat (dummy v1) ================= */
-app.post("/api/chat", async (req, res) => {
-  const text = String(req.body?.text || "").trim();
-  res.json({
-    ok: true,
-    result: {
-      GPT: `GPT received: ${text}`,
-      Gemini: `Gemini received: ${text}`,
-      Claude: `Claude received: ${text}`,
-      Perplexity: `Perplexity received: ${text}`,
-      Mistral: `Mistral received: ${text}`,
-      Sora: null
-    }
-  });
-});
-
 /* ================= AI Chat (v1) =================
   - 6大AIを /api/chat で一括実行して返す
   - 各AIの個別APIキーが無い場合は OpenAI で代替（ある場合は後で差し替え可能）
