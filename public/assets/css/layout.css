@@ -257,18 +257,8 @@ details > summary::-webkit-details-marker{ display:none; }
 
 /* GPT-like chat icon for project threads */
 .pj-thread::before{
-  width:16px;
-  height:16px;
-  flex:0 0 auto;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  font-family:"Font Awesome 6 Free";
-  font-weight:900;
-  font-size:14px;
-  line-height:1;
-  opacity:.9;
-  content:"\f27a";
+  content:"";
+  display:none;
 }
 
 .pj-thread:hover{ background:rgba(255,255,255,.05); }
@@ -701,6 +691,11 @@ body.view-images .board{
   .ask-note{ white-space:nowrap; }
 }
 
+/* PJトップでは注意文を出さない（GPT同等） */
+body.view-project:not(.has-chat) .ask-note{
+  display:none;
+}
+
 /* Plus pop */
 .plus-menu{ position:relative; }
 .plus-pop{
@@ -738,7 +733,7 @@ body:not(.has-chat) .board{ padding-bottom:0; }
 
 /* Project home: ask should be near top (GPT like) */
 body.view-project:not(.has-chat) .ask-wrap{
-  top:132px;
+  top:112px;
   transform:none;
 }
 
@@ -822,18 +817,19 @@ body.project-open .project-modal{ display:flex; }
 
 /* ===== Project home (GPT-like) ===== */
 .view-project{
+  width:min(760px, calc(100% - 64px)); /* GPTの密度に合わせる */
   padding-top:10px;
 }
 
 .pj-home-head{
-  margin:8px 0 12px;
+  margin:10px 0 14px;
 }
 
 .pj-home-title{
   display:flex;
   align-items:center;
   gap:10px;
-  font-size:24px;
+  font-size:22px;               /* 少し小さめでGPT寄せ */
   font-weight:700;
   letter-spacing:.01em;
   color:rgba(255,255,255,.94);
@@ -869,7 +865,7 @@ body.project-open .project-modal{ display:flex; }
   align-items:center;
   justify-content:space-between;
   gap:14px;
-  padding:14px 2px;
+  padding:14px 0;               /* 左右の余白を無くして線揃え */
   border-bottom:1px solid var(--line);
   cursor:pointer;
 }
@@ -2162,4 +2158,9 @@ body.theme-light .images-empty{
     right:14px;
     bottom:92px;
   }
+}
+
+/* PJトップでは非表示（GPT同等） */
+body.view-project:not(.has-chat) .scroll-down-btn{
+  display:none;
 }
