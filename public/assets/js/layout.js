@@ -524,6 +524,25 @@
     const delAll = document.getElementById("btnDeleteAllChats");
     if (delAll) delAll.textContent = isEn ? "Delete" : "削除";
 
+    // ===== Trainer (AET) : static texts (no data-i18n) =====
+    const btnTrainer = document.getElementById("btnAddTrainerCase");
+    if (btnTrainer) btnTrainer.textContent = isEn ? "+ Manage cases" : "+ ケースを管理";
+
+    const trainerPanel = document.querySelector(".settings-modal .panel-trainer");
+    if (trainerPanel) {
+      const swapLeafText = (from, to) => {
+        trainerPanel.querySelectorAll("*").forEach((el) => {
+          if (!(el instanceof HTMLElement)) return;
+          if (el.children && el.children.length) return;
+          const t = (el.textContent || "").trim();
+          if (t === from) el.textContent = to;
+        });
+      };
+
+      swapLeafText("最適回答を登録", isEn ? "Register best answers" : "最適回答を登録");
+      swapLeafText("\"質問\" → \"最適回答\"を登録", isEn ? 'Register "Question" → "Best answer"' : "\"質問\" → \"最適回答\"を登録");
+    }
+
     // data-i18n / data-i18n-aria 全反映（HTML属性ベース）
     applyI18nAttrs();
   };
