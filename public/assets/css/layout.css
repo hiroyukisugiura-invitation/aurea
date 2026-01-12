@@ -454,7 +454,7 @@ details > summary::-webkit-details-marker{ display:none; }
 .board{
   flex:1;
   min-height:0;
-  padding:0 0 110px;
+  padding:0 0 220px;
   overflow:auto;
 }
 
@@ -536,8 +536,9 @@ body.view-search .brand-rail{
 
 /* ================= ASK ================= */
 .ask-wrap{
-  position:absolute;
-  left:0; right:0;
+  position:fixed;
+  left:var(--sbw);
+  right:0;
   bottom:22px;
   display:flex;
   flex-direction:column;
