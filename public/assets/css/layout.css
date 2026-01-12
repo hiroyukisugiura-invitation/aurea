@@ -1333,7 +1333,8 @@ body.theme-light .images-empty{
   }
 
   .settings-modal .select{
-    padding-right:34px;
+    background-position:right 10px center;
+    padding-right:30px;
   }
 }
 
@@ -1410,13 +1411,25 @@ body.theme-light .images-empty{
   border:1px solid rgba(255,255,255,.12);
   background:rgba(255,255,255,.05);
   color:rgba(255,255,255,.86);
-  padding:0 30px 0 10px; /* 余白を詰める（右矢印領域は残す） */
+
+  /* ▼を自前にして位置を制御（ネイティブ矢印の余白ズレ対策） */
+  -webkit-appearance:none;
+  appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1.5 1.5l4.5 4.5 4.5-4.5' fill='none' stroke='%23ffffff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' opacity='0.9'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-size:12px 8px;
+  background-position:right 10px center; /* ←▼を少し左へ */
+
+  /* 文字〜▼の間の不自然な空白を削る（右は▼+余白だけ確保） */
+  padding:0 30px 0 10px;
+
   font-size:13px;
   line-height:32px;
   outline:0;
   cursor:pointer;
+
   max-width:100%;
-  min-width:120px; /* ←短すぎて「ダ…」「日…」にならないよう最小幅 */
+  min-width:120px;
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
@@ -1674,7 +1687,10 @@ body.theme-light .images-empty{
     height:34px;
     min-height:34px;
     line-height:32px;
-    padding:0 44px 0 12px;
+
+    background-position:right 10px center; /* ←▼を少し左へ */
+    padding:0 30px 0 12px;                /* ←不自然な空白を削る */
+
     white-space:nowrap;
     overflow:hidden;
     text-overflow:ellipsis;
