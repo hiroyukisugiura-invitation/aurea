@@ -238,7 +238,7 @@ details > summary::-webkit-details-marker{ display:none; }
   display:flex;
   align-items:center;
   gap:6px;
-  padding:4px 6px;
+  padding:2px 6px;   /* 詰める */
   border-radius:12px;
 }
 
@@ -249,7 +249,7 @@ details > summary::-webkit-details-marker{ display:none; }
   display:flex;
   align-items:center;
   gap:8px;
-  padding:6px 10px;
+  padding:5px 10px;  /* 詰める */
   border-radius:12px;
   color:rgba(255,255,255,.92);
   text-decoration:none;
@@ -284,7 +284,7 @@ details > summary::-webkit-details-marker{ display:none; }
 .pj-thread .d{ display:none; }
 
 .sb-chat{
-  padding:10px 10px;
+  padding:6px 10px; /* 詰める */
   border-radius:12px;
   background:transparent;
   border:1px solid transparent;
@@ -292,8 +292,9 @@ details > summary::-webkit-details-marker{ display:none; }
   text-decoration:none;
   display:flex;
   flex-direction:column;
-  gap:4px;
+  gap:3px; /* 詰める */
 }
+.sb-chat .ic{ display:none; } /* チャット履歴のアイコンを削除 */
 .sb-chat:hover{ background:var(--soft); }
 .sb-chat .t{ font-size:13px; line-height:1.25; }
 
@@ -302,15 +303,15 @@ details > summary::-webkit-details-marker{ display:none; }
   position:relative;
   display:flex;
   align-items:center;
-  gap:8px;
-  padding:6px 6px;
+  gap:6px;           /* 詰める */
+  padding:4px 6px;   /* 詰める */
   border-radius:12px;
 }
 
 .sb-link{
   flex:1;
   min-width:0;
-  padding:8px 8px 8px 30px; /* left icon space */
+  padding:6px 8px 6px 30px; /* PJは左アイコン分を確保 */
   border-radius:10px;
   color:var(--text);
   text-decoration:none;
@@ -340,14 +341,17 @@ details > summary::-webkit-details-marker{ display:none; }
   content:"";
 }
 
-/* Project rows: file icon (fa-file) */
+/* Project rows: GPT同様のフォルダ（fa-folder） */
 .sb-row[data-kind="project"] .sb-link::before{
-  content:"\f15b";
+  content:"\f07b";
 }
 
-/* Chat history rows: chat icon (fa-message) */
+/* Chat history rows: アイコン非表示（表示不要） */
+.sb-row[data-kind="thread"] .sb-link{
+  padding:6px 8px; /* アイコン分を削る */
+}
 .sb-row[data-kind="thread"] .sb-link::before{
-  content:"\f27a";
+  content:"";
 }
 
 .sb-link[data-active="1"]{ background:rgba(255,255,255,.06); }

@@ -2526,36 +2526,8 @@ btnNewChat?.addEventListener("click", (e) => {
 
       if (t.closest(".sb-more") || t.classList.contains("sb-dots")) return;
 
-      // PJ選択＝展開のみ（会話コンテキストは切り替えない）
+      // PJ名クリック＝PJ内で「新しいチャット」を作成して即オープン（GPTと同じ）
       e.preventDefault();
-      selectProjectScope(id);
-      return;
-
-      if (!state.threads.projects[id]) state.threads.projects[id] = [];
-      if (!state.activeThreadIdByScope.projects) state.activeThreadIdByScope.projects = {};
-
-      const threads = (state.threads.projects[id] || []).slice()
-        .sort((a,b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
-
-      let tid = state.activeThreadIdByScope.projects[id] || null;
-      const exists = tid && threads.some(t => t.id === tid);
-
-      if (!exists && threads.length) {
-        tid = threads[0].id;
-        state.activeThreadIdByScope.projects[id] = tid;
-      }
-
-      if (tid) {
-        state.context = { type: "project", projectId: id };
-        state.view = "chat";
-        save(state);
-
-        renderSidebar();
-        renderView();
-        askInput?.focus();
-        return;
-      }
-
       createProjectThread(id);
       return;
     }
