@@ -872,15 +872,18 @@ body.view-project .view{
   width:100%;
   max-width:none;
   margin:0;
-  padding:10px 0 0 0; /* 外周の左右余白を撤去 */
+  padding:10px 0 0 0;
 
   height:100%;
   display:flex;
   flex-direction:column;
+  align-items:center; /* 中央寄せ */
 }
 
 .pj-home-head{
   margin:10px 0 14px;
+  width:100%;
+  max-width:760px;   /* GPT同等の中央幅 */
 }
 
 .pj-home-title{
@@ -919,6 +922,9 @@ body.view-project .view{
 
 .pj-home-askbar{
   width:100%;
+  max-width:760px;   /* 履歴と同幅 */
+  margin:0 auto;
+
   background:rgba(35,36,37,.98);
   border:1px solid rgba(255,255,255,.10);
   border-radius:22px;
@@ -985,13 +991,15 @@ body.view-project .board{
   display:flex;
   flex-direction:column;
   border-top:1px solid var(--line);
-  margin-top:12px; /* PJ内Askバー直下 */
+  margin-top:12px;
 
-  /* GPT同等：履歴のみスクロール */
-  overflow-y:auto;
+  width:100%;
+  max-width:760px;   /* GPT同等幅 */
+  margin-left:auto;
+  margin-right:auto;
+
+  overflow-y:auto;   /* 履歴だけスクロール */
   min-height:0;
-
-  /* Askバー・ヘッダ分を除いた可視領域を履歴に割り当て */
   max-height:calc(100vh - 260px);
 }
 
