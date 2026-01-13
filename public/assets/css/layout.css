@@ -497,7 +497,7 @@ details > summary::-webkit-details-marker{ display:none; }
   height:100%;
   display:flex;
   flex-direction:column;
-  background:transparent;
+  background:var(--panel2); /* ← 左カラムと地色を揃えて“余白”に見える帯を消す */
   overflow:hidden;
 }
 
@@ -1724,6 +1724,9 @@ body.theme-light .images-empty{
   outline:0;
   cursor:pointer;
 
+  text-align:center;         /* ← 文字を中央へ */
+  text-align-last:center;    /* ← 主要ブラウザで確実に中央へ */
+
   max-width:100%;
   min-width:0;
   overflow:hidden;
@@ -2163,6 +2166,14 @@ body.theme-light .images-empty{
 
 .settings-modal #legalOverlay #legalModalBody{
   margin-top:8px;
+}
+
+/* Legal: avoid right-side extra gap when JS adds paddingRight for scrollbar */
+.settings-modal #legalOverlay #legalModalBody{
+  padding-right:0;
+}
+.settings-modal #legalOverlay #legalModalBody[style*="padding-right"]{
+  padding-right:0 !important;
 }
 
 /* ===============================
