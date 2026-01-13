@@ -564,7 +564,7 @@
 
     // ===== Trainer (AET) : static texts (no data-i18n) =====
     const btnTrainer = document.getElementById("btnAddTrainerCase");
-    if (btnTrainer) btnTrainer.textContent = isEn ? "+ Manage cases" : "+ ケースを管理";
+    if (btnTrainer) btnTrainer.textContent = isEn ? "+ Manage cases" : "ケースを管理";
 
     const trainerPanel = document.querySelector(".settings-modal .panel-trainer");
     if (trainerPanel) {
@@ -1625,7 +1625,6 @@ const closeSettings = () => {
             </summary>
             <div class="plus-pop" role="menu" aria-label="${escHtml(pjAddFileLabel)}">
               <a href="#" role="menuitem" data-action="add-file">${escHtml(pjAddFileLabel)}</a>
-              <a href="#" role="menuitem" data-action="create-image">${escHtml(pjCreateImageLabel)}</a>
             </div>
           </details>
 
@@ -1684,17 +1683,6 @@ const closeSettings = () => {
           document.body.appendChild(input);
           input.addEventListener("change", () => document.body.removeChild(input));
           input.click();
-          return;
-        }
-
-        if (action === "create-image") {
-          const prompt = (input?.value || "").trim() || tr("promptEmpty");
-          if (!getActiveThreadId()) createThread();
-          await createImageFromPrompt(prompt);
-          state.view = "images";
-          save(state);
-          renderSidebar();
-          renderView();
           return;
         }
       });
@@ -3819,8 +3807,16 @@ btnNewChat?.addEventListener("click", (e) => {
       m.setAttribute("aria-hidden", "false");
     });
 
-    const btnChangeEmail = document.getElementById("btnChangeEmail");
+    const btnChangeEmail =
+      document.getElementById("btnChangeEmail")
+      || document.querySelector(".panel-account .section[aria-label='サインイン'] button")
+      || Array.from(document.querySelectorAll(".panel-account button")).find(b => {
+        const t = String(b.textContent || "").trim();
+        return t === "変更" || t === "Change";
+      }) || null;
+
     btnChangeEmail?.addEventListener("click", async (e) => {
+
       e.preventDefault();
       const next = window.prompt(tr("promptNewEmail"), state.user.email || "");
       if (next === null) return;
@@ -3895,6 +3891,10 @@ const ensureTrainerDict = () => {
     z-index:10080;
   `;
 
+  const isEn = ((state.settings?.language || "ja") === "en");
+  const L_Q = isEn ? "Question" : "質問";
+  const L_A = isEn ? "Best answer" : "最適回答";
+
   trainerDictWrap.innerHTML = `
     <div style="
       width:760px; max-height:80vh;
@@ -3916,8 +3916,8 @@ const ensureTrainerDict = () => {
         font-weight:600;
         border-bottom:1px solid rgba(255,255,255,.08);
       ">
-        <div>質問</div>
-        <div>最適回答</div>
+        <div>${escHtml(L_Q)}</div>
+        <div>${escHtml(L_A)}</div>
       </div>
 
       <div id="trainerDictList" style="

@@ -975,8 +975,9 @@ body.theme-light .pj-home-askbar input::placeholder{
 }
 
 /* light: project ask input text contrast */
-body.theme-light .pj-home-askbar input{
-  color:rgba(0,0,0,.88);
+/* project view: remove extra gap next to sidebar */
+body.view-project .board{
+  padding-left:0;
 }
 
 .pj-home-list{
