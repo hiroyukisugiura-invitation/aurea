@@ -1332,14 +1332,14 @@ body.theme-light .images-empty{
   display:flex;
   align-items:center;
   justify-content:center;
-  padding:18px;
+  padding:0; /* Legal Popup 含め、左右余白を作らない */
 
   background:rgba(0,0,0,.22);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 
-  border-radius:28px;        /* ← 角を丸めて背景と馴染ませる */
-  overflow:hidden;           /* ← 暈しの角を切らない */
+  border-radius:28px;
+  overflow:hidden;
 
   pointer-events:auto;
 }
