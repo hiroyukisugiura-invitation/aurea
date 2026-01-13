@@ -1591,9 +1591,9 @@ const closeSettings = () => {
           </div>
           <div class="pj-home-row__date">
             <span class="pj-home-date">${escHtml(d)}</span>
-            <span class="pj-home-actions" aria-label="スレッド操作">
-              <button type="button" class="pj-home-act" data-action="pj-home-rename" data-project-id="${escHtml(pid)}" data-thread-id="${escHtml(t.id)}">名前変更</button>
-              <button type="button" class="pj-home-act danger" data-action="pj-home-delete" data-project-id="${escHtml(pid)}" data-thread-id="${escHtml(t.id)}">削除</button>
+            <span class="pj-home-actions" aria-label="${escHtml(tr("menu"))}">
+              <button type="button" class="pj-home-act" data-action="pj-home-rename" data-project-id="${escHtml(pid)}" data-thread-id="${escHtml(t.id)}">${escHtml(tr("menuRename"))}</button>
+              <button type="button" class="pj-home-act danger" data-action="pj-home-delete" data-project-id="${escHtml(pid)}" data-thread-id="${escHtml(t.id)}">${escHtml(tr("menuDelete"))}</button>
             </span>
           </div>
         </div>
@@ -1610,8 +1610,23 @@ const closeSettings = () => {
 
       <div class="pj-home-ask" aria-label="新しい会話を開始">
         <div class="pj-home-askbar">
-          <div class="pj-home-askicon" aria-hidden="true">+</div>
-          <input id="aureaProjectHomeAsk" type="text" placeholder="${escHtml(name)} 内の新しいチャット" aria-label="${escHtml(name)} 内の新しいチャット" autocomplete="off" />
+          <details class="plus-menu pj-home-plus">
+            <summary class="pj-home-plusbtn" aria-label="${escHtml(tr("addFile"))}">
+              <span aria-hidden="true">+</span>
+            </summary>
+            <div class="plus-pop" role="menu" aria-label="${escHtml(tr("addFile"))}">
+              <a href="#" role="menuitem" data-action="add-file">${escHtml(tr("addFile"))}</a>
+              <a href="#" role="menuitem" data-action="create-image">${escHtml(tr("createImage"))}</a>
+            </div>
+          </details>
+
+          <input
+            id="aureaProjectHomeAsk"
+            type="text"
+            placeholder="${escHtml(tr("projectNewChat")).replace("{project}", escHtml(name))}"
+            aria-label="${escHtml(tr("projectNewChat")).replace("{project}", escHtml(name))}"
+            autocomplete="off"
+          />
         </div>
       </div>
 
@@ -1635,6 +1650,46 @@ const closeSettings = () => {
 
       if (input) input.value = "";
     };
+
+    const pjPlus = wrap.querySelector(".pj-home-plus");
+    const pjPlusItems = Array.from(wrap.querySelectorAll(".pj-home-plus .plus-pop a[role='menuitem']"));
+
+    pjPlusItems.forEach((a) => {
+      if (a.dataset.bound === "1") return;
+      a.dataset.bound = "1";
+
+      const action = (a.getAttribute("data-action") || "").trim();
+
+      a.addEventListener("click", async (e) => {
+        e.preventDefault();
+
+        // close PJ plus menu
+        if (pjPlus && pjPlus.hasAttribute("open")) pjPlus.removeAttribute("open");
+
+        if (action === "add-file") {
+          const input = document.createElement("input");
+          input.type = "file";
+          input.multiple = true;
+          input.accept = "*/*";
+          input.style.display = "none";
+          document.body.appendChild(input);
+          input.addEventListener("change", () => document.body.removeChild(input));
+          input.click();
+          return;
+        }
+
+        if (action === "create-image") {
+          const prompt = (input?.value || "").trim() || tr("promptEmpty");
+          if (!getActiveThreadId()) createThread();
+          await createImageFromPrompt(prompt);
+          state.view = "images";
+          save(state);
+          renderSidebar();
+          renderView();
+          return;
+        }
+      });
+    });
 
     if (input) {
       input.addEventListener("keydown", (e) => {
@@ -2470,6 +2525,10 @@ btnNewChat?.addEventListener("click", (e) => {
 
     if (userMenuDetails?.hasAttribute("open") && !isInside(userMenuDetails, t)) closeDetails(userMenuDetails);
     if (plusDetails?.hasAttribute("open") && !isInside(plusDetails, t)) closeDetails(plusDetails);
+
+    const pjPlus = document.querySelector(".pj-home-plus");
+    if (pjPlus?.hasAttribute("open") && !isInside(pjPlus, t)) closeDetails(pjPlus);
+
     $$(".sb-more[open]").forEach(d => { if (!isInside(d, t)) closeDetails(d); });
 
     // project backdrop close
@@ -4350,9 +4409,9 @@ renderTrainerCases();
         : (k === "terms") ? tr("terms")
         : tr("privacy");
 
-      // 短文は枠を内容量に合わせる（固定maxHeightを外す）
+      // reset (CSS handles padding; JS only controls scroll when needed)
       legalModalBody.style.maxHeight = "";
-      legalModalBody.style.overflowY = "visible";
+      legalModalBody.style.overflowY = "";
       legalModalBody.style.paddingRight = "";
 
       const lang = ((state.settings?.language || "ja") === "en") ? "en" : "ja";

@@ -1371,9 +1371,9 @@ body.theme-light .images-empty{
   justify-content:center;
   padding:18px;
 
-  background:rgba(0,0,0,.35);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background:rgba(0,0,0,.28);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 
   pointer-events:auto;
 }
@@ -2187,6 +2187,19 @@ body.theme-light .images-empty{
   transform: translateY(0) scale(1);
 }
 
+/* Legal popup content spacing */
+.settings-modal #legalOverlay .modal .hd{
+  padding:14px 16px;
+}
+
+.settings-modal #legalOverlay .modal .bd{
+  padding:0 16px 16px;
+}
+
+.settings-modal #legalOverlay #legalModalBody{
+  margin-top:10px;
+}
+
 /* ===============================
    AI Stack Popup (UI unified)
 =============================== */
@@ -2280,16 +2293,18 @@ body.theme-light .images-empty{
   word-break:break-word;
 }
 
-/* Editable condition text */
+/* Editable condition text (show full text, wrap) */
 .settings-modal #aiStackOverlay .ai-cond{
   display:block;
   font:inherit;
   color:inherit;
   line-height:inherit;
-  white-space:nowrap;
-  overflow:hidden;          /* はみ出し防止 */
-  text-overflow:ellipsis;   /* 省略 */
-  word-break:keep-all;
+
+  white-space:normal;
+  overflow:visible;
+  text-overflow:clip;
+  word-break:break-word;
+
   outline:none;
   border:0;
   background:transparent;
@@ -2298,12 +2313,12 @@ body.theme-light .images-empty{
   max-width:100%;
 }
 
-/* 画面が狭い時はセル側も1行省略に統一（...） */
+/* small screens: still wrap (do not ellipsis-hide content) */
 @media (max-width: 720px){
   .settings-modal #aiStackOverlay .table__body .table__row .table__cell:nth-child(3){
-    white-space:nowrap;
-    text-overflow:ellipsis;
-    overflow:hidden;
+    white-space:normal;
+    overflow:visible;
+    text-overflow:clip;
   }
 }
 
@@ -2412,4 +2427,58 @@ body.theme-light .pj-home-askbar .pj-home-askicon{
 
 body.theme-light .pj-home-askbar input::placeholder{
   color:var(--muted);
+}
+
+/* light: settings modal should not look like a boxed white frame */
+body.theme-light .settings-modal > .overlay{
+  background:rgba(0,0,0,.18);
+}
+body.theme-light .settings-modal > .overlay > .modal{
+  background:rgba(255,255,255,.86);
+  border:1px solid rgba(0,0,0,.06);
+  box-shadow:0 18px 70px rgba(0,0,0,.14);
+}
+body.theme-light .settings-modal .nav{
+  background:linear-gradient(180deg, rgba(0,0,0,.02), transparent 35%);
+}
+
+/* PJ home: plus menu button (match chat ask mini) */
+.pj-home-plus{
+  position:relative;
+  flex:0 0 auto;
+}
+
+.pj-home-plus > summary{
+  list-style:none;
+}
+.pj-home-plus > summary::-webkit-details-marker{
+  display:none;
+}
+
+.pj-home-plusbtn{
+  width:34px;
+  height:34px;
+  border-radius:12px;
+  border:1px solid transparent;
+  background:transparent;
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+  color:rgba(255,255,255,.92);
+  user-select:none;
+}
+
+.pj-home-plusbtn:hover{
+  background:var(--hover);
+  border-color:rgba(255,255,255,.06);
+}
+
+body.theme-light .pj-home-plusbtn{
+  color:rgba(0,0,0,.75);
+}
+
+.pj-home-plus .plus-pop{
+  left:0;
+  top:46px;
+  bottom:auto; /* PJトップは上に飛ばさず下に出す */
 }
