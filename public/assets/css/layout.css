@@ -2371,69 +2371,6 @@ body.view-project:not(.has-chat) .scroll-down-btn{
   display:none;
 }
 
-/* ===== Project home ask (history search) ===== */
-.pj-home-ask{
-  margin-top:12px;
-}
-
-.pj-home-askbar{
-  width:100%;
-  background:rgba(35,36,37,.98);
-  border:1px solid rgba(255,255,255,.10);
-  border-radius:22px;
-  display:flex;
-  align-items:center;
-  gap:10px;
-  padding:10px 12px;
-  box-shadow:0 18px 45px rgba(0,0,0,.25);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-}
-
-body.theme-light .pj-home-askbar{
-  background:rgba(255,255,255,.90);
-  border:1px solid var(--line);
-  box-shadow:0 18px 45px rgba(0,0,0,.10);
-}
-
-.pj-home-askbar .pj-home-askicon{
-  width:26px;
-  height:26px;
-  border-radius:10px;
-  display:grid;
-  place-items:center;
-  color:rgba(255,255,255,.82);
-  border:1px solid rgba(255,255,255,.10);
-  background:rgba(255,255,255,.04);
-  flex:0 0 auto;
-}
-
-body.theme-light .pj-home-askbar .pj-home-askicon{
-  color:rgba(0,0,0,.70);
-  border-color:var(--line);
-  background:rgba(0,0,0,.03);
-}
-
-.pj-home-askbar input{
-  flex:1;
-  min-width:0;
-  border:0;
-  outline:0;
-  background:transparent;
-  color:var(--text);
-  font-size:14px;
-  line-height:1.45;
-  padding:6px 2px;
-}
-
-.pj-home-askbar input::placeholder{
-  color:rgba(255,255,255,.45);
-}
-
-body.theme-light .pj-home-askbar input::placeholder{
-  color:var(--muted);
-}
-
 /* light: settings modal should not look like a boxed white frame */
 body.theme-light .settings-modal > .overlay{
   background:rgba(0,0,0,.10);   /* 白飛び防止 */
