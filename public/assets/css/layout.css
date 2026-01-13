@@ -1087,6 +1087,13 @@ body.view-project .board{
 }
 
 /* Search results view */
+body.view-search .view{
+  width:100%;
+  max-width:760px;              /* PJ一覧と同じ */
+  margin-left:auto;
+  margin-right:auto;
+}
+
 .view-search .search-head{
   display:flex;
   align-items:flex-end;
