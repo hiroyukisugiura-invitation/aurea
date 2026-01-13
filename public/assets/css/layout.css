@@ -531,10 +531,7 @@ body.view-project .topbar{
   flex:1;
   min-height:0;
   padding:0 0 220px;
-  overflow-y:auto;
-  overflow-x:hidden;
-  -webkit-overflow-scrolling:touch;
-  overscroll-behavior:contain;
+  overflow:hidden; /* PJ選択時の全体スクロールを止める */
 }
 
 /* Brand rail */
@@ -875,7 +872,11 @@ body.view-project .view{
   width:100%;
   max-width:none;
   margin:0;
-  padding:10px 32px 0 32px; /* ← GPT同様：左右に余白 */
+  padding:10px 0 0 0; /* 外周の左右余白を撤去 */
+
+  height:100%;
+  display:flex;
+  flex-direction:column;
 }
 
 .pj-home-head{
@@ -985,6 +986,13 @@ body.view-project .board{
   flex-direction:column;
   border-top:1px solid var(--line);
   margin-top:12px; /* PJ内Askバー直下 */
+
+  /* GPT同等：履歴のみスクロール */
+  overflow-y:auto;
+  min-height:0;
+
+  /* Askバー・ヘッダ分を除いた可視領域を履歴に割り当て */
+  max-height:calc(100vh - 260px);
 }
 
 .pj-home-row{

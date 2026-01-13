@@ -4357,7 +4357,7 @@ renderTrainerCases();
             支払時期：申込時に確定、以後は更新日に自動課金<br>
             提供時期：決済完了後、直ちに利用可能<br>
             返品・キャンセル：デジタルサービスの性質上、不可（法令に基づく場合を除く）<br>
-            お問い合わせ：from.invitation@gmail.com、担当者まで
+            お問い合わせ：from.invitation@gmail.com、担当まで
           </div>
         `,
         en: `
