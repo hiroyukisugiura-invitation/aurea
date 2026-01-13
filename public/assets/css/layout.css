@@ -2020,11 +2020,12 @@ body.theme-light .images-empty{
 .settings-modal .panel-account .section[aria-label="規約・規定"] .reg-head{
   font-size:13px;
   font-weight:400;
-  color:rgba(255,255,255,.88);
+  color:var(--text);
   margin-bottom:6px;
   letter-spacing:0;
   font-family:inherit;
   line-height:1.2;
+  opacity:.86;
 }
 
 .settings-modal .panel-account .section[aria-label="規約・規定"] .reg-tabs{
@@ -2045,7 +2046,7 @@ body.theme-light .images-empty{
 
   padding:0;
   margin:0;
-  color:rgba(255,255,255,.55);
+  color:var(--muted);
   font-size:12px;
   font-weight:400;
   font-family:inherit;
@@ -2055,11 +2056,13 @@ body.theme-light .images-empty{
 }
 
 .settings-modal .panel-account .section[aria-label="規約・規定"] .reg-tab:hover{
-  color:rgba(255,255,255,.70);
+  color:var(--text);
+  opacity:.78;
 }
 
 .settings-modal .panel-account .section[aria-label="規約・規定"] .reg-tab[aria-selected="true"]{
-  color:rgba(255,255,255,.70);
+  color:var(--text);
+  opacity:.82;
 }
 .settings-modal .panel-account .section[aria-label="規約・規定"] .reg-tab[aria-selected="true"]::after{
   content:none;
@@ -2072,8 +2075,8 @@ body.theme-light .images-empty{
 
 .settings-modal .reg-card{
   border-radius:16px;
-  border:1px solid rgba(255,255,255,.10);
-  background:rgba(255,255,255,.03);
+  border:1px solid var(--line);
+  background:var(--card);
   padding:14px 14px;
 }
 .settings-modal .reg-card:empty{
@@ -2083,14 +2086,14 @@ body.theme-light .images-empty{
 .settings-modal .reg-title{
   font-size:13px;
   font-weight:700;
-  color:rgba(255,255,255,.90);
+  color:var(--text);
   margin-bottom:8px;
 }
 
 .settings-modal .reg-text{
   font-size:13px;
   line-height:1.6;
-  color:rgba(255,255,255,.78);
+  color:var(--muted);
 }
 
 /* ===============================
