@@ -192,29 +192,8 @@
   const chatRoot = $(".chat");
   const board = $(".board");
 
-  // ===== scroll state (GPT-like) + scroll-to-bottom indicator =====
+// ===== scroll state (GPT-like) =====
   let userNearBottom = true;
-  let scrollDownBtnEl = null;
-
-  const ensureScrollDownButton = () => {
-    if (scrollDownBtnEl) return scrollDownBtnEl;
-
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "scroll-down-btn";
-    btn.setAttribute("aria-label", "Scroll to bottom");
-    btn.textContent = "↓";
-    btn.hidden = true;
-
-    btn.addEventListener("click", (e) => {
-      e.preventDefault();
-      if (board) board.scrollTo({ top: board.scrollHeight, behavior: "smooth" });
-    });
-
-    document.body.appendChild(btn);
-    scrollDownBtnEl = btn;
-    return btn;
-  };
 
   const isNearBottom = () => {
     if (!board) return true;
@@ -224,8 +203,6 @@
 
   const syncScrollState = () => {
     userNearBottom = isNearBottom();
-    const btn = ensureScrollDownButton();
-    btn.hidden = userNearBottom;
   };
 
   board?.addEventListener("scroll", syncScrollState, { passive: true });
@@ -4670,8 +4647,7 @@ renderTrainerCases();
   // sidebar search（render 後に必ず mount）
   mountSidebarSearch();
 
-  // scroll indicator init
-  ensureScrollDownButton();
+  // scroll state init
   syncScrollState();
 
   /* ================= OAuth return (v1) ================= */
