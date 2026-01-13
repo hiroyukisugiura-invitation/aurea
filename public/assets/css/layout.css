@@ -67,6 +67,26 @@ body.theme-light .pj-thread .t{
   color:var(--text);
 }
 
+/* light: project home text contrast */
+body.theme-light .pj-home-title{
+  color:var(--text);
+}
+body.theme-light .pj-home-row__ttl{
+  color:var(--text);
+}
+body.theme-light .pj-home-row__date{
+  color:rgba(0,0,0,.55);
+}
+body.theme-light .pj-home-row:hover{
+  background:rgba(0,0,0,.03);
+}
+body.theme-light .pj-home-ic{
+  background:rgba(0,0,0,.06);
+}
+body.theme-light .pj-home-ic::before{
+  border-color:rgba(0,0,0,.55);
+}
+
 body.theme-light .sb-dots{
   color:rgba(0,0,0,.55);
 }
@@ -486,6 +506,11 @@ details > summary::-webkit-details-marker{ display:none; }
   gap:10px;
 }
 
+/* PJトップでも右上固定 */
+body.view-project .topbar{
+  justify-content:flex-end !important;
+}
+
 .icon-btn{
   width:36px;height:36px;
   border-radius:10px;
@@ -615,6 +640,21 @@ body.view-project .brand-rail{
   );
   pointer-events:none;
   z-index:-1;
+}
+
+/* light theme: 黒い帯にならないように差し替え */
+body.theme-light .ask-wrap::before{
+  background:linear-gradient(
+    to top,
+    rgba(242,243,245,1) 0%,
+    rgba(242,243,245,.98) 45%,
+    rgba(242,243,245,0) 100%
+  );
+}
+
+/* PJトップではこのグラデが見出し（PJ名）を覆うので無効化 */
+body.view-project:not(.has-chat) .ask-wrap::before{
+  display:none;
 }
 
 /* 画像ビューでは Ask を消す（一覧のみ） */
@@ -778,6 +818,11 @@ body.project-open .project-modal{ display:flex; }
 .project-card .picon:hover{ background:var(--soft); border-color:rgba(255,255,255,.06); }
 .project-card .picon svg{ width:18px;height:18px;opacity:.92; }
 
+/* 右上のギア（先頭のpicon）を消す。×（閉じる）は残す */
+.project-card .phd .picon:first-of-type{
+  display:none;
+}
+
 /* Project modal body */
 .project-card .pbd{ padding:14px 16px 18px; }
 .project-card .pname{
@@ -817,7 +862,8 @@ body.project-open .project-modal{ display:flex; }
 
 /* ===== Project home (GPT-like) ===== */
 .view-project{
-  width:min(760px, calc(100% - 64px)); /* GPTの密度に合わせる */
+  width:min(860px, calc(100% - 64px)); /* Askと同じ幅に揃える */
+  margin:0 auto;
   padding-top:10px;
 }
 
@@ -832,7 +878,7 @@ body.project-open .project-modal{ display:flex; }
   font-size:22px;               /* 少し小さめでGPT寄せ */
   font-weight:700;
   letter-spacing:.01em;
-  color:rgba(255,255,255,.94);
+  color:rgba(255,255,255,.98);  /* 視認性を上げる（PJ名が確実に見える） */
 }
 
 .pj-home-ic{
