@@ -3428,6 +3428,13 @@ btnNewChat?.addEventListener("click", (e) => {
         const tm = document.getElementById("aureaTrainerCaseModal");
         if (tm) tm.remove();
 
+        // Trainer: 辞書ポップも破棄（見出しが固定化されるため、リロード不要で更新）
+        if (trainerDictWrap) {
+          trainerDictWrap.remove();
+          trainerDictWrap = null;
+        }
+        trainerSelectedId = null;
+
         saveSettings();
         applyI18n();
         renderSidebar();
@@ -3916,8 +3923,8 @@ const ensureTrainerDict = () => {
         font-weight:600;
         border-bottom:1px solid rgba(255,255,255,.08);
       ">
-        <div>${escHtml(L_Q)}</div>
-        <div>${escHtml(L_A)}</div>
+        <div>${L_Q}</div>
+        <div>${L_A}</div>
       </div>
 
       <div id="trainerDictList" style="
@@ -4435,7 +4442,7 @@ renderTrainerCases();
         if (legalModalBody.scrollHeight > maxPx + 8) {
           legalModalBody.style.maxHeight = "min(60vh, 520px)";
           legalModalBody.style.overflowY = "auto";
-          legalModalBody.style.paddingRight = "8px";
+          legalModalBody.style.paddingRight = "0px";
         }
         legalOverlay.classList.add("is-open");
       });
