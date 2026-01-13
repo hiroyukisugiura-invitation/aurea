@@ -1338,6 +1338,9 @@ body.theme-light .images-empty{
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 
+  border-radius:28px;        /* ← 角を丸めて背景と馴染ませる */
+  overflow:hidden;           /* ← 暈しの角を切らない */
+
   pointer-events:auto;
 }
 
@@ -1728,9 +1731,9 @@ body.theme-light .images-empty{
   white-space:nowrap;
 }
 
-/* 送信方法は文言が長いので別で最小幅を確保（見切れ防止） */
+/* 送信方法：三角アイコン撤去後は文字幅に追従（右余白を作らない） */
 .settings-modal #settingsSendMode{
-  min-width:320px;
+  min-width:0;
 }
 
 .settings-modal .input{
@@ -2151,15 +2154,15 @@ body.theme-light .images-empty{
 
 /* Legal popup content spacing */
 .settings-modal #legalOverlay .modal .hd{
-  padding:14px 16px;
+  padding:12px 14px;
 }
 
 .settings-modal #legalOverlay .modal .bd{
-  padding:0 16px 16px;
+  padding:0 14px 14px;
 }
 
 .settings-modal #legalOverlay #legalModalBody{
-  margin-top:10px;
+  margin-top:8px;
 }
 
 /* ===============================
