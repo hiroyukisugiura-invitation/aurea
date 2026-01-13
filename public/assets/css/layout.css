@@ -2101,14 +2101,13 @@ body.theme-light .images-empty{
 /* ===============================
    Legal Popup (規約・規定)
 =============================== */
-
 .settings-modal #legalOverlay{
   position: fixed;
   inset: 0;
   display: none; /* JSで flex にする */
   align-items: center;
   justify-content: center;
-  padding: 18px;
+  padding: 18px 0; /* 左右余白を完全に削除 */
   background: rgba(0,0,0,.45);
   z-index: 10040;
 
