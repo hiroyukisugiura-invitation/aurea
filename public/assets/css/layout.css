@@ -872,10 +872,10 @@ body.view-project .view{
 
 /* ===== Project home (GPT-like) ===== */
 .view-project{
-  width:100%;               /* 中央制限を解除 */
-  max-width:none;           /* .view の min/max を無効化 */
-  margin:0;                 /* auto を完全排除 */
-  padding:10px 32px 0 32px; /* GPT同等：左基準 */
+  width:100%;
+  max-width:none;
+  margin:0;
+  padding:10px 0 0 0; /* ← 左の余白をゼロ（サイドバー直後から開始） */
 }
 
 .pj-home-head{
@@ -2445,6 +2445,33 @@ body.theme-light .settings-modal > .overlay > .modal{
   background:#ffffff;           /* 完全不透明 */
   border:1px solid rgba(0,0,0,.08);
   box-shadow:0 18px 60px rgba(0,0,0,.16);
+}
+
+/* light: settings modal text colors */
+body.theme-light .settings-modal{
+  --text:#141516;
+  --muted:#4b4f55;
+  --line:rgba(0,0,0,.10);
+  --soft:rgba(0,0,0,.04);
+  --modalBg:#ffffff;
+  --modalBorder:rgba(0,0,0,.08);
+}
+
+body.theme-light .settings-modal .nav-title,
+body.theme-light .settings-modal .content-title{
+  color:rgba(0,0,0,.86);
+}
+
+body.theme-light .settings-modal .content-sub,
+body.theme-light .settings-modal .sec-desc,
+body.theme-light .settings-modal .row .v{
+  color:rgba(0,0,0,.55);
+}
+
+body.theme-light .settings-modal .row .k,
+body.theme-light .settings-modal .sec-title,
+body.theme-light .settings-modal .nav-item{
+  color:rgba(0,0,0,.74);
 }
 
 body.theme-light .settings-modal .nav{
