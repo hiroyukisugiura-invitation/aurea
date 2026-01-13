@@ -2122,10 +2122,10 @@ body.theme-light .images-empty{
 }
 
 .settings-modal #legalOverlay .modal{
-  /* 内容に追従しつつ、最大幅は制限（英語でも崩れない） */
+  /* 文字量に合わせて枠を自動調整（固定min-widthを撤去） */
   width:fit-content;
   max-width:min(760px, calc(100% - 24px));
-  min-width:min(520px, calc(100% - 24px));
+  min-width:0;
 
   height:auto;
   background:var(--modalBg);
@@ -2135,8 +2135,8 @@ body.theme-light .images-empty{
   font-family:var(--font);
   position: relative;
 
-  /* reduce vertical padding feel */
-  padding-top: 4px;
+  /* 余白を削る */
+  padding-top: 0;
 
   /* animation */
   transform: translateY(6px) scale(.98);
@@ -2155,17 +2155,17 @@ body.theme-light .images-empty{
   transform: translateY(0) scale(1);
 }
 
-/* Legal popup content spacing */
+/* Legal popup content spacing（上下余白を詰める） */
 .settings-modal #legalOverlay .modal .hd{
-  padding:12px 14px;
+  padding:10px 12px;
 }
 
 .settings-modal #legalOverlay .modal .bd{
-  padding:0 14px 14px;
+  padding:0 12px 12px;
 }
 
 .settings-modal #legalOverlay #legalModalBody{
-  margin-top:8px;
+  margin-top:6px;
 }
 
 /* Legal: avoid right-side extra gap when JS adds paddingRight for scrollbar */

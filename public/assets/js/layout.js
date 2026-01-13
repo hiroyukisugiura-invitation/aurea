@@ -579,6 +579,9 @@
 
       swapLeafText("最適回答を登録", isEn ? "Register best answers" : "最適回答を登録");
       swapLeafText("\"質問\" → \"最適回答\"を登録", isEn ? 'Register "Question" → "Best answer"' : "\"質問\" → \"最適回答\"を登録");
+
+      swapLeafText("質問", isEn ? "Question" : "質問");
+      swapLeafText("最適回答", isEn ? "Best answer" : "最適回答");
     }
 
     // data-i18n / data-i18n-aria 全反映（HTML属性ベース）
