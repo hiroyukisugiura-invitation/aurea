@@ -877,13 +877,13 @@ body.view-project .view{
   height:100%;
   display:flex;
   flex-direction:column;
-  align-items:center; /* 中央寄せ */
+  align-items:stretch; /* 全体は中央寄せしない */
 }
 
 .pj-home-head{
-  margin:10px 0 14px;
+  margin:10px auto 14px; /* 左右に余白 */
   width:100%;
-  max-width:760px;   /* GPT同等の中央幅 */
+  max-width:760px;
 }
 
 .pj-home-title{
@@ -922,8 +922,9 @@ body.view-project .view{
 
 .pj-home-askbar{
   width:100%;
-  max-width:760px;   /* 履歴と同幅 */
-  margin:0 auto;
+  max-width:760px;
+  margin-left:auto;
+  margin-right:auto;
 
   background:rgba(35,36,37,.98);
   border:1px solid rgba(255,255,255,.10);
@@ -994,11 +995,11 @@ body.view-project .board{
   margin-top:12px;
 
   width:100%;
-  max-width:760px;   /* GPT同等幅 */
+  max-width:760px;
   margin-left:auto;
   margin-right:auto;
 
-  overflow-y:auto;   /* 履歴だけスクロール */
+  overflow-y:auto;      /* 履歴だけスクロール */
   min-height:0;
   max-height:calc(100vh - 260px);
 }
