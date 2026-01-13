@@ -1589,7 +1589,13 @@ const closeSettings = () => {
           <div class="pj-home-row__main">
             <div class="pj-home-row__ttl">${escHtml(t.title || tr("threadNew"))}</div>
           </div>
-          <div class="pj-home-row__date">${escHtml(d)}</div>
+          <div class="pj-home-row__date">
+            <span class="pj-home-date">${escHtml(d)}</span>
+            <span class="pj-home-actions" aria-label="スレッド操作">
+              <button type="button" class="pj-home-act" data-action="pj-home-rename" data-project-id="${escHtml(pid)}" data-thread-id="${escHtml(t.id)}">名前変更</button>
+              <button type="button" class="pj-home-act danger" data-action="pj-home-delete" data-project-id="${escHtml(pid)}" data-thread-id="${escHtml(t.id)}">削除</button>
+            </span>
+          </div>
         </div>
       `;
     }).join("");
@@ -1632,9 +1638,22 @@ const closeSettings = () => {
 
     if (input) {
       input.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          start();
+        const mode = state.settings?.sendMode || (localStorage.getItem("aurea_send_mode") || "cmdEnter");
+        const isEnter = (e.key === "Enter");
+
+        if (mode === "cmdEnter") {
+          if (isEnter && (e.metaKey || e.ctrlKey)) {
+            e.preventDefault();
+            start();
+          }
+          return;
+        }
+
+        if (mode === "enter") {
+          if (isEnter) {
+            e.preventDefault();
+            start();
+          }
         }
       });
 
@@ -2659,6 +2678,28 @@ btnNewChat?.addEventListener("click", (e) => {
       renderView();
       askInput?.focus();
       return;
+    }
+
+    // PJトップ：履歴の「名前変更 / 削除」
+    const pjHomeAct = t.closest("button.pj-home-act[data-action]");
+    if (pjHomeAct) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const pid = String(pjHomeAct.getAttribute("data-project-id") || "");
+      const tid = String(pjHomeAct.getAttribute("data-thread-id") || "");
+      const act = String(pjHomeAct.getAttribute("data-action") || "");
+
+      if (act === "pj-home-rename") {
+        renameProjectThread(pid, tid);
+        renderView();
+        return;
+      }
+
+      if (act === "pj-home-delete") {
+        await deleteProjectThread(pid, tid);
+        return;
+      }
     }
 
     // search card click / project home row click
