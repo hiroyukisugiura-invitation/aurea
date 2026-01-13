@@ -482,11 +482,10 @@
 
     // Group headers（中身は data-i18n で反映）
 
-    // Sidebar search placeholder (mounted)
-    const sbSearch = document.getElementById("aureaSearchInput");
-    if (sbSearch) {
-      sbSearch.placeholder = tr("search");
-      sbSearch.setAttribute("aria-label", tr("search"));
+    // Sidebar search (icon button)
+    const sbSearchBtn = document.getElementById("aureaSearchBtn");
+    if (sbSearchBtn) {
+      sbSearchBtn.setAttribute("aria-label", tr("search"));
     }
 
     // ===== Settings modal (embedded) =====
@@ -770,9 +769,195 @@ const closeSettings = () => {
     if (aiStackOverlay && aiStackOverlay.style.display !== "none") closeAiStackPopup();
   });
 
-  /* ================= search box mount ================= */
-  let sbSearchInput = null;
+  /* ================= search popup (GPT-like) ================= */
+  let sbSearchBtn = null;
+  let searchModal = null;
+  let searchModalInput = null;
+  let searchModalList = null;
+  let searchModalBound = false;
 
+  const isSearchModalOpen = () => {
+    return !!searchModal && searchModal.style.display !== "none";
+  };
+
+  const closeSearchModal = () => {
+    if (!searchModal) return;
+    searchModal.style.display = "none";
+    searchModal.setAttribute("aria-hidden", "true");
+  };
+
+  const renderSearchModalResults = (q) => {
+    if (!searchModalList) return;
+
+    const query = (q || "").trim();
+    const hits = searchAll(query);
+
+    searchModalList.innerHTML = "";
+
+    if (!query) return;
+
+    if (hits.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "images-empty";
+      empty.textContent = (state.settings?.language === "en") ? "No results." : "一致する項目がありません。";
+      searchModalList.appendChild(empty);
+      return;
+    }
+
+    for (const h of hits) {
+      const projName = h.scopeType === "project"
+        ? (state.projects.find(p => p.id === h.projectId)?.name || tr("project"))
+        : tr("chat");
+
+      const meta = h.scopeType === "project"
+        ? `${tr("project")}: ${projName}`
+        : tr("global");
+
+      const card = document.createElement("div");
+      card.className = "search-card";
+      card.dataset.threadId = h.threadId;
+      card.dataset.scopeType = h.scopeType;
+      card.dataset.projectId = h.projectId || "";
+
+      card.innerHTML = `
+        <div class="top">
+          <div class="ttl">${escHtml(h.threadTitle)}</div>
+          <div class="meta">${escHtml(meta)}</div>
+        </div>
+        <div class="snip">${escHtml(h.snippet || "")}</div>
+      `;
+
+      searchModalList.appendChild(card);
+    }
+  };
+
+  const ensureSearchModal = () => {
+    if (searchModal) return searchModal;
+
+    searchModal = document.createElement("div");
+    searchModal.id = "aureaSearchModal";
+    searchModal.setAttribute("aria-hidden", "true");
+    searchModal.style.cssText = `
+      position:fixed; inset:0;
+      display:none; align-items:center; justify-content:center;
+      background:rgba(0,0,0,.45);
+      z-index:10070;
+      padding:18px;
+    `;
+
+    searchModal.innerHTML = `
+      <div style="
+        width:min(860px, calc(100% - 24px));
+        max-height:calc(100vh - 64px);
+        background:rgba(20,21,22,.96);
+        border:1px solid rgba(255,255,255,.10);
+        border-radius:18px;
+        box-shadow:0 10px 30px rgba(0,0,0,.45);
+        overflow:hidden;
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        color:rgba(255,255,255,.92);
+        font-family: -apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Hiragino Sans','Noto Sans JP',sans-serif;
+        display:flex;
+        flex-direction:column;
+        min-width:0;
+      ">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.08);">
+          <div style="font-size:14px;font-weight:600;">${escHtml(tr("search"))}</div>
+          <button type="button" data-action="close" style="
+            width:36px;height:36px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
+            background:rgba(255,255,255,.06);color:rgba(255,255,255,.92);
+            cursor:pointer;font-size:18px;line-height:34px;
+          ">×</button>
+        </div>
+
+        <div style="padding:14px 16px 12px;">
+          <input id="aureaSearchModalInput" type="search" placeholder="${escHtml(tr("search"))}" aria-label="${escHtml(tr("search"))}" style="
+            width:100%;
+            height:40px;
+            border-radius:12px;
+            border:1px solid rgba(255,255,255,.12);
+            background:rgba(255,255,255,.05);
+            color:rgba(255,255,255,.92);
+            outline:none;
+            padding:0 12px;
+            font-size:13px;
+          "/>
+        </div>
+
+        <div style="padding:0 16px 16px; min-height:0; flex:1 1 auto; overflow:auto;">
+          <div id="aureaSearchModalResults" class="search-results"></div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(searchModal);
+
+    searchModalInput = document.getElementById("aureaSearchModalInput");
+    searchModalList = document.getElementById("aureaSearchModalResults");
+
+    if (!searchModalBound) {
+      searchModalBound = true;
+
+      searchModal.addEventListener("click", (e) => {
+        if (e.target === searchModal) closeSearchModal();
+      });
+
+      searchModal.addEventListener("click", (e) => {
+        const t = e.target;
+
+        if (t.closest("[data-action='close']")) {
+          e.preventDefault();
+          closeSearchModal();
+          return;
+        }
+
+        const card = t.closest(".search-card");
+        if (card && card.dataset.threadId) {
+          e.preventDefault();
+          openThreadFromSearchHit({
+            scopeType: card.dataset.scopeType,
+            projectId: card.dataset.projectId || null,
+            threadId: card.dataset.threadId
+          });
+          closeSearchModal();
+          return;
+        }
+      });
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key !== "Escape") return;
+        if (!isSearchModalOpen()) return;
+        closeSearchModal();
+      }, true);
+    }
+
+    if (searchModalInput) {
+      searchModalInput.addEventListener("input", () => {
+        renderSearchModalResults(searchModalInput.value || "");
+      });
+    }
+
+    return searchModal;
+  };
+
+  const openSearchModal = () => {
+    ensureSearchModal();
+
+    if (searchModalInput) {
+      searchModalInput.value = "";
+      renderSearchModalResults("");
+    }
+
+    searchModal.style.display = "flex";
+    searchModal.setAttribute("aria-hidden", "false");
+
+    setTimeout(() => {
+      try { searchModalInput?.focus(); } catch {}
+    }, 0);
+  };
+
+  /* ================= sidebar search mount (icon only) ================= */
   const mountSidebarSearch = () => {
     if (!sidebar) return;
 
@@ -780,40 +965,26 @@ const closeSettings = () => {
     if (!sbTop) return;
 
     // 既に存在する場合は何もしない（再生成しない）
-    if (sbTop.querySelector("#aureaSearchInput")) return;
+    if (sbTop.querySelector("#aureaSearchBtn")) return;
 
     const wrap = document.createElement("div");
     wrap.className = "sb-search";
 
-    const input = document.createElement("input");
-    input.id = "aureaSearchInput";
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.id = "aureaSearchBtn";
+    btn.className = "sb-searchbtn";
+    btn.setAttribute("aria-label", tr("search"));
+    btn.innerHTML = `<i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>`;
 
-    // ★ legacy search / ESC操作でも参照できるように保持
-    sbSearchInput = input;
+    sbSearchBtn = btn;
 
-    input.type = "search";
-    input.placeholder = (state.settings?.language === "en") ? "Search" : "検索";
-    input.setAttribute("aria-label", (state.settings?.language === "en") ? "Search" : "検索");
-
-    wrap.appendChild(input);
+    wrap.appendChild(btn);
     sbTop.insertBefore(wrap, sbTop.firstChild);
 
-    // GPT準拠：横断検索（global + project）
-    // 重要：renderSearchView を直呼びせず、必ず view=search に遷移して renderView 経由で描画する
-    input.addEventListener("input", () => {
-      const q = input.value.trim();
-
-      if (!q) {
-        // 空ならチャット画面に戻す（見た目の混線防止）
-        state.view = "chat";
-        save(state);
-        renderView();
-        return;
-      }
-
-      state.view = "search";
-      save(state);
-      renderView();
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      openSearchModal();
     });
   };
 
@@ -1753,9 +1924,16 @@ const closeSettings = () => {
     }
 
     if (state.view === "search") {
-      if (chatRoot) chatRoot.style.display = "none";
-      renderSearchView(sbSearchInput?.value || "");
-      setHasChat(false);
+      // 検索は画面遷移ではなく、常にポップ（GPT準拠）
+      state.view = "chat";
+      save(state);
+
+      clearBoardViewNodes();
+      if (chatRoot) chatRoot.style.display = "";
+      renderChat();
+      applyI18n();
+
+      openSearchModal();
       return;
     }
 
