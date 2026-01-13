@@ -4349,11 +4349,10 @@ renderTrainerCases();
     const legalContent = {
       tokusho: {
         ja: `
-          <div class="reg-title">特定商取引法に基づく表記</div>
           <div class="reg-text">
             事業者名：INVITATION.co<br>
             販売価格：各プランページに表示（税抜）<br>
-            商品代金以外の必要料金：通信料等は利用者負担<br>
+            商品以外の料金：通信料等は利用者負担<br>
             支払方法：クレジットカード<br>
             支払時期：申込時に確定、以後は更新日に自動課金<br>
             提供時期：決済完了後、直ちに利用可能<br>
@@ -4362,7 +4361,6 @@ renderTrainerCases();
           </div>
         `,
         en: `
-          <div class="reg-title">Disclosure based on the Specified Commercial Transaction Act</div>
           <div class="reg-text">
             Business name: INVITATION.co<br>
             Price: Displayed on each plan page (tax excluded)<br>
@@ -4378,7 +4376,6 @@ renderTrainerCases();
 
       terms: {
         ja: `
-          <div class="reg-title">利用規約</div>
           <div class="reg-text">
             本サービスは、AIを用いて情報の整理・要約・提案を提供します。<br>
             提供される内容は正確性を保証しません。重要な判断は利用者が必ず追加確認を行ってください。<br>
@@ -4387,7 +4384,6 @@ renderTrainerCases();
           </div>
         `,
         en: `
-          <div class="reg-title">Terms</div>
           <div class="reg-text">
             This service provides organization, summaries, and suggestions using AI.<br>
             We do not guarantee accuracy. Please verify important decisions independently.<br>
@@ -4399,7 +4395,6 @@ renderTrainerCases();
 
       privacy: {
         ja: `
-          <div class="reg-title">プライバシーポリシー</div>
           <div class="reg-text">
             当社は、アカウント情報（メール、表示名等）および利用ログ等を、<br>
             サービス提供・改善・不正防止の目的で取り扱います。<br>
@@ -4408,7 +4403,6 @@ renderTrainerCases();
           </div>
         `,
         en: `
-          <div class="reg-title">Privacy</div>
           <div class="reg-text">
             We handle account information (email, display name, etc.) <br>
             and usage logs for service delivery, improvement, and fraud prevention.<br>

@@ -179,9 +179,9 @@
       googleConnectFailedAlert: "Google 連携に失敗しました: {err}",
 
       regulations: "規約・規定",
-      tokusho: "特定商取引法",
+      tokusho: "特定商取引法に基づく表記",
       terms: "利用規約",
-      privacy: "プライバシー",
+      privacy: "プライバシーポリシー",
 
       aiStack: "AI Stack",
       aiStackDesc: "展開中のAI / 最新Ver, / 稼働条件",
@@ -344,9 +344,9 @@
       googleConnectedAlert: "Google account connected",
       googleConnectFailedAlert: "Google connect failed: {err}",
       regulations: "Regulations",
-      tokusho: "Specified Commercial Transaction Act",
+      tokusho: "Disclosure based on the Specified Commercial Transaction Act",
       terms: "Terms",
-      privacy: "Privacy",
+      privacy: "Privacy Policy",
       aiStack: "AI Stack",
       aiStackDesc: "Active AIs / Latest ver / Conditions",
       listTable: "List",
