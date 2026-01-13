@@ -773,8 +773,9 @@ body:not(.has-chat) .board{ padding-bottom:0; }
 
 /* Project home: ask should be near top (GPT like) */
 body.view-project:not(.has-chat) .ask-wrap{
-  top:112px;
-  transform:none;
+  top:156px !important;       /* 中央配置ルールより優先 */
+  bottom:auto !important;
+  transform:none !important;
 }
 
 /* ================= Modals (project only) ================= */
@@ -904,6 +905,7 @@ body.project-open .project-modal{ display:flex; }
   display:flex;
   flex-direction:column;
   border-top:1px solid var(--line);
+  margin-top:96px; /* Askの影/余白ぶんも含めて確実に下げる */
 }
 
 .pj-home-row{
@@ -2145,26 +2147,36 @@ body.theme-light .images-empty{
 .settings-modal #aiStackOverlay .table__body .table__row .table__cell:nth-child(3){
   color:rgba(255,255,255,.78);
   white-space:normal;
-  overflow:visible;
+  overflow:hidden;          /* はみ出し防止 */
   text-overflow:clip;
   word-break:break-word;
 }
 
-/* Editable condition text（1行＋省略） */
+/* Editable condition text */
 .settings-modal #aiStackOverlay .ai-cond{
   display:block;
   font:inherit;
   color:inherit;
   line-height:inherit;
   white-space:nowrap;
-  overflow:visible;
-  text-overflow:clip;
+  overflow:hidden;          /* はみ出し防止 */
+  text-overflow:ellipsis;   /* 省略 */
   word-break:keep-all;
   outline:none;
   border:0;
   background:transparent;
   padding:0;
   min-width:0;
+  max-width:100%;
+}
+
+/* 画面が狭い時はセル側も1行省略に統一（...） */
+@media (max-width: 720px){
+  .settings-modal #aiStackOverlay .table__body .table__row .table__cell:nth-child(3){
+    white-space:nowrap;
+    text-overflow:ellipsis;
+    overflow:hidden;
+  }
 }
 
 .settings-modal #aiStackOverlay .ai-cond:focus{
