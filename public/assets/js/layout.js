@@ -1602,15 +1602,54 @@ const closeSettings = () => {
         </div>
       </div>
 
+      <div class="pj-home-ask" aria-label="履歴検索">
+        <div class="pj-home-askbar">
+          <div class="pj-home-askicon" aria-hidden="true">+</div>
+          <input id="aureaProjectHistorySearch" type="search" placeholder="${escHtml(tr("search"))}" aria-label="${escHtml(tr("search"))}" autocomplete="off" />
+        </div>
+      </div>
+
       <div class="pj-home-list" id="aureaProjectHomeThreads">
-        ${rows || `<div class="images-empty">${escHtml(tr("searchPrompt"))}</div>`}
+        ${rows || `<div class="images-empty" id="aureaProjectHomeEmpty">${escHtml(tr("searchNoMatch"))}</div>`}
       </div>
     `;
 
     board?.appendChild(wrap);
 
-    if (askInput) {
-      askInput.placeholder = `${name} 内の新しいチャット`;
+    const input = document.getElementById("aureaProjectHistorySearch");
+    const listEl = document.getElementById("aureaProjectHomeThreads");
+
+    const syncFilter = () => {
+      if (!input || !listEl) return;
+
+      const q = String(input.value || "").trim().toLowerCase();
+      const items = Array.from(listEl.querySelectorAll(".pj-home-row"));
+
+      let shown = 0;
+      items.forEach((row) => {
+        const ttl = (row.querySelector(".pj-home-row__ttl")?.textContent || "").trim().toLowerCase();
+        const ok = !q || ttl.includes(q);
+        row.style.display = ok ? "" : "none";
+        if (ok) shown += 1;
+      });
+
+      let empty = document.getElementById("aureaProjectHomeEmpty");
+      if (!empty) {
+        empty = document.createElement("div");
+        empty.className = "images-empty";
+        empty.id = "aureaProjectHomeEmpty";
+        empty.textContent = tr("searchNoMatch");
+        empty.style.display = "none";
+        listEl.appendChild(empty);
+      }
+
+      empty.style.display = (items.length > 0 && shown === 0) ? "" : "none";
+    };
+
+    if (input) {
+      input.addEventListener("input", syncFilter);
+      syncFilter();
+      setTimeout(() => input.focus(), 0);
     }
   };
 
