@@ -1602,53 +1602,42 @@ const closeSettings = () => {
         </div>
       </div>
 
-      <div class="pj-home-ask" aria-label="履歴検索">
+      <div class="pj-home-ask" aria-label="新しい会話を開始">
         <div class="pj-home-askbar">
           <div class="pj-home-askicon" aria-hidden="true">+</div>
-          <input id="aureaProjectHistorySearch" type="search" placeholder="${escHtml(tr("search"))}" aria-label="${escHtml(tr("search"))}" autocomplete="off" />
+          <input id="aureaProjectHomeAsk" type="text" placeholder="${escHtml(name)} 内の新しいチャット" aria-label="${escHtml(name)} 内の新しいチャット" autocomplete="off" />
         </div>
       </div>
 
       <div class="pj-home-list" id="aureaProjectHomeThreads">
-        ${rows || `<div class="images-empty" id="aureaProjectHomeEmpty">${escHtml(tr("searchNoMatch"))}</div>`}
+        ${rows || `<div class="images-empty">${escHtml(tr("searchPrompt"))}</div>`}
       </div>
     `;
 
     board?.appendChild(wrap);
 
-    const input = document.getElementById("aureaProjectHistorySearch");
-    const listEl = document.getElementById("aureaProjectHomeThreads");
+    const input = document.getElementById("aureaProjectHomeAsk");
 
-    const syncFilter = () => {
-      if (!input || !listEl) return;
+    const start = () => {
+      const text = (input?.value || "").trim();
 
-      const q = String(input.value || "").trim().toLowerCase();
-      const items = Array.from(listEl.querySelectorAll(".pj-home-row"));
+      createProjectThread(pid);
 
-      let shown = 0;
-      items.forEach((row) => {
-        const ttl = (row.querySelector(".pj-home-row__ttl")?.textContent || "").trim().toLowerCase();
-        const ok = !q || ttl.includes(q);
-        row.style.display = ok ? "" : "none";
-        if (ok) shown += 1;
-      });
-
-      let empty = document.getElementById("aureaProjectHomeEmpty");
-      if (!empty) {
-        empty = document.createElement("div");
-        empty.className = "images-empty";
-        empty.id = "aureaProjectHomeEmpty";
-        empty.textContent = tr("searchNoMatch");
-        empty.style.display = "none";
-        listEl.appendChild(empty);
+      if (text) {
+        appendMessage("user", text);
       }
 
-      empty.style.display = (items.length > 0 && shown === 0) ? "" : "none";
+      if (input) input.value = "";
     };
 
     if (input) {
-      input.addEventListener("input", syncFilter);
-      syncFilter();
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          start();
+        }
+      });
+
       setTimeout(() => input.focus(), 0);
     }
   };
@@ -1928,15 +1917,6 @@ const closeSettings = () => {
     renderProjects();
     renderChatList();
     applyI18n();
-  };
-
-  /* ================= selection ================= */
-  const selectProjectScope = (projectId) => {
-    // PJは「入れ物」：選択＝展開のみ（会話コンテキストは切り替えない）
-    state.activeProjectId = projectId;
-
-    save(state);
-    renderSidebar();
   };
 
   /* ================= rename/delete project ================= */

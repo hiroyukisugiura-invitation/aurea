@@ -864,11 +864,19 @@ body.project-open .project-modal{ display:flex; }
   padding:18px 0 0;
 }
 
+/* Project view は中央寄せを使わない（GPT準拠） */
+body.view-project .view{
+  width:100%;
+  max-width:none;
+  margin:0;
+}
+
 /* ===== Project home (GPT-like) ===== */
 .view-project{
-  width:min(860px, calc(100% - 64px)); /* Askと同じ幅に揃える */
-  margin:0 auto;
-  padding-top:10px;
+  width:100%;               /* 中央制限を解除 */
+  max-width:none;           /* .view の min/max を無効化 */
+  margin:0;                 /* auto を完全排除 */
+  padding:10px 32px 0 32px; /* GPT同等：左基準 */
 }
 
 .pj-home-head{
@@ -904,11 +912,74 @@ body.project-open .project-modal{ display:flex; }
   border-bottom-right-radius:2px;
 }
 
+/* ===== Project home ask (start new chat) ===== */
+.pj-home-ask{
+  margin:10px 0 0;
+}
+
+.pj-home-askbar{
+  width:100%;
+  background:rgba(35,36,37,.98);
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:22px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 12px;
+  box-shadow:0 18px 45px rgba(0,0,0,.25);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+body.theme-light .pj-home-askbar{
+  background:rgba(255,255,255,.90);
+  border:1px solid var(--line);
+  box-shadow:0 18px 45px rgba(0,0,0,.10);
+}
+
+.pj-home-askbar .pj-home-askicon{
+  width:26px;
+  height:26px;
+  border-radius:10px;
+  display:grid;
+  place-items:center;
+  color:rgba(255,255,255,.82);
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(255,255,255,.04);
+  flex:0 0 auto;
+}
+
+body.theme-light .pj-home-askbar .pj-home-askicon{
+  color:rgba(0,0,0,.70);
+  border-color:var(--line);
+  background:rgba(0,0,0,.03);
+}
+
+.pj-home-askbar input{
+  flex:1;
+  min-width:0;
+  border:0;
+  outline:0;
+  background:transparent;
+  color:var(--text);
+  font-size:14px;
+  line-height:1.45;
+  padding:6px 2px;
+}
+
+.pj-home-askbar input::placeholder{
+  color:rgba(255,255,255,.45);
+}
+
+body.theme-light .pj-home-askbar input::placeholder{
+  color:var(--muted);
+}
+
 .pj-home-list{
   display:flex;
   flex-direction:column;
   border-top:1px solid var(--line);
-  margin-top:12px; /* PJ内Askバー直下に揃える */
+  margin-top:12px; /* PJ内Askバー直下 */
 }
 
 .pj-home-row{
@@ -928,7 +999,7 @@ body.project-open .project-modal{ display:flex; }
   flex:1 1 auto;
 }
 .pj-home-row__ttl{
-  font-size:14px;
+  font-size:13px;
   color:rgba(255,255,255,.92);
   white-space:nowrap;
   overflow:hidden;
@@ -936,7 +1007,7 @@ body.project-open .project-modal{ display:flex; }
 }
 .pj-home-row__date{
   flex:0 0 auto;
-  font-size:12px;
+  font-size:11px;
   color:rgba(255,255,255,.60);
   white-space:nowrap;
 }
