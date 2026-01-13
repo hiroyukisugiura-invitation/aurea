@@ -2518,3 +2518,26 @@ body.theme-light .pj-home-plusbtn{
   top:46px;
   bottom:auto; /* PJトップは上に飛ばさず下に出す */
 }
+/* light: settings select/button visibility */
+body.theme-light .settings-modal .select{
+  background:rgba(0,0,0,.03);
+  border:1px solid rgba(0,0,0,.10);
+  color:rgba(0,0,0,.82);
+}
+
+body.theme-light .settings-modal .select{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1.5 1.5l4.5 4.5 4.5-4.5' fill='none' stroke='%23141516' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' opacity='0.85'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-size:12px 8px;
+  background-position:right 10px center;
+}
+
+body.theme-light .settings-modal .btn{
+  border:1px solid rgba(0,0,0,.10);
+  background:rgba(0,0,0,.03);
+  color:rgba(0,0,0,.78);
+}
+
+body.theme-light .settings-modal .btn:hover{
+  background:rgba(0,0,0,.06);
+}
