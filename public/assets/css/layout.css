@@ -2436,13 +2436,17 @@ body.theme-light .pj-home-askbar input::placeholder{
 
 /* light: settings modal should not look like a boxed white frame */
 body.theme-light .settings-modal > .overlay{
-  background:rgba(0,0,0,.18);
+  background:rgba(0,0,0,.10);   /* 白飛び防止 */
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
+
 body.theme-light .settings-modal > .overlay > .modal{
-  background:rgba(255,255,255,.86);
-  border:1px solid rgba(0,0,0,.06);
-  box-shadow:0 18px 70px rgba(0,0,0,.14);
+  background:#ffffff;           /* 完全不透明 */
+  border:1px solid rgba(0,0,0,.08);
+  box-shadow:0 18px 60px rgba(0,0,0,.16);
 }
+
 body.theme-light .settings-modal .nav{
   background:linear-gradient(180deg, rgba(0,0,0,.02), transparent 35%);
 }
