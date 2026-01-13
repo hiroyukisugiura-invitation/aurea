@@ -560,6 +560,13 @@
       swapLeafText("最適回答", isEn ? "Best answer" : "最適回答");
     }
 
+        // ===== Search modal (popup) i18n =====
+    const smInput = document.getElementById("aureaSearchModalInput");
+    if (smInput) {
+      smInput.placeholder = tr("search");
+      smInput.setAttribute("aria-label", tr("search"));
+    }
+
     // data-i18n / data-i18n-aria 全反映（HTML属性ベース）
     applyI18nAttrs();
   };
