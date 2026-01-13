@@ -799,9 +799,34 @@ const closeSettings = () => {
     sbTop.insertBefore(wrap, sbTop.firstChild);
 
     // GPT準拠：横断検索（global + project）
+    // 重要：renderSearchView を直呼びせず、必ず view=search に遷移して renderView 経由で描画する
     input.addEventListener("input", () => {
-      const q = input.value.trim().toLowerCase();
-      renderSearchView(q);
+      const q = input.value.trim();
+
+      if (!q) {
+        // 空ならチャット画面に戻す（見た目の混線防止）
+        state.view = "chat";
+        save(state);
+        renderView();
+        return;
+      }
+
+      state.view = "search";
+      save(state);
+      renderView();
+    });
+
+      if (!q) {
+        // 空ならチャット画面に戻す（見た目の混線防止）
+        state.view = "chat";
+        save(state);
+        renderView();
+        return;
+      }
+
+      state.view = "search";
+      save(state);
+      renderView();
     });
   };
 
