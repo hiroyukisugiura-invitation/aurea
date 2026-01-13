@@ -531,7 +531,8 @@ body.view-project .topbar{
   flex:1;
   min-height:0;
   padding:0 0 220px;
-  overflow:hidden; /* PJ選択時の全体スクロールを止める */
+  overflow-y:auto;        /* 通常（Chat）はスクロール可 */
+  overflow-x:hidden;
 }
 
 /* Brand rail */
@@ -986,6 +987,7 @@ body.theme-light .pj-home-askbar input::placeholder{
 /* project view: remove extra gap next to sidebar */
 body.view-project .board{
   padding-left:0;
+  overflow:hidden;        /* PJトップでは全体スクロール禁止 */
 }
 
 .pj-home-list{
