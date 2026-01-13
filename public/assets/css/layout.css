@@ -875,7 +875,7 @@ body.view-project .view{
   width:100%;
   max-width:none;
   margin:0;
-  padding:10px 0 0 0; /* ← 左の余白をゼロ（サイドバー直後から開始） */
+  padding:10px 32px 0 32px; /* ← GPT同様：左右に余白 */
 }
 
 .pj-home-head{
@@ -1246,48 +1246,6 @@ body.theme-light .images-empty{
   .sidebar{ position:relative; width:var(--sbw); }
 }
 
-/* ===== Settings iframe modal ===== */
-.settings-frame{
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 28px;
-}
-
-.settings-frame[hidden]{
-  display: none !important;
-}
-
-.settings-frame-iframe{
-  width: min(1120px, calc(100% - 24px));
-  height: min(760px, calc(100% - 24px));
-  border: 0;
-  border-radius: 22px;
-  background: transparent;
-  box-shadow: 0 18px 70px rgba(0,0,0,.45);
-}
-
-.settings-frame-close{
-  position: fixed;
-  top: 26px;
-  right: 26px;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,.14);
-  background: rgba(30,30,30,.45);
-  color: rgba(255,255,255,.92);
-  font-size: 22px;
-  line-height: 38px;
-  cursor: pointer;
-  z-index: 10000;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-
 /* ===============================
    SETTINGS MODAL (embedded)
    - scoped to .settings-modal only
@@ -1303,27 +1261,27 @@ body.theme-light .images-empty{
   padding:18px;
   pointer-events:auto;
 
-  /* settings.html の :root 相当（ページ全体を汚染しない） */
-  --bg:#0e0f10;
-  --text:#e7e7e7;
-  --muted:#a9aaac;
-  --line:rgba(255,255,255,.08);
-  --soft:rgba(255,255,255,.06);
-  --shadow:0 10px 30px rgba(0,0,0,.45);
+  /* ===== unified soft gray theme (settings only) ===== */
+  --bg:#f2f3f5;
+  --text:#1c1d1f;
+  --muted:#5f6368;
+  --line:rgba(0,0,0,.08);
+  --soft:rgba(0,0,0,.04);
+  --shadow:0 18px 50px rgba(0,0,0,.18);
 
-  --modalBg: rgba(20,21,22,.96);
-  --modalBorder: rgba(255,255,255,.10);
+  --modalBg:#ffffff;
+  --modalBorder:rgba(0,0,0,.08);
 
-  --card:rgba(255,255,255,.03);
-  --cardBorder:rgba(255,255,255,.10);
+  --card:#f6f7f8;
+  --cardBorder:rgba(0,0,0,.08);
 
-  --dangerBg: rgba(255,255,80,.10);
-  --dangerBd: rgba(255,80,80,.28);
+  --dangerBg:rgba(255,80,80,.10);
+  --dangerBd:rgba(255,80,80,.35);
 
-  --okBg: rgba(120,220,140,.10);
-  --okBd: rgba(120,220,140,.24);
+  --okBg:rgba(80,180,120,.10);
+  --okBd:rgba(80,180,120,.35);
 
-  --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Hiragino Sans","Noto Sans JP",sans-serif;
 
   font-family:var(--font);
   color:var(--text);
@@ -1376,24 +1334,22 @@ body.theme-light .images-empty{
   justify-content:center;
   padding:18px;
 
-  background:rgba(0,0,0,.28);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background:rgba(0,0,0,.22);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 
   pointer-events:auto;
 }
 
 .settings-modal > .overlay > .modal{
   width:min(1040px, calc(100% - 24px));
-  height:760px;                /* 固定 */
-  max-height:calc(100vh - 64px);/* 画面からはみ出さない */
+  height:760px;
+  max-height:calc(100vh - 64px);
   background:var(--modalBg);
   border:1px solid var(--modalBorder);
-  border-radius:18px;
+  border-radius:20px;
   box-shadow:var(--shadow);
   overflow:hidden;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
   display:grid;
   grid-template-columns: 300px 1fr;
   min-width:0;
@@ -1415,7 +1371,7 @@ body.theme-light .images-empty{
 }
 .settings-modal .close:hover{
   background:var(--soft);
-  border-color:rgba(255,255,255,.06);
+  border-color:var(--line);
 }
 .settings-modal .close i{
   font-size:16px;
@@ -1439,7 +1395,7 @@ body.theme-light .images-empty{
 }
 .settings-modal .nav-title{
   font-size:14px;
-  color:rgba(255,255,255,.92);
+  color:var(--text);
   letter-spacing:.02em;
 }
 .settings-modal .nav-list{
@@ -1459,12 +1415,13 @@ body.theme-light .images-empty{
   border-radius:12px;
   border:1px solid transparent;
   background:transparent;
-  color:rgba(255,255,255,.88);
+  color:var(--text);
   cursor:pointer;
   text-align:left;
   font-size:13px;
   line-height:1;
   user-select:none;
+  opacity:.88;
 }
 .settings-modal .nav-item:hover{ background:var(--soft); }
 .settings-modal .nav-ic{
@@ -1480,8 +1437,8 @@ body.theme-light .images-empty{
 .settings-modal #tab-data:checked ~ .overlay .modal .nav label[for="tab-data"],
 .settings-modal #tab-trainer:checked ~ .overlay .modal .nav label[for="tab-trainer"],
 .settings-modal #tab-account:checked ~ .overlay .modal .nav label[for="tab-account"]{
-  background:rgba(255,255,255,.08);
-  border-color:rgba(255,255,255,.10);
+  background:var(--soft);
+  border-color:var(--line);
 }
 
 /* Right content */
@@ -1568,12 +1525,12 @@ body.theme-light .images-empty{
 
 .settings-modal .content-title{
   font-size:16px;
-  color:rgba(255,255,255,.94);
+  color:var(--text);
   letter-spacing:.01em;
 }
 .settings-modal .content-sub{
   font-size:12px;
-  color:rgba(255,255,255,.58);
+  color:var(--muted);
   margin-top:6px;
   line-height:1.5;
 }
@@ -1603,13 +1560,13 @@ body.theme-light .images-empty{
 
 .settings-modal .sec-title{
   font-size:14px;
-  color:rgba(255,255,255,.92);
+  color:var(--text);
   line-height:1.2;
   margin:0 0 12px 0;
 }
 .settings-modal .sec-desc{
   font-size:12px;
-  color:rgba(255,255,255,.60);
+  color:var(--muted);
   line-height:1.55;
   margin-top:6px;
 }
@@ -1620,7 +1577,7 @@ body.theme-light .images-empty{
   justify-content:space-between; /* ←左右分離を復旧 */
   gap:12px;
   padding:10px 0;
-  border-top:1px solid rgba(255,255,255,.08);
+  border-top:1px solid var(--line);
 }
 
 /* デスクトップ：ピル（select/btn）は文字サイズに追従（伸び禁止） */
@@ -1688,23 +1645,24 @@ body.theme-light .images-empty{
 }
 .settings-modal .row .k{
   font-size:13px;
-  color:rgba(255,255,255,.88);
+  color:var(--text);
   line-height:1.2;
+  opacity:.82;
 }
 .settings-modal .row .v{
   font-size:12px;
-  color:rgba(255,255,255,.55);
+  color:var(--muted);
   line-height:1.45;
 }
 
 /* Controls */
 .settings-modal .btn{
   height:34px;
-  padding:0 10px; /* 余白を詰める */
+  padding:0 10px;
   border-radius:10px;
-  border:1px solid rgba(255,255,255,.12);
-  background:rgba(255,255,255,.05);
-  color:rgba(255,255,255,.85);
+  border:1px solid var(--line);
+  background:var(--card);
+  color:var(--text);
   cursor:pointer;
   user-select:none;
   font-size:13px;
@@ -1718,48 +1676,47 @@ body.theme-light .images-empty{
   text-overflow:ellipsis;
 }
 
-.settings-modal .btn:hover{background:rgba(255,255,255,.08)}
+.settings-modal .btn:hover{ background:rgba(0,0,0,.06); }
 .settings-modal .btn i{font-size:14px;opacity:.92;flex:0 0 auto}
 
 .settings-modal .btn.secondary{
   background:transparent;
-  border-color:rgba(255,255,255,.10);
-  color:rgba(255,255,255,.78);
+  border-color:var(--line);
+  color:var(--text);
+  opacity:.85;
 }
-.settings-modal .btn.secondary:hover{background:rgba(255,255,255,.06)}
+.settings-modal .btn.secondary:hover{ background:rgba(0,0,0,.05); }
 
 .settings-modal .btn.ok{
   border-color:var(--okBd);
   background:var(--okBg);
-  color:rgba(210,255,220,.95);
+  color:var(--text);
 }
 
 .settings-modal .btn.danger{
-  border-color:rgba(255,255,255,.14);
+  border-color:var(--line);
   background:transparent;
-  color:rgba(255,255,255,.86);
+  color:var(--text);
+  opacity:.88;
 }
 .settings-modal .btn.danger:hover{
-  background:rgba(255,255,255,.06);
-  border-color:rgba(255,255,255,.18);
+  background:rgba(0,0,0,.05);
 }
 
 .settings-modal .select{
   height:34px;
   border-radius:10px;
-  border:1px solid rgba(255,255,255,.12);
-  background:rgba(255,255,255,.05);
-  color:rgba(255,255,255,.86);
+  border:1px solid var(--line);
+  background:var(--card);
+  color:var(--text);
 
-  /* ▼を自前にして位置を制御（ネイティブ矢印の余白ズレ対策） */
   -webkit-appearance:none;
   appearance:none;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1.5 1.5l4.5 4.5 4.5-4.5' fill='none' stroke='%23ffffff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' opacity='0.9'/%3E%3C/svg%3E");
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1.5 1.5l4.5 4.5 4.5-4.5' fill='none' stroke='%231c1d1f' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' opacity='0.70'/%3E%3C/svg%3E");
   background-repeat:no-repeat;
   background-size:12px 8px;
-  background-position:right 10px center; /* ←▼を少し左へ */
+  background-position:right 10px center;
 
-  /* 文字〜▼の間の不自然な空白を削る（右は▼+余白だけ確保） */
   padding:0 30px 0 10px;
 
   font-size:13px;
@@ -1782,9 +1739,9 @@ body.theme-light .images-empty{
 .settings-modal .input{
   height:34px;
   border-radius:10px;
-  border:1px solid rgba(255,255,255,.12);
-  background:rgba(255,255,255,.05);
-  color:rgba(255,255,255,.90);
+  border:1px solid var(--line);
+  background:var(--card);
+  color:var(--text);
   padding:0 10px;
   font-size:13px;
   outline:0;
@@ -1816,8 +1773,8 @@ body.theme-light .images-empty{
   justify-content:space-between;
 }
 .settings-modal .saas:hover{
-  background:rgba(255,255,255,.035);
-  border-color:rgba(255,255,255,.12);
+  background:var(--soft);
+  border-color:var(--line);
 }
 .settings-modal .brand{
   width:38px;height:38px;border-radius:999px;
@@ -1832,27 +1789,28 @@ body.theme-light .images-empty{
   height:34px;
   padding:0 14px;
   border-radius:999px;
-  border:1px solid rgba(255,255,255,.12);
-  background:rgba(255,255,255,.035);
-  color:rgba(255,255,255,.86);
+  border:1px solid var(--line);
+  background:var(--card);
+  color:var(--text);
   font-size:13px;
   font-weight:700;
   letter-spacing:.01em;
   cursor:pointer;
 }
 .settings-modal .status-btn:hover{
-  background:rgba(255,255,255,.06);
-  border-color:rgba(255,255,255,.18);
+  background:var(--soft);
+  border-color:var(--line);
 }
 .settings-modal .status-btn.off{
-  background:rgba(255,255,255,.035);
-  border-color:rgba(255,255,255,.14);
-  color:rgba(255,255,255,.82);
+  background:var(--card);
+  border-color:var(--line);
+  color:var(--text);
+  opacity:.82;
 }
 .settings-modal .status-btn.on{
-  border-color:rgba(120,220,140,.28);
-  background:rgba(120,220,140,.08);
-  color:rgba(210,255,220,.95);
+  border-color:var(--okBd);
+  background:var(--okBg);
+  color:var(--text);
 }
 
 @media (max-width: 1080px){
@@ -2269,7 +2227,7 @@ body.theme-light .images-empty{
 .settings-modal #aiStackOverlay .table__cell{
   font-size:13px;
   line-height:1.4;
-  color:rgba(255,255,255,.86);
+  color:var(--text);
   font-family:var(--font); /* セル単位でも固定 */
   min-width:0;
 }
@@ -2277,7 +2235,7 @@ body.theme-light .images-empty{
 .settings-modal #aiStackOverlay .table__row--head .table__cell{
   font-size:12px;
   font-weight:600;
-  color:rgba(255,255,255,.55);
+  color:var(--muted);
   white-space:nowrap;
   word-break:keep-all;
 }
@@ -2285,13 +2243,13 @@ body.theme-light .images-empty{
 /* Ver column */
 .settings-modal #aiStackOverlay .table__body .table__row .table__cell:nth-child(2){
   text-align:left;
-  color:rgba(255,255,255,.70);
+  color:var(--muted);
   white-space:nowrap;
 }
 
 /* Condition column（折り返し可：英語でも見切れない） */
 .settings-modal #aiStackOverlay .table__body .table__row .table__cell:nth-child(3){
-  color:rgba(255,255,255,.78);
+  color:var(--muted);
   white-space:normal;
   overflow:hidden;          /* はみ出し防止 */
   text-overflow:clip;
@@ -2335,9 +2293,9 @@ body.theme-light .images-empty{
   width:32px;
   height:32px;
   border-radius:8px;
-  border:1px solid rgba(255,255,255,.15);
-  background:rgba(255,255,255,.08);
-  color:#fff;
+  border:1px solid var(--line);
+  background:var(--card);
+  color:var(--text);
   cursor:pointer;
 }
 
@@ -2369,112 +2327,4 @@ body.theme-light .images-empty{
 /* PJトップでは非表示（GPT同等） */
 body.view-project:not(.has-chat) .scroll-down-btn{
   display:none;
-}
-
-/* light: settings modal should not look like a boxed white frame */
-body.theme-light .settings-modal > .overlay{
-  background:rgba(0,0,0,.10);   /* 白飛び防止 */
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-}
-
-body.theme-light .settings-modal > .overlay > .modal{
-  background:#ffffff;           /* 完全不透明 */
-  border:1px solid rgba(0,0,0,.08);
-  box-shadow:0 18px 60px rgba(0,0,0,.16);
-}
-
-/* light: settings modal text colors */
-body.theme-light .settings-modal{
-  --text:#141516;
-  --muted:#4b4f55;
-  --line:rgba(0,0,0,.10);
-  --soft:rgba(0,0,0,.04);
-  --modalBg:#ffffff;
-  --modalBorder:rgba(0,0,0,.08);
-}
-
-body.theme-light .settings-modal .nav-title,
-body.theme-light .settings-modal .content-title{
-  color:rgba(0,0,0,.86);
-}
-
-body.theme-light .settings-modal .content-sub,
-body.theme-light .settings-modal .sec-desc,
-body.theme-light .settings-modal .row .v{
-  color:rgba(0,0,0,.55);
-}
-
-body.theme-light .settings-modal .row .k,
-body.theme-light .settings-modal .sec-title,
-body.theme-light .settings-modal .nav-item{
-  color:rgba(0,0,0,.74);
-}
-
-body.theme-light .settings-modal .nav{
-  background:linear-gradient(180deg, rgba(0,0,0,.02), transparent 35%);
-}
-
-/* PJ home: plus menu button (match chat ask mini) */
-.pj-home-plus{
-  position:relative;
-  flex:0 0 auto;
-}
-
-.pj-home-plus > summary{
-  list-style:none;
-}
-.pj-home-plus > summary::-webkit-details-marker{
-  display:none;
-}
-
-.pj-home-plusbtn{
-  width:34px;
-  height:34px;
-  border-radius:12px;
-  border:1px solid transparent;
-  background:transparent;
-  display:grid;
-  place-items:center;
-  cursor:pointer;
-  color:rgba(255,255,255,.92);
-  user-select:none;
-}
-
-.pj-home-plusbtn:hover{
-  background:var(--hover);
-  border-color:rgba(255,255,255,.06);
-}
-
-body.theme-light .pj-home-plusbtn{
-  color:rgba(0,0,0,.75);
-}
-
-.pj-home-plus .plus-pop{
-  left:0;
-  top:46px;
-  bottom:auto; /* PJトップは上に飛ばさず下に出す */
-}
-/* light: settings select/button visibility */
-body.theme-light .settings-modal .select{
-  background:rgba(0,0,0,.03);
-  border:1px solid rgba(0,0,0,.10);
-  color:rgba(0,0,0,.82);
-}
-
-body.theme-light .settings-modal .select{
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1.5 1.5l4.5 4.5 4.5-4.5' fill='none' stroke='%23141516' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' opacity='0.85'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;
-  background-size:12px 8px;
-  background-position:right 10px center;
-}
-
-body.theme-light .settings-modal .btn{
-  border:1px solid rgba(0,0,0,.10);
-  background:rgba(0,0,0,.03);
-  color:rgba(0,0,0,.78);
-}
-
-body.theme-light .settings-modal .btn:hover{
-  background:rgba(0,0,0,.06);
 }
