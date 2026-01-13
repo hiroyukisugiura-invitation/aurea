@@ -1575,6 +1575,15 @@ const closeSettings = () => {
     const proj = state.projects.find(p => p.id === pid) || null;
     const name = proj ? (proj.name || tr("project")) : tr("project");
 
+    const isEn = ((state.settings?.language || "ja") === "en");
+
+    // PJトップAsk（i18nキー未定義でも必ず表示が崩れない）
+    const pjNewChatLabel = isEn ? `New chat in ${name}` : `${name} 内の新しいチャット`;
+
+    // PJトップの＋メニュー（i18nキー未定義でも必ず表示が崩れない）
+    const pjAddFileLabel = isEn ? "Add photos and files" : "写真とファイルを追加";
+    const pjCreateImageLabel = isEn ? "Create an image" : "画像を作成する";
+
     const wrap = document.createElement("div");
     wrap.id = "aureaView";
     wrap.className = "view view-project";
@@ -1611,20 +1620,20 @@ const closeSettings = () => {
       <div class="pj-home-ask" aria-label="新しい会話を開始">
         <div class="pj-home-askbar">
           <details class="plus-menu pj-home-plus">
-            <summary class="pj-home-plusbtn" aria-label="${escHtml(tr("addFile"))}">
+            <summary class="pj-home-plusbtn" aria-label="${escHtml(pjAddFileLabel)}">
               <span aria-hidden="true">+</span>
             </summary>
-            <div class="plus-pop" role="menu" aria-label="${escHtml(tr("addFile"))}">
-              <a href="#" role="menuitem" data-action="add-file">${escHtml(tr("addFile"))}</a>
-              <a href="#" role="menuitem" data-action="create-image">${escHtml(tr("createImage"))}</a>
+            <div class="plus-pop" role="menu" aria-label="${escHtml(pjAddFileLabel)}">
+              <a href="#" role="menuitem" data-action="add-file">${escHtml(pjAddFileLabel)}</a>
+              <a href="#" role="menuitem" data-action="create-image">${escHtml(pjCreateImageLabel)}</a>
             </div>
           </details>
 
           <input
             id="aureaProjectHomeAsk"
             type="text"
-            placeholder="${escHtml(tr("projectNewChat")).replace("{project}", escHtml(name))}"
-            aria-label="${escHtml(tr("projectNewChat")).replace("{project}", escHtml(name))}"
+            placeholder="${escHtml(isEn ? `New chat in ${name}` : `${name} 内の新しいチャット`)}"
+            aria-label="${escHtml(isEn ? `New chat in ${name}` : `${name} 内の新しいチャット`)}"
             autocomplete="off"
           />
         </div>

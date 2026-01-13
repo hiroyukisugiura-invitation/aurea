@@ -72,7 +72,7 @@ body.theme-light .pj-home-title{
   color:var(--text);
 }
 body.theme-light .pj-home-row__ttl{
-  color:var(--text);
+  color:rgba(0,0,0,.88);
 }
 body.theme-light .pj-home-row__date{
   color:rgba(0,0,0,.55);
@@ -143,13 +143,12 @@ body.theme-light .ask-note{
 .sidebar{
   background:linear-gradient(180deg, rgba(255,255,255,.03), transparent 40%), var(--panel2);
   border-right:1px solid var(--line);
-  padding:16px 12px;
+  padding:16px 8px; /* ← 左右余白を詰めて“白帯”を消す */
   display:flex;
   flex-direction:column;
   gap:14px;
   min-width:0;
 
-  /* 左カラムの位置崩れ防止（常に左端・常に全高） */
   height:100vh;
   position:sticky;
   top:0;
@@ -973,6 +972,11 @@ body.theme-light .pj-home-askbar .pj-home-askicon{
 
 body.theme-light .pj-home-askbar input::placeholder{
   color:var(--muted);
+}
+
+/* light: project ask input text contrast */
+body.theme-light .pj-home-askbar input{
+  color:rgba(0,0,0,.88);
 }
 
 .pj-home-list{
