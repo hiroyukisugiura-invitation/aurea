@@ -1071,8 +1071,6 @@ const closeSettings = () => {
   };
 
   const ensureAttachTray = () => {
-    if (attachTrayEl) return attachTrayEl;
-
     // 1) 通常チャット（.ask）
     const ask = document.querySelector(".ask");
 
@@ -1080,11 +1078,23 @@ const closeSettings = () => {
     const pjAskInput = document.getElementById("aureaProjectHomeAsk");
     const pjBar = pjAskInput ? pjAskInput.closest(".pj-home-askbar") : null;
 
-    // どちらも無い場合は作れない
-    const anchor = ask || pjBar;
+    // 優先：PJトップが存在するならPJトップ、無ければ通常チャット
+    const anchor = pjBar || ask;
     if (!anchor) return null;
 
     const host = anchor.parentElement || null;
+
+    // 既存トレイがあれば「今の画面のアンカー位置へ移動」する
+    if (attachTrayEl) {
+      try {
+        if (host && attachTrayEl.parentElement !== host) {
+          host.insertBefore(attachTrayEl, anchor);
+        } else if (host && attachTrayEl.nextSibling !== anchor) {
+          host.insertBefore(attachTrayEl, anchor);
+        }
+      } catch {}
+      return attachTrayEl;
+    }
 
     const tray = document.createElement("div");
     tray.id = "aureaAttachTray";
@@ -1101,7 +1111,7 @@ const closeSettings = () => {
       justify-content:flex-start;
       align-items:center;
 
-      pointer-events:auto; /* ask-wrap が pointer-events:none の環境対策 */
+      pointer-events:auto;
     `;
 
     if (host) host.insertBefore(tray, anchor);
