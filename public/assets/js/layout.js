@@ -3039,8 +3039,17 @@ const closeSettings = () => {
   document.addEventListener("drop", async (e) => {
     const dt = e.dataTransfer;
     if (!dt || !dt.files || !dt.files.length) return;
+
+    // ファイルドロップを許可（PJトップ含む）
     e.preventDefault();
+
+    // 重要：PJトップは動的生成のため、先にトレイ生成を試みる
+    try { ensureAttachTray(); } catch {}
+
     await addFilesAsAttachments(dt.files);
+
+    // 重要：追加後にもう一度トレイ描画（PJトップで確実に出す）
+    try { renderAttachTray(); } catch {}
   });
 
   // (removed) legacy sidebar search handler
