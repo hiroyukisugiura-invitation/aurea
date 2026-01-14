@@ -1065,8 +1065,6 @@ const closeSettings = () => {
     return `${num.toFixed(i === 0 ? 0 : (i === 1 ? 1 : 2))} ${u[i]}`;
   };
 
-  let attachTrayBound = false;
-
   const ensureAttachTray = () => {
     if (attachTrayEl) return attachTrayEl;
 
@@ -1079,14 +1077,13 @@ const closeSettings = () => {
     const tray = document.createElement("div");
     tray.id = "aureaAttachTray";
     tray.style.cssText = `
-      display:none;
       width:100%;
       max-width:760px;
       margin:0 auto;
       padding:0 10px 10px;
       box-sizing:border-box;
 
-      display:flex;
+      display:none;
       flex-wrap:wrap;
       gap:10px;
       justify-content:flex-start;
@@ -1097,34 +1094,6 @@ const closeSettings = () => {
     else document.body.appendChild(tray);
 
     attachTrayEl = tray;
-
-    // tray内クリックをここで確実に拾う（削除が効かない問題対策）
-    if (!attachTrayBound) {
-      attachTrayBound = true;
-
-      tray.addEventListener("click", (e) => {
-        const t = e.target;
-        if (!(t instanceof Element)) return;
-
-        const chip = t.closest(".aurea-attach-chip");
-        if (!chip) return;
-
-        e.preventDefault();
-        e.stopPropagation();
-
-        const aid = String(chip.getAttribute("data-aid") || "");
-        const hit = pendingAttachments.find(a => a.id === aid) || null;
-        if (!hit) return;
-
-        if (t.closest("[data-action='remove']")) {
-          removeAttachmentById(aid);
-          return;
-        }
-
-        openAttachModal(hit);
-      }, true);
-    }
-
     return tray;
   };
 
@@ -1181,6 +1150,23 @@ const closeSettings = () => {
         <span style="opacity:.62;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(meta)}</span>
         <span data-action="remove" aria-label="remove" style="opacity:.72;margin-left:auto;display:inline-flex;width:22px;height:22px;align-items:center;justify-content:center;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);">×</span>
       `;
+
+      // ✅ 削除（×）はここで直バインド（確実）
+      const rm = chip.querySelector("[data-action='remove']");
+      if (rm) {
+        rm.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          removeAttachmentById(a.id);
+        });
+      }
+
+      // ✅ チップクリックはプレビュー（確実）
+      chip.addEventListener("click", (e) => {
+        // × のクリックは上で stopPropagation 済み
+        e.preventDefault();
+        openAttachModal(a);
+      });
 
       tray.appendChild(chip);
     }
