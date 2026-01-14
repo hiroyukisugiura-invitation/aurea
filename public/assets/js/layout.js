@@ -2199,6 +2199,7 @@ const closeSettings = () => {
   };
 
   const renderProjectHomeView = () => {
+    clearPendingAttachments();
     clearBoardViewNodes();
 
     const pid = String(state.activeProjectId || "");
@@ -3461,6 +3462,7 @@ btnNewChat?.addEventListener("click", (e) => {
       if (t.closest(".sb-more") || t.classList.contains("sb-dots")) return;
 
       e.preventDefault();
+      clearPendingAttachments();
 
       // 1回目：PJトップ（プロジェクト名＋新規Ask＋履歴）を表示するための状態へ
       // 2回目（同PJ再クリック）：PJ内で新規トーク作成→即オープン
