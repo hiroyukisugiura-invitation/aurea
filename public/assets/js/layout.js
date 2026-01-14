@@ -3522,7 +3522,13 @@ btnNewChat?.addEventListener("click", (e) => {
   };
 
   const showAuthGate = () => {
-    if (authGate) authGate.style.display = "flex";
+    if (authGate) {
+      authGate.style.display = "flex";
+
+      // クリック不能の原因になりがちな「上に被さる透明要素」対策として最前面固定
+      authGate.style.zIndex = "100000";
+      authGate.style.pointerEvents = "auto";
+    }
     if (appRoot) appRoot.setAttribute("aria-hidden", "true");
   };
 
@@ -3626,6 +3632,39 @@ btnNewChat?.addEventListener("click", (e) => {
       }, 0);
     }
   }
+
+    // auth gate buttons: capture fallback (clickが拾われない環境対策)
+  document.addEventListener("pointerdown", (e) => {
+    const t = e.target;
+    if (!(t instanceof Element)) return;
+
+    const b = t.closest("#btnAuthPersonal, #btnAuthCompany");
+    if (!b) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (b.id === "btnAuthPersonal") {
+      // 企業アカウントを personal にさせない（別アドレス運用）
+      const st2 = getAuthState();
+      if (st2?.loggedIn && st2.mode === "company") {
+        setGateMessage("企業アカウントはPersonal利用できません。個人利用は個人アドレスで登録してください。");
+        return;
+      }
+
+      setAuthMode("personal");
+      window.__AUREA_AUTH_MODE__ = "personal";
+      clearInvite();
+      startGoogleLogin("personal");
+      return;
+    }
+
+    if (b.id === "btnAuthCompany") {
+      setAuthMode("company");
+      window.__AUREA_AUTH_MODE__ = "company";
+      startGoogleLogin("company");
+    }
+  }, true);
 
   btnAuthPersonal?.addEventListener("click", (e) => {
     e.preventDefault();
