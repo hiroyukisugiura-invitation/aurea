@@ -1052,6 +1052,11 @@ const closeSettings = () => {
 
     /* ================= attachments (Ask bar) ================= */
   let pendingAttachments = []; // [{ id, file, name, size, mime, kind, dataUrl? }]
+    const clearPendingAttachments = () => {
+    pendingAttachments = [];
+    try { renderAttachTray(); } catch {}
+  };
+
   let attachTrayEl = null;
   let attachModalEl = null;
   let attachModalBound = false;
@@ -1583,6 +1588,7 @@ const closeSettings = () => {
 
 /* ================= threads ================= */
   const createThread = () => {
+    clearPendingAttachments();
     const threads = getThreadsForContext();
     const t = { id: uid(), title: tr("threadNew"), updatedAt: nowISO(), messages: [] };
     threads.unshift(t);
@@ -1598,6 +1604,7 @@ const closeSettings = () => {
   };
 
   const createProjectThread = (projectId) => {
+    clearPendingAttachments();
     const pid = projectId;
     if (!pid) return;
 
@@ -1863,6 +1870,7 @@ const closeSettings = () => {
 
   const openThreadFromSearchHit = (hit) => {
     if (!hit) return;
+    clearPendingAttachments();
 
     if (hit.scopeType === "global") {
       state.context = { type: "global" };
@@ -2928,6 +2936,31 @@ const closeSettings = () => {
   };
 
   /* ================= UI bindings ================= */
+    // attachment tray: force click handling (capture)
+  document.addEventListener("click", (e) => {
+    const t = e.target;
+    if (!(t instanceof Element)) return;
+
+    const chip = t.closest(".aurea-attach-chip");
+    if (!chip) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const aid = String(chip.getAttribute("data-aid") || chip.dataset.aid || "");
+    const hit = pendingAttachments.find(a => String(a.id) === aid) || null;
+    if (!hit) return;
+
+    // remove
+    if (t.closest("[data-action='remove']")) {
+      removeAttachmentById(aid);
+      return;
+    }
+
+    // open preview
+    openAttachModal(hit);
+  }, true);
+
     /* ================= drag & drop (Ask bar attach) ================= */
   document.addEventListener("dragover", (e) => {
     const dt = e.dataTransfer;
@@ -3254,6 +3287,7 @@ btnNewChat?.addEventListener("click", (e) => {
       if (t.closest(".sb-more") || t.classList.contains("sb-dots")) return;
 
       e.preventDefault();
+      clearPendingAttachments();
 
       const pid = pjThread.dataset.projectId;
       const tid = pjThread.dataset.threadId;
@@ -3336,6 +3370,7 @@ btnNewChat?.addEventListener("click", (e) => {
       if (t.closest(".sb-more") || t.classList.contains("sb-dots")) return;
 
       e.preventDefault();
+      clearPendingAttachments();
       state.context = { type: "global" };
       setActiveThreadId(id);
       state.view = "chat";
