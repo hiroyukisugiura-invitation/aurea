@@ -678,27 +678,34 @@ app.post("/api/chat", async (req, res) => {
     // build user parts (multimodal)
     const userParts = [{ type: "text", text: prompt }];
 
-    // PDF: upload -> file_id -> input_file
+    for (const a of attachments) {
+      const type = String(a?.type || "").trim();
+      const mime = String(a?.mime || "").trim();
+      const data = String(a?.data || "").trim();
+      const name = String(a?.name || "file").trim();
+
+      // PDF: upload -> file_id -> input_file
       if (type === "file" && (mime === "application/pdf" || name.toLowerCase().endsWith(".pdf")) && data) {
-        const fid = await uploadOpenAIFile({ base64: data, filename: name || "file.pdf", mime: mime || "application/pdf" });
+        const fid = await uploadOpenAIFile({
+          base64: data,
+          filename: name || "file.pdf",
+          mime: mime || "application/pdf"
+        });
         if (fid) {
           userParts.push({ type: "input_file", file_id: fid });
         }
         continue;
       }
 
-    // v1: image attachments only (data is base64 without prefix)
-    for (const a of attachments) {
-      const type = String(a?.type || "").trim();
-      const mime = String(a?.mime || "").trim();
-      const data = String(a?.data || "").trim();
-
+      // image
       if (type === "image" && mime.startsWith("image/") && data) {
         const url = `data:${mime};base64,${data}`;
         userParts.push({ type: "input_image", image_url: { url } });
-      } else if (type === "file") {
-        // v1: file content not passed yet (metadata only)
-        const name = String(a?.name || "file").trim();
+        continue;
+      }
+
+      // other file (metadata only)
+      if (type === "file") {
         const size = Number(a?.size || 0) || 0;
         userParts.push({
           type: "text",
