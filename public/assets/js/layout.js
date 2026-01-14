@@ -1095,9 +1095,7 @@ const closeSettings = () => {
       align-items:center;
 
       pointer-events:auto; /* 重要：ask-wrap が pointer-events:none のため */
-    `;git add .
-git commit -m "AUREA: restore UI, fix OAuth flow and app bindings"
-git push
+    `;
 
     if (host) host.insertBefore(tray, ask);
     else document.body.appendChild(tray);
@@ -3575,10 +3573,20 @@ btnNewChat?.addEventListener("click", (e) => {
     if (appRoot) appRoot.setAttribute("aria-hidden", "true");
   };
 
-  const hideAuthGate = () => {
-    if (authGate) authGate.style.display = "none";
-    if (appRoot) appRoot.removeAttribute("aria-hidden");
-  };
+const hideAuthGate = () => {
+  try {
+    if (authGate) {
+      authGate.style.display = "none";
+      authGate.setAttribute("aria-hidden", "true");
+    }
+    if (appRoot) {
+      appRoot.removeAttribute("aria-hidden");
+    }
+    document.body.classList.remove("data-auth-required");
+  } catch (e) {
+    console.warn("hideAuthGate failed", e);
+  }
+};
 
   const startGoogleLogin = (mode) => {
     // Googleログインは login.html で実行（Email/Password導線は作らない）
@@ -3660,21 +3668,10 @@ btnNewChat?.addEventListener("click", (e) => {
   if (st?.loggedIn) {
     setGateMessage("");
     hideAuthGate();
-  } else {
-    // モードが保存されている場合は自動でGoogleログインへ（次回自動）
-    const savedMode = getAuthMode();
-    if (savedMode) {
-      window.__AUREA_AUTH_MODE__ = savedMode;
-      // 招待tokenがある場合は company 優先
-      const inv = getInvite();
-      const nextMode = inv?.token ? "company" : savedMode;
-
-      // 自動遷移（UX：Welcome Gate → Googleログイン）
-      setTimeout(() => {
-        startGoogleLogin(nextMode);
-      }, 0);
-    }
-  }
+} else {
+  // 未ログイン時は Welcome Gate に留める（自動遷移しない）
+  showAuthGate();
+}
 
     // auth gate buttons: capture fallback (clickが拾われない環境対策)
   document.addEventListener("pointerdown", (e) => {
