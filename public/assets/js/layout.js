@@ -1363,11 +1363,25 @@ const closeSettings = () => {
       const name = String(f.name || "file").trim();
       const kind = sniffKind(mime, name);
 
-      // v1: 画像だけ dataUrl を持たせる（プレビュー用）
+      // v1: image + small text files (txt/md/csv) keep dataUrl for payload/preview
       let dataUrl = "";
+
+      const lower = name.toLowerCase();
+      const isTextLike =
+        mime.startsWith("text/") ||
+        mime === "text/csv" ||
+        lower.endsWith(".txt") ||
+        lower.endsWith(".md") ||
+        lower.endsWith(".csv");
+
       if (kind === "image") {
-        // 8MB上限（重いとUIが固まるので）
+        // 8MB上限（UI負荷対策）
         if ((f.size || 0) <= (8 * 1024 * 1024)) {
+          dataUrl = await fileToDataUrl(f);
+        }
+      } else if (isTextLike) {
+        // 512KB上限（即解析用）
+        if ((f.size || 0) <= (512 * 1024)) {
           dataUrl = await fileToDataUrl(f);
         }
       }
@@ -1422,6 +1436,15 @@ const closeSettings = () => {
 
       let data = "";
 
+      const lower = name.toLowerCase();
+      const isPdf = (mime === "application/pdf") || lower.endsWith(".pdf");
+      const isTextLike =
+        mime.startsWith("text/") ||
+        mime === "text/csv" ||
+        lower.endsWith(".txt") ||
+        lower.endsWith(".md") ||
+        lower.endsWith(".csv");
+
       // v1: image -> base64 (already prepared as dataUrl)
       if (kind === "image" && a?.dataUrl && String(a.dataUrl).startsWith("data:")) {
         const s = String(a.dataUrl);
@@ -1429,8 +1452,14 @@ const closeSettings = () => {
         if (idx >= 0) data = s.slice(idx + 7);
       }
 
+      // v1: text files (txt/md/csv) -> base64 (already prepared as dataUrl)
+      if (!data && kind !== "image" && isTextLike && a?.dataUrl && String(a.dataUrl).startsWith("data:")) {
+        const s = String(a.dataUrl);
+        const idx = s.indexOf("base64,");
+        if (idx >= 0) data = s.slice(idx + 7);
+      }
+
       // v1: PDF -> read file and pack base64 (size guard)
-      const isPdf = (mime === "application/pdf") || name.toLowerCase().endsWith(".pdf");
       if (!data && kind !== "image" && isPdf && a?.file && size > 0) {
         const MAX_PDF = 8 * 1024 * 1024; // 8MB
         if (size <= MAX_PDF) {
@@ -2010,7 +2039,6 @@ const closeSettings = () => {
 
         // Assistant only: fold "AI Stack" progress into details
         if (msg?.role === "assistant" && raw0.startsWith("AI Stack\n")) {
-
           const sep = raw0.indexOf("\n\n");
           const head = (sep >= 0) ? raw0.slice(0, sep) : raw0;
           const rest = (sep >= 0) ? raw0.slice(sep + 2) : "";
@@ -2690,6 +2718,14 @@ const closeSettings = () => {
     return /\b(image|render|illustration|photo|png|jpg|webp)\b/i.test(s) || /画像|イラスト|写真|生成|レンダ/.test(s);
   };
 
+    const isImageGenerationRequest = (text) => {
+    const s = String(text || "");
+    return (
+      /\b(generate|create|make|render|draw|illustrate)\b/i.test(s) ||
+      /画像|イラスト|生成|描いて|作って/.test(s)
+    );
+  };
+
   const setStreaming = (on) => {
     if (stopBtn) stopBtn.style.display = on ? "" : "none";
 
@@ -2803,6 +2839,61 @@ const closeSettings = () => {
     streamAbort = false;
     multiAiAbort = false;
     setStreaming(true);
+        // ===== Sora image generation (front complete) =====
+    if (isImageGenerationRequest(userText)) {
+      try { showAiActivity("Sora"); } catch {}
+
+      try {
+        const payload = {
+          prompt: userText,
+          attachments: await buildAttachmentsPayload(rawAttachments),
+          context: {
+            view: state.view,
+            scope: state.context,
+            projectId: state.context?.type === "project" ? state.context.projectId : null,
+            threadId: getActiveThreadId(),
+            language: state.settings?.language || "ja"
+          }
+        };
+
+        const r = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const j = await r.json().catch(() => null);
+        const url = String(j?.image?.url || "").trim();
+        const p = String(j?.image?.prompt || userText || "").trim();
+
+        if (r.ok && j && j.ok && url) {
+          // save to images library
+          try {
+            addImageToLibrary({
+              prompt: p,
+              src: url,
+              from: { threadId: getActiveThreadId(), context: state.context }
+            });
+          } catch {}
+
+          // render image message
+          const imgMsg = `AUREA_IMAGE\n${url}\n${p}`;
+          updateMessage(m.id, imgMsg);
+          renderChat();
+
+          setStreaming(false);
+          renderSidebar();
+          return;
+        }
+
+      } catch {}
+
+      // fail-safe
+      updateMessage(m.id, "Image generation failed.");
+      renderChat();
+      setStreaming(false);
+      return;
+    }
 
     const runId = ++multiAiRunId;
 

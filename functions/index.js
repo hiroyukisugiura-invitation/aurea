@@ -757,6 +757,35 @@ app.post("/api/chat", async (req, res) => {
         continue;
       }
 
+      // text files (txt/md/csv): decode base64 -> inject as text
+      const lower = name.toLowerCase();
+      const isTextLike =
+        mime.startsWith("text/") ||
+        mime === "text/csv" ||
+        lower.endsWith(".txt") ||
+        lower.endsWith(".md") ||
+        lower.endsWith(".csv");
+
+      if (type === "file" && isTextLike && data) {
+        let decoded = "";
+        try {
+          decoded = Buffer.from(String(data), "base64").toString("utf8");
+        } catch {
+          decoded = "";
+        }
+
+        if (decoded) {
+          const MAX_CHARS = 120000;
+          if (decoded.length > MAX_CHARS) decoded = decoded.slice(0, MAX_CHARS);
+
+          userParts.push({
+            type: "text",
+            text: `Attached text file: ${name}${mime ? ` (${mime})` : ""}\n\n${decoded}`
+          });
+        }
+        continue;
+      }
+
       // image
       if (type === "image" && mime.startsWith("image/") && data) {
         const url = `data:${mime};base64,${data}`;
