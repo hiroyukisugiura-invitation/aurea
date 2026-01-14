@@ -1065,29 +1065,66 @@ const closeSettings = () => {
     return `${num.toFixed(i === 0 ? 0 : (i === 1 ? 1 : 2))} ${u[i]}`;
   };
 
+  let attachTrayBound = false;
+
   const ensureAttachTray = () => {
     if (attachTrayEl) return attachTrayEl;
 
     const ask = document.querySelector(".ask");
     if (!ask) return null;
 
-    // 重要：.ask（丸い入力コンテナ）の外に出す（GPT同等：コメントの上部に展開）
+    // 重要：.ask の外に出しつつ、「Askと同じ中央カラム幅」に揃える
     const host = ask.parentElement || null;
 
     const tray = document.createElement("div");
     tray.id = "aureaAttachTray";
     tray.style.cssText = `
       display:none;
-      gap:10px;
+      width:100%;
+      max-width:760px;
+      margin:0 auto;
+      padding:0 10px 10px;
+      box-sizing:border-box;
+
+      display:flex;
       flex-wrap:wrap;
-      padding:0 0 10px;
-      margin:0;
+      gap:10px;
+      justify-content:flex-start;
+      align-items:center;
     `;
 
     if (host) host.insertBefore(tray, ask);
     else document.body.appendChild(tray);
 
     attachTrayEl = tray;
+
+    // tray内クリックをここで確実に拾う（削除が効かない問題対策）
+    if (!attachTrayBound) {
+      attachTrayBound = true;
+
+      tray.addEventListener("click", (e) => {
+        const t = e.target;
+        if (!(t instanceof Element)) return;
+
+        const chip = t.closest(".aurea-attach-chip");
+        if (!chip) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        const aid = String(chip.getAttribute("data-aid") || "");
+        const hit = pendingAttachments.find(a => a.id === aid) || null;
+        if (!hit) return;
+
+        if (t.closest("[data-action='remove']")) {
+          removeAttachmentById(aid);
+          return;
+        }
+
+        openAttachModal(hit);
+      }, true);
+    }
+
     return tray;
   };
 
@@ -1111,7 +1148,7 @@ const closeSettings = () => {
       chip.dataset.aid = a.id;
 
       chip.style.cssText = `
-        max-width:320px;
+        max-width:360px;
         border-radius:999px;
         border:1px solid rgba(255,255,255,.12);
         background:rgba(255,255,255,.06);
@@ -1140,9 +1177,9 @@ const closeSettings = () => {
 
       chip.innerHTML = `
         ${thumb}
-        <span style="opacity:.92;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(name)}</span>
-        <span style="opacity:.62;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(meta)}</span>
-        <span data-action="remove" aria-label="remove" style="opacity:.72;margin-left:auto;">×</span>
+        <span style="opacity:.92;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(name)}</span>
+        <span style="opacity:.62;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(meta)}</span>
+        <span data-action="remove" aria-label="remove" style="opacity:.72;margin-left:auto;display:inline-flex;width:22px;height:22px;align-items:center;justify-content:center;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);">×</span>
       `;
 
       tray.appendChild(chip);
@@ -3161,24 +3198,6 @@ btnNewChat?.addEventListener("click", (e) => {
   /* ================= delegate clicks ================= */
   document.addEventListener("click", async (e) => {
     const t = e.target;
-
-        // attachment tray click (open/remove)
-    const chip = t.closest("#aureaAttachTray .aurea-attach-chip");
-    if (chip) {
-      e.preventDefault();
-
-      const aid = String(chip.dataset.aid || "");
-      const hit = pendingAttachments.find(a => a.id === aid) || null;
-      if (!hit) return;
-
-      if (t.closest("[data-action='remove']")) {
-        removeAttachmentById(aid);
-        return;
-      }
-
-      openAttachModal(hit);
-      return;
-    }
 
     /* ===== Apps: SaaS card click → connect (same tab) ===== */
     const saasCard = t.closest(".panel-apps .apps-grid .saas");
