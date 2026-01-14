@@ -2951,10 +2951,36 @@ btnNewChat?.addEventListener("click", (e) => {
     const copyBtn = t.closest(".act[data-action='copy-message']");
     if (copyBtn) {
       e.preventDefault();
+
+      // guard: prevent rapid re-click flicker
+      if (copyBtn.dataset.busy === "1") return;
+      copyBtn.dataset.busy = "1";
+
+      // keep original icon once
+      if (!copyBtn.dataset.origHtml) {
+        copyBtn.dataset.origHtml = copyBtn.innerHTML || "";
+      }
+
       const mid = copyBtn.dataset.mid;
       const th = getThreadByIdInScope(getActiveThreadId());
       const msg = th?.messages?.find(m => m.id === mid);
-      if (msg) await copyText(msg.content || "");
+
+      const ok = msg ? await copyText(msg.content || "") : false;
+
+      // UI feedback: copy -> checkmark -> revert
+      if (ok) {
+        copyBtn.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 6L9 17l-5-5"></path>
+          </svg>
+        `;
+      }
+
+      setTimeout(() => {
+        copyBtn.innerHTML = copyBtn.dataset.origHtml || "";
+        copyBtn.dataset.busy = "0";
+      }, ok ? 900 : 150);
+
       return;
     }
 
