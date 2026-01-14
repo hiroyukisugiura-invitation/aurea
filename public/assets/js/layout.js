@@ -1016,6 +1016,347 @@ const closeSettings = () => {
     }
   };
 
+    /* ================= attachments (Ask bar) ================= */
+  let pendingAttachments = []; // [{ id, file, name, size, mime, kind, dataUrl? }]
+  let attachTrayEl = null;
+  let attachModalEl = null;
+  let attachModalBound = false;
+
+  const bytesToHuman = (n) => {
+    const v = Number(n || 0);
+    if (!v) return "0 B";
+    const u = ["B","KB","MB","GB"];
+    const i = Math.min(u.length - 1, Math.floor(Math.log(v) / Math.log(1024)));
+    const num = v / Math.pow(1024, i);
+    return `${num.toFixed(i === 0 ? 0 : (i === 1 ? 1 : 2))} ${u[i]}`;
+  };
+
+  const ensureAttachTray = () => {
+    if (attachTrayEl) return attachTrayEl;
+
+    const ask = document.querySelector(".ask");
+    if (!ask) return null;
+
+    const tray = document.createElement("div");
+    tray.id = "aureaAttachTray";
+    tray.style.cssText = `
+      display:none;
+      gap:8px;
+      flex-wrap:wrap;
+      padding:6px 10px 0;
+      margin:0;
+    `;
+
+    // Askの先頭に差し込む（UIを壊さず、必要時だけ出す）
+    ask.insertBefore(tray, ask.firstChild);
+    attachTrayEl = tray;
+    return tray;
+  };
+
+  const renderAttachTray = () => {
+    const tray = ensureAttachTray();
+    if (!tray) return;
+
+    tray.innerHTML = "";
+
+    if (!pendingAttachments.length) {
+      tray.style.display = "none";
+      return;
+    }
+
+    tray.style.display = "flex";
+
+    for (const a of pendingAttachments) {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "aurea-attach-chip";
+      chip.dataset.aid = a.id;
+
+      chip.style.cssText = `
+        max-width:240px;
+        border-radius:999px;
+        border:1px solid rgba(255,255,255,.12);
+        background:rgba(255,255,255,.06);
+        color:rgba(255,255,255,.92);
+        cursor:pointer;
+        padding:6px 10px;
+        display:flex;
+        align-items:center;
+        gap:8px;
+        font-size:12px;
+        line-height:1;
+        font-family:var(--font);
+      `;
+
+      const name = String(a.name || "file").trim();
+      const meta = `${bytesToHuman(a.size)}${a.mime ? ` · ${a.mime}` : ""}`;
+
+      chip.innerHTML = `
+        <span style="opacity:.92;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(name)}</span>
+        <span style="opacity:.62;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(meta)}</span>
+        <span data-action="remove" aria-label="remove" style="opacity:.72;margin-left:auto;">×</span>
+      `;
+
+      tray.appendChild(chip);
+    }
+  };
+
+  const ensureAttachModal = () => {
+    if (attachModalEl) return attachModalEl;
+
+    const wrap = document.createElement("div");
+    wrap.id = "aureaAttachModal";
+    wrap.setAttribute("aria-hidden", "true");
+    wrap.style.cssText = `
+      position:fixed; inset:0;
+      display:none; align-items:center; justify-content:center;
+      background:rgba(0,0,0,.45);
+      z-index:10090;
+      padding:18px;
+    `;
+
+    wrap.innerHTML = `
+      <div style="
+        width:min(860px, calc(100% - 24px));
+        max-height:calc(100vh - 64px);
+        background:rgba(20,21,22,.96);
+        border:1px solid rgba(255,255,255,.10);
+        border-radius:18px;
+        box-shadow:0 10px 30px rgba(0,0,0,.45);
+        overflow:hidden;
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        color:rgba(255,255,255,.92);
+        font-family: -apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Hiragino Sans','Noto Sans JP',sans-serif;
+        display:flex;
+        flex-direction:column;
+        min-width:0;
+      ">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.08);">
+          <div id="aureaAttachModalTitle" style="font-size:14px;font-weight:600;">Attachment</div>
+          <button type="button" data-action="close" style="
+            width:36px;height:36px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
+            background:rgba(255,255,255,.06);color:rgba(255,255,255,.92);
+            cursor:pointer;font-size:18px;line-height:34px;
+          ">×</button>
+        </div>
+
+        <div id="aureaAttachModalBody" style="padding:14px 16px;overflow:auto;min-height:0;flex:1 1 auto;"></div>
+
+        <div style="padding:14px 16px;border-top:1px solid rgba(255,255,255,.08);display:flex;justify-content:flex-end;gap:10px;">
+          <button type="button" data-action="remove" style="
+            height:36px;padding:0 12px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
+            background:transparent;color:rgba(255,255,255,.86);cursor:pointer;font-size:13px;
+          ">Remove</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(wrap);
+    attachModalEl = wrap;
+
+    if (!attachModalBound) {
+      attachModalBound = true;
+
+      wrap.addEventListener("click", (e) => {
+        if (e.target === wrap) closeAttachModal();
+      });
+
+      wrap.addEventListener("click", (e) => {
+        const t = e.target;
+
+        if (t.closest("[data-action='close']")) {
+          e.preventDefault();
+          closeAttachModal();
+          return;
+        }
+
+        if (t.closest("[data-action='remove']")) {
+          e.preventDefault();
+          const aid = wrap.dataset.aid || "";
+          if (aid) removeAttachmentById(aid);
+          closeAttachModal();
+          return;
+        }
+      });
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key !== "Escape") return;
+        if (!isAttachModalOpen()) return;
+        closeAttachModal();
+      }, true);
+    }
+
+    return wrap;
+  };
+
+  const isAttachModalOpen = () => {
+    return !!attachModalEl && attachModalEl.style.display !== "none";
+  };
+
+  const closeAttachModal = () => {
+    if (!attachModalEl) return;
+    attachModalEl.style.display = "none";
+    attachModalEl.setAttribute("aria-hidden", "true");
+    attachModalEl.dataset.aid = "";
+  };
+
+  const openAttachModal = (att) => {
+    ensureAttachModal();
+    if (!attachModalEl) return;
+
+    const isEn = ((state.settings?.language || "ja") === "en");
+    const titleEl = document.getElementById("aureaAttachModalTitle");
+    const bodyEl = document.getElementById("aureaAttachModalBody");
+
+    const name = String(att?.name || "file");
+    const mime = String(att?.mime || "");
+    const size = bytesToHuman(att?.size || 0);
+
+    if (titleEl) titleEl.textContent = name;
+    if (bodyEl) {
+      const isImg = String(att?.kind || "") === "image";
+      const preview = isImg && att?.dataUrl
+        ? `<img src="${escHtml(att.dataUrl)}" alt="image" style="max-width:100%;border-radius:14px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.03);" />`
+        : `<div style="opacity:.72;">${escHtml(isEn ? "Preview not available." : "プレビューは利用できません。")}</div>`;
+
+      bodyEl.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="font-size:12px;opacity:.72;">${escHtml(mime ? `${mime} · ${size}` : size)}</div>
+          ${preview}
+        </div>
+      `;
+    }
+
+    attachModalEl.dataset.aid = String(att?.id || "");
+    attachModalEl.style.display = "flex";
+    attachModalEl.setAttribute("aria-hidden", "false");
+  };
+
+  const removeAttachmentById = (aid) => {
+    const id = String(aid || "");
+    if (!id) return;
+    pendingAttachments = pendingAttachments.filter(a => a.id !== id);
+    renderAttachTray();
+  };
+
+  const sniffKind = (mime, name) => {
+    const m = String(mime || "").toLowerCase();
+    if (m.startsWith("image/")) return "image";
+    const n = String(name || "").toLowerCase();
+    if (/\.(png|jpg|jpeg|webp|gif|bmp|svg)$/.test(n)) return "image";
+    return "file";
+  };
+
+  const fileToDataUrl = (file) => new Promise((resolve) => {
+    try {
+      const fr = new FileReader();
+      fr.onload = () => resolve(String(fr.result || ""));
+      fr.onerror = () => resolve("");
+      fr.readAsDataURL(file);
+    } catch {
+      resolve("");
+    }
+  });
+
+  const addFilesAsAttachments = async (files) => {
+    const list = Array.from(files || []).filter(f => f && typeof f.size === "number");
+    if (!list.length) return;
+
+    for (const f of list) {
+      const mime = String(f.type || "").trim();
+      const name = String(f.name || "file").trim();
+      const kind = sniffKind(mime, name);
+
+      // v1: 画像だけ dataUrl を持たせる（プレビュー用）
+      let dataUrl = "";
+      if (kind === "image") {
+        // 8MB上限（重いとUIが固まるので）
+        if ((f.size || 0) <= (8 * 1024 * 1024)) {
+          dataUrl = await fileToDataUrl(f);
+        }
+      }
+
+      pendingAttachments.push({
+        id: uid(),
+        file: f,
+        name,
+        size: f.size || 0,
+        mime,
+        kind,
+        dataUrl
+      });
+    }
+
+    renderAttachTray();
+  };
+
+  const openFilePickerForAttachments = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.multiple = true;
+    input.accept = "*/*";
+    input.style.display = "none";
+    document.body.appendChild(input);
+
+    input.addEventListener("change", async () => {
+      const files = input.files;
+      document.body.removeChild(input);
+      await addFilesAsAttachments(files);
+    });
+
+    input.click();
+  };
+
+  const takePendingAttachments = () => {
+    const out = pendingAttachments.slice();
+    pendingAttachments = [];
+    renderAttachTray();
+    return out;
+  };
+
+  const buildAttachmentsPayload = async (atts) => {
+    const src = Array.isArray(atts) ? atts : [];
+    const out = [];
+
+    for (const a of src) {
+      const name = String(a?.name || "file");
+      const mime = String(a?.mime || "");
+      const size = Number(a?.size || 0) || 0;
+      const kind = String(a?.kind || "file");
+
+      let data = "";
+
+      // v1: image -> base64 (already prepared as dataUrl)
+      if (kind === "image" && a?.dataUrl && String(a.dataUrl).startsWith("data:")) {
+        const s = String(a.dataUrl);
+        const idx = s.indexOf("base64,");
+        if (idx >= 0) data = s.slice(idx + 7);
+      }
+
+      // v1: PDF -> read file and pack base64 (size guard)
+      const isPdf = (mime === "application/pdf") || name.toLowerCase().endsWith(".pdf");
+      if (!data && kind !== "image" && isPdf && a?.file && size > 0) {
+        const MAX_PDF = 8 * 1024 * 1024; // 8MB
+        if (size <= MAX_PDF) {
+          const url = await fileToDataUrl(a.file);
+          const idx = String(url || "").indexOf("base64,");
+          if (idx >= 0) data = String(url).slice(idx + 7);
+        }
+      }
+
+      out.push({
+        type: (kind === "image") ? "image" : "file",
+        mime,
+        name,
+        size,
+        data
+      });
+    }
+
+    return out;
+  };
+
   /* ================= Ask bar behavior ================= */
   const setHasChat = (has) => body.classList.toggle("has-chat", !!has);
 
@@ -1845,14 +2186,7 @@ const closeSettings = () => {
         if (pjPlus && pjPlus.hasAttribute("open")) pjPlus.removeAttribute("open");
 
         if (action === "add-file") {
-          const input = document.createElement("input");
-          input.type = "file";
-          input.multiple = true;
-          input.accept = "*/*";
-          input.style.display = "none";
-          document.body.appendChild(input);
-          input.addEventListener("change", () => document.body.removeChild(input));
-          input.click();
+          openFilePickerForAttachments();
           return;
         }
       });
@@ -2336,7 +2670,7 @@ const closeSettings = () => {
     return lines.join("\n");
   };
 
-  const multiAiReply = async (userText) => {
+  const multiAiReply = async (userText, rawAttachments = []) => {
     const m = appendMessage("assistant", "");
     if (!m) return;
 
@@ -2366,14 +2700,27 @@ const closeSettings = () => {
 
     const targets = MULTI_AI.filter((a) => a.name !== "GPT" && (a.name !== "Sora" || usedSora));
 
-    // ===== /api/chat (dummy v1) =====
+    // ===== /api/chat (Unified Request Schema v1) =====
     let apiMap = null;
     try {
+      const payload = {
+        prompt: userText,
+        attachments: await buildAttachmentsPayload(rawAttachments),
+        context: {
+          view: state.view,
+          scope: state.context,
+          projectId: state.context?.type === "project" ? state.context.projectId : null,
+          threadId: getActiveThreadId(),
+          language: state.settings?.language || "ja"
+        }
+      };
+
       const r = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: userText })
+        body: JSON.stringify(payload)
       });
+
       const j = await r.json().catch(() => null);
       if (r.ok && j && j.ok && j.result && typeof j.result === "object") {
         apiMap = j.result;
@@ -2466,7 +2813,8 @@ const closeSettings = () => {
     autosizeTextarea();
     updateSendButtonVisibility();
 
-    await multiAiReply(text);
+    const rawAttachments = takePendingAttachments();
+    await multiAiReply(text, rawAttachments);
   };
 
   /* ================= special: create image (store to library) ================= */
@@ -2502,6 +2850,21 @@ const closeSettings = () => {
   };
 
   /* ================= UI bindings ================= */
+    /* ================= drag & drop (Ask bar attach) ================= */
+  document.addEventListener("dragover", (e) => {
+    const dt = e.dataTransfer;
+    if (!dt) return;
+    if (!dt.types || !Array.from(dt.types).includes("Files")) return;
+    e.preventDefault();
+  });
+
+  document.addEventListener("drop", async (e) => {
+    const dt = e.dataTransfer;
+    if (!dt || !dt.files || !dt.files.length) return;
+    e.preventDefault();
+    await addFilesAsAttachments(dt.files);
+  });
+
   // (removed) legacy sidebar search handler
   // 検索は mountSidebarSearch() で生成される input (#aureaSearchInput) のみを使用
 
@@ -2608,14 +2971,7 @@ btnNewChat?.addEventListener("click", (e) => {
       closeDetails(plusDetails);
 
       if (action === "add-file") {
-        const input = document.createElement("input");
-        input.type = "file";
-        input.multiple = true;
-        input.accept = "*/*";
-        input.style.display = "none";
-        document.body.appendChild(input);
-        input.addEventListener("change", () => document.body.removeChild(input));
-        input.click();
+        openFilePickerForAttachments();
         return;
       }
 
@@ -2750,6 +3106,24 @@ btnNewChat?.addEventListener("click", (e) => {
   /* ================= delegate clicks ================= */
   document.addEventListener("click", async (e) => {
     const t = e.target;
+
+        // attachment tray click (open/remove)
+    const chip = t.closest("#aureaAttachTray .aurea-attach-chip");
+    if (chip) {
+      e.preventDefault();
+
+      const aid = String(chip.dataset.aid || "");
+      const hit = pendingAttachments.find(a => a.id === aid) || null;
+      if (!hit) return;
+
+      if (t.closest("[data-action='remove']")) {
+        removeAttachmentById(aid);
+        return;
+      }
+
+      openAttachModal(hit);
+      return;
+    }
 
     /* ===== Apps: SaaS card click → connect (same tab) ===== */
     const saasCard = t.closest(".panel-apps .apps-grid .saas");

@@ -564,22 +564,52 @@ const getOpenAIKey = () => {
   return k ? k : null;
 };
 
-const callOpenAIText = async ({ system, user, model }) => {
+const uploadOpenAIFile = async ({ base64, filename, mime }) => {
+  const key = getOpenAIKey();
+  if (!key) return null;
+
+  const buf = Buffer.from(String(base64 || ""), "base64");
+  if (!buf || !buf.length) return null;
+
+  const fd = new FormData();
+  fd.append("purpose", "assistants"); // Files API requires purpose; used broadly for file tools/inputs
+  fd.append("file", new Blob([buf], { type: String(mime || "application/pdf") }), String(filename || "file.pdf"));
+
+  const r = await fetch("https://api.openai.com/v1/files", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}` },
+    body: fd
+  });
+
+  const j = await r.json().catch(() => null);
+  if (!r.ok || !j || !j.id) return null;
+  return String(j.id);
+};
+
+const callOpenAIText = async ({ system, user, userParts, model }) => {
   const key = getOpenAIKey();
   if (!key) return null;
 
   const m = String(model || "gpt-5.2").trim() || "gpt-5.2";
+
+  const sysText = String(system || "").trim();
+  const userText = String(user || "").trim();
+
+  const parts =
+    Array.isArray(userParts) && userParts.length
+      ? userParts
+      : [{ type: "text", text: userText }];
 
   const payload = {
     model: m,
     input: [
       {
         role: "system",
-        content: [{ type: "text", text: String(system || "").trim() }]
+        content: [{ type: "text", text: sysText }]
       },
       {
         role: "user",
-        content: [{ type: "text", text: String(user || "").trim() }]
+        content: parts
       }
     ]
   };
@@ -628,26 +658,68 @@ const shouldUseSora = (text) => {
 
 app.post("/api/chat", async (req, res) => {
   try {
-    const text = String(req.body?.text || "").trim();
+    // ===== Unified Request Schema =====
+    const prompt = String(req.body?.prompt || "").trim();
+    const attachments = Array.isArray(req.body?.attachments) ? req.body.attachments : [];
+    const context = req.body?.context || {};
 
-    // 6AIの結果を返す（まずは全てOpenAIで稼働させる）
-    // ※ 各社キー（Gemini/Anthropic/Perplexity/Mistral）へは次工程で差し替え
-    const useSora = shouldUseSora(text);
+    if (!prompt && attachments.length === 0) {
+      res.status(400).json({ ok: false, reason: "empty_input" });
+      return;
+    }
+
+    // v1: 添付はまだAIに渡さず、存在だけ認識（後工程で実装）
+    const useSora =
+      shouldUseSora(prompt) ||
+      attachments.some(a => String(a.type || "") === "image");
 
     const names = ["GPT", "Gemini", "Claude", "Perplexity", "Mistral", "Sora"];
+
+    // build user parts (multimodal)
+    const userParts = [{ type: "text", text: prompt }];
+
+    // PDF: upload -> file_id -> input_file
+      if (type === "file" && (mime === "application/pdf" || name.toLowerCase().endsWith(".pdf")) && data) {
+        const fid = await uploadOpenAIFile({ base64: data, filename: name || "file.pdf", mime: mime || "application/pdf" });
+        if (fid) {
+          userParts.push({ type: "input_file", file_id: fid });
+        }
+        continue;
+      }
+
+    // v1: image attachments only (data is base64 without prefix)
+    for (const a of attachments) {
+      const type = String(a?.type || "").trim();
+      const mime = String(a?.mime || "").trim();
+      const data = String(a?.data || "").trim();
+
+      if (type === "image" && mime.startsWith("image/") && data) {
+        const url = `data:${mime};base64,${data}`;
+        userParts.push({ type: "input_image", image_url: { url } });
+      } else if (type === "file") {
+        // v1: file content not passed yet (metadata only)
+        const name = String(a?.name || "file").trim();
+        const size = Number(a?.size || 0) || 0;
+        userParts.push({
+          type: "text",
+          text: `Attached file: ${name}${mime ? ` (${mime})` : ""}${size ? ` ${size} bytes` : ""}`
+        });
+      }
+    }
 
     const tasks = names.map(async (name) => {
       if (name === "Sora" && !useSora) return { name, out: null };
 
       const system = buildSystemPrompt(name);
+
       const out = await callOpenAIText({
         system,
-        user: text,
+        user: prompt,
+        userParts,
         model: "gpt-5.2"
       });
 
-      // OpenAIキー未設定時のフォールバック（落とさない）
-      if (!out) return { name, out: `${name} received: ${text}` };
+      if (!out) return { name, out: null };
 
       return { name, out };
     });
@@ -655,9 +727,14 @@ app.post("/api/chat", async (req, res) => {
     const results = await Promise.all(tasks);
 
     const map = {};
-    for (const r of results) map[r.name] = r.out;
+    for (const r of results) {
+      if (r.out) map[r.name] = r.out;
+    }
 
-    res.json({ ok: true, result: map });
+    res.json({
+      ok: true,
+      result: map
+    });
   } catch (e) {
     const msg = String(e && e.message ? e.message : e || "");
     res.status(500).json({ ok: false, reason: "chat_failed", msg });
