@@ -38,6 +38,42 @@
 
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
 
+  /* ================= AI activity fade ================= */
+let aiActivityRoot = null;
+
+const ensureAiActivityRoot = () => {
+  if (aiActivityRoot) return aiActivityRoot;
+
+  const el = document.createElement("div");
+  el.className = "ai-activity";
+  document.body.appendChild(el);
+  aiActivityRoot = el;
+  return el;
+};
+
+const showAiActivity = (name) => {
+  const root = ensureAiActivityRoot();
+
+  const pill = document.createElement("div");
+  pill.className = "ai-pill";
+  pill.textContent = name;
+
+  root.appendChild(pill);
+
+  // fade in
+  requestAnimationFrame(() => pill.classList.add("show"));
+
+  // fade out
+  setTimeout(() => {
+    pill.classList.remove("show");
+    setTimeout(() => {
+      try { root.removeChild(pill); } catch {}
+    }, 260);
+  }, 1200);
+};
+
+showAiActivity(k);
+
   /* ================= storage ================= */
   const STORAGE_KEY_LOCAL = "aurea_main_v1_local";
   const STORAGE_KEY_CLOUD = "aurea_main_v1_cloud";
@@ -1041,14 +1077,17 @@ const closeSettings = () => {
     tray.id = "aureaAttachTray";
     tray.style.cssText = `
       display:none;
-      gap:8px;
+      gap:10px;
       flex-wrap:wrap;
-      padding:6px 10px 0;
+      padding:0 10px 8px;
       margin:0;
     `;
 
-    // Askの先頭に差し込む（UIを壊さず、必要時だけ出す）
-    ask.insertBefore(tray, ask.firstChild);
+    // GPT準拠：入力列（askbar / controls）の「上」に置く（入力が右に避けない）
+    const bar = ask.querySelector(".askbar, .askbar-inner, .bar, .row") || null;
+    if (bar) ask.insertBefore(tray, bar);
+    else ask.insertBefore(tray, ask.firstChild);
+
     attachTrayEl = tray;
     return tray;
   };
@@ -1073,16 +1112,16 @@ const closeSettings = () => {
       chip.dataset.aid = a.id;
 
       chip.style.cssText = `
-        max-width:240px;
+        max-width:320px;
         border-radius:999px;
         border:1px solid rgba(255,255,255,.12);
         background:rgba(255,255,255,.06);
         color:rgba(255,255,255,.92);
         cursor:pointer;
-        padding:6px 10px;
+        padding:7px 10px;
         display:flex;
         align-items:center;
-        gap:8px;
+        gap:10px;
         font-size:12px;
         line-height:1;
         font-family:var(--font);
@@ -1091,9 +1130,19 @@ const closeSettings = () => {
       const name = String(a.name || "file").trim();
       const meta = `${bytesToHuman(a.size)}${a.mime ? ` · ${a.mime}` : ""}`;
 
+      const isImg = String(a.kind || "") === "image";
+      const isPdf = (String(a.mime || "") === "application/pdf") || String(a.name || "").toLowerCase().endsWith(".pdf");
+
+      const thumb = (isImg && a.dataUrl)
+        ? `<img src="${escHtml(a.dataUrl)}" alt="" style="width:22px;height:22px;border-radius:6px;object-fit:cover;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.03);" />`
+        : isPdf
+          ? `<span aria-hidden="true" style="width:30px;height:22px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.12);background:rgba(255,60,60,.16);color:rgba(255,255,255,.92);font-size:10px;font-weight:700;letter-spacing:.04em;">PDF</span>`
+          : `<span aria-hidden="true" style="width:22px;height:22px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.03);opacity:.85;">📄</span>`;
+
       chip.innerHTML = `
-        <span style="opacity:.92;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(name)}</span>
-        <span style="opacity:.62;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(meta)}</span>
+        ${thumb}
+        <span style="opacity:.92;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(name)}</span>
+        <span style="opacity:.62;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(meta)}</span>
         <span data-action="remove" aria-label="remove" style="opacity:.72;margin-left:auto;">×</span>
       `;
 
@@ -2727,6 +2776,13 @@ const closeSettings = () => {
       }
     } catch {
       apiMap = null;
+    }
+
+    // ===== AI activity fade (active AIs only) =====
+    if (apiMap && typeof apiMap === "object") {
+      for (const k of Object.keys(apiMap)) {
+        if (apiMap[k]) showAiActivity(k);
+      }
     }
 
     // run in parallel, update status per AI

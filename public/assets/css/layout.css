@@ -2374,3 +2374,64 @@ body.theme-light .images-empty{
 body.view-project:not(.has-chat) .scroll-down-btn{
   display:none;
 }
+
+/* ===== AI activity fade (AUREA) ===== */
+.ai-activity {
+  position: fixed;
+  top: 16px;
+  right: 20px;
+  z-index: 10050;
+  display: flex;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.ai-activity .ai-pill {
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(20,21,22,.75);
+  color: rgba(255,255,255,.92);
+  font-size: 12px;
+  letter-spacing: .02em;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity .25s ease, transform .25s ease;
+  backdrop-filter: blur(8px);
+}
+
+.ai-activity .ai-pill.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ===== AI activity fade (AUREA) ===== */
+.ai-activity{
+  position:fixed;
+  top:16px;
+  right:20px;
+  z-index:10050;
+  display:flex;
+  gap:8px;
+  pointer-events:none;
+}
+
+.ai-activity .ai-pill{
+  padding:6px 10px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(20,21,22,.75);
+  color:rgba(255,255,255,.92);
+  font-size:12px;
+  letter-spacing:.02em;
+  opacity:0;
+  transform:translateY(-4px);
+  transition:opacity .25s ease, transform .25s ease;
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+}
+
+.ai-activity .ai-pill.show{
+  opacity:1;
+  transform:translateY(0);
+}
