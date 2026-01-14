@@ -72,8 +72,6 @@ const showAiActivity = (name) => {
   }, 1200);
 };
 
-showAiActivity(k);
-
   /* ================= storage ================= */
   const STORAGE_KEY_LOCAL = "aurea_main_v1_local";
   const STORAGE_KEY_CLOUD = "aurea_main_v1_cloud";
