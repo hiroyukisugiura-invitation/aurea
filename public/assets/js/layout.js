@@ -3029,28 +3029,42 @@ const closeSettings = () => {
   }, true);
 
     /* ================= drag & drop (Ask bar attach) ================= */
+  const hasFileItems = (dt) => {
+    try {
+      if (!dt) return false;
+      if (dt.files && dt.files.length) return true;
+      if (dt.items && dt.items.length) {
+        return Array.from(dt.items).some(it => it && it.kind === "file");
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  };
+
+  // captureで強制（PJトップでも確実に preventDefault）
   document.addEventListener("dragover", (e) => {
     const dt = e.dataTransfer;
-    if (!dt) return;
-    if (!dt.types || !Array.from(dt.types).includes("Files")) return;
+    if (!hasFileItems(dt)) return;
     e.preventDefault();
-  });
+    e.stopPropagation();
+  }, true);
 
   document.addEventListener("drop", async (e) => {
     const dt = e.dataTransfer;
-    if (!dt || !dt.files || !dt.files.length) return;
+    if (!hasFileItems(dt)) return;
 
-    // ファイルドロップを許可（PJトップ含む）
     e.preventDefault();
+    e.stopPropagation();
 
-    // 重要：PJトップは動的生成のため、先にトレイ生成を試みる
     try { ensureAttachTray(); } catch {}
 
-    await addFilesAsAttachments(dt.files);
-
-    // 重要：追加後にもう一度トレイ描画（PJトップで確実に出す）
-    try { renderAttachTray(); } catch {}
-  });
+    const files = (dt && dt.files && dt.files.length) ? dt.files : null;
+    if (files) {
+      await addFilesAsAttachments(files);
+      try { renderAttachTray(); } catch {}
+    }
+  }, true);
 
   // (removed) legacy sidebar search handler
   // 検索は mountSidebarSearch() で生成される input (#aureaSearchInput) のみを使用
