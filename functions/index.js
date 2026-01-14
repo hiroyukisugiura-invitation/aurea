@@ -656,7 +656,16 @@ const shouldUseSora = (text) => {
   return /\b(image|render|illustration|photo|png|jpg|webp)\b/i.test(s) || /画像|イラスト|写真|生成|レンダ/.test(s);
 };
 
+const isImageGenerationRequest = (text) => {
+  const s = String(text || "");
+  return (
+    /\b(generate|create|make|render|draw|illustrate)\b/i.test(s) ||
+    /画像|イラスト|生成|描いて|作って/.test(s)
+  );
+};
+
 app.post("/api/chat", async (req, res) => {
+
   try {
     // ===== Unified Request Schema =====
     const prompt = String(req.body?.prompt || "").trim();
@@ -666,6 +675,57 @@ app.post("/api/chat", async (req, res) => {
     if (!prompt && attachments.length === 0) {
       res.status(400).json({ ok: false, reason: "empty_input" });
       return;
+    }
+
+    // ===== Sora image generation (v1) =====
+    // 画像生成要求は、6AI map ではなく image を返す
+    if (isImageGenerationRequest(prompt)) {
+      const key = getOpenAIKey();
+      if (!key) {
+        res.status(500).json({ ok: false, reason: "openai_key_missing" });
+        return;
+      }
+
+      try {
+        const r = await fetch("https://api.openai.com/v1/images", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${key}`
+          },
+          body: JSON.stringify({
+            model: "sora-2",
+            prompt,
+            size: "1024x1024"
+          })
+        });
+
+        const j = await r.json().catch(() => null);
+
+        const url =
+          (j && Array.isArray(j.data) && j.data[0] && (j.data[0].url || j.data[0].b64_json))
+            ? (j.data[0].url ? String(j.data[0].url) : `data:image/png;base64,${String(j.data[0].b64_json)}`)
+            : "";
+
+        if (!r.ok || !url) {
+          res.status(500).json({ ok: false, reason: "image_generation_failed" });
+          return;
+        }
+
+        res.json({
+          ok: true,
+          image: {
+            url,
+            prompt
+          }
+        });
+        return;
+
+      } catch (e) {
+        void e;
+        res.status(500).json({ ok: false, reason: "image_generation_failed" });
+        return;
+      }
     }
 
     // v1: 添付はまだAIに渡さず、存在だけ認識（後工程で実装）

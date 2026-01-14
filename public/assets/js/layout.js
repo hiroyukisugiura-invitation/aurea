@@ -1971,8 +1971,29 @@ const closeSettings = () => {
       const renderMessageHtml = (msg) => {
         const raw0 = String(msg?.content || "");
 
+        // Assistant only: Sora image message
+        // Format:
+        // AUREA_IMAGE
+        // <url>
+        // <prompt>
+        if (msg?.role === "assistant" && raw0.startsWith("AUREA_IMAGE\n")) {
+          const lines = raw0.split("\n");
+          const url = String(lines[1] || "").trim();
+          const prompt = String(lines.slice(2).join("\n") || "").trim();
+
+          if (url) {
+            return `
+              <div class="ai-image-card">
+                <img src="${escHtml(url)}" alt="generated image" />
+                ${prompt ? `<div class="ai-image-caption">${escHtml(prompt).replace(/\n/g, "<br>")}</div>` : ""}
+              </div>
+            `.trim();
+          }
+        }
+
         // Assistant only: fold "AI Stack" progress into details
         if (msg?.role === "assistant" && raw0.startsWith("AI Stack\n")) {
+
           const sep = raw0.indexOf("\n\n");
           const head = (sep >= 0) ? raw0.slice(0, sep) : raw0;
           const rest = (sep >= 0) ? raw0.slice(sep + 2) : "";
@@ -2239,9 +2260,11 @@ const closeSettings = () => {
 
     const input = document.getElementById("aureaProjectHomeAsk");
 
-    const start = () => {
+    const start = async () => {
       const text = (input?.value || "").trim();
+      if (!text && pendingAttachments.length === 0) return;
 
+      // PJ内で新規トーク作成 → そのトークに送信（GPT同等）
       createProjectThread(pid);
 
       if (text) {
@@ -2249,6 +2272,10 @@ const closeSettings = () => {
       }
 
       if (input) input.value = "";
+
+      // 添付を確定して multiAiReply へ（解析・打ち返し）
+      const rawAttachments = takePendingAttachments();
+      await multiAiReply(text || tr("promptEmpty"), rawAttachments);
     };
 
     const pjPlus = wrap.querySelector(".pj-home-plus");
@@ -2274,14 +2301,14 @@ const closeSettings = () => {
     });
 
     if (input) {
-      input.addEventListener("keydown", (e) => {
+      input.addEventListener("keydown", async (e) => {
         const mode = state.settings?.sendMode || (localStorage.getItem("aurea_send_mode") || "cmdEnter");
         const isEnter = (e.key === "Enter");
 
         if (mode === "cmdEnter") {
           if (isEnter && (e.metaKey || e.ctrlKey)) {
             e.preventDefault();
-            start();
+            await start();
           }
           return;
         }
@@ -2289,7 +2316,7 @@ const closeSettings = () => {
         if (mode === "enter") {
           if (isEnter) {
             e.preventDefault();
-            start();
+            await start();
           }
         }
       });
@@ -2803,6 +2830,37 @@ const closeSettings = () => {
       });
 
       const j = await r.json().catch(() => null);
+
+      // ===== Sora image response (v1) =====
+      if (r.ok && j && j.ok && j.image && j.image.url) {
+        const url = String(j.image.url || "").trim();
+        const p = String(j.image.prompt || userText || "").trim();
+
+        // show activity
+        try { showAiActivity("Sora"); } catch {}
+
+        // save to images library (real image)
+        try {
+          addImageToLibrary({
+            prompt: p,
+            src: url,
+            from: {
+              threadId: getActiveThreadId(),
+              context: state.context
+            }
+          });
+        } catch {}
+
+        // render as special image message
+        const imgMsg = `AUREA_IMAGE\n${url}\n${p}`;
+        updateMessage(m.id, imgMsg);
+        renderChat();
+
+        setStreaming(false);
+        renderSidebar();
+        return;
+      }
+
       if (r.ok && j && j.ok && j.result && typeof j.result === "object") {
         apiMap = j.result;
       }
