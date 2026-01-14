@@ -1073,11 +1073,18 @@ const closeSettings = () => {
   const ensureAttachTray = () => {
     if (attachTrayEl) return attachTrayEl;
 
+    // 1) 通常チャット（.ask）
     const ask = document.querySelector(".ask");
-    if (!ask) return null;
 
-    // 重要：.ask の外に出しつつ、「Askと同じ中央カラム幅」に揃える
-    const host = ask.parentElement || null;
+    // 2) PJトップ（#aureaProjectHomeAsk のある .pj-home-askbar）
+    const pjAskInput = document.getElementById("aureaProjectHomeAsk");
+    const pjBar = pjAskInput ? pjAskInput.closest(".pj-home-askbar") : null;
+
+    // どちらも無い場合は作れない
+    const anchor = ask || pjBar;
+    if (!anchor) return null;
+
+    const host = anchor.parentElement || null;
 
     const tray = document.createElement("div");
     tray.id = "aureaAttachTray";
@@ -1094,10 +1101,10 @@ const closeSettings = () => {
       justify-content:flex-start;
       align-items:center;
 
-      pointer-events:auto; /* 重要：ask-wrap が pointer-events:none のため */
+      pointer-events:auto; /* ask-wrap が pointer-events:none の環境対策 */
     `;
 
-    if (host) host.insertBefore(tray, ask);
+    if (host) host.insertBefore(tray, anchor);
     else document.body.appendChild(tray);
 
     attachTrayEl = tray;
