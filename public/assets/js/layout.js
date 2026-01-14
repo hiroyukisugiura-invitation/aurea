@@ -1071,20 +1071,21 @@ const closeSettings = () => {
     const ask = document.querySelector(".ask");
     if (!ask) return null;
 
+    // 重要：.ask（丸い入力コンテナ）の外に出す（GPT同等：コメントの上部に展開）
+    const host = ask.parentElement || null;
+
     const tray = document.createElement("div");
     tray.id = "aureaAttachTray";
     tray.style.cssText = `
       display:none;
       gap:10px;
       flex-wrap:wrap;
-      padding:0 10px 8px;
+      padding:0 0 10px;
       margin:0;
     `;
 
-    // GPT準拠：入力列（askbar / controls）の「上」に置く（入力が右に避けない）
-    const bar = ask.querySelector(".askbar, .askbar-inner, .bar, .row") || null;
-    if (bar) ask.insertBefore(tray, bar);
-    else ask.insertBefore(tray, ask.firstChild);
+    if (host) host.insertBefore(tray, ask);
+    else document.body.appendChild(tray);
 
     attachTrayEl = tray;
     return tray;
