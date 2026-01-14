@@ -3028,6 +3028,39 @@ const closeSettings = () => {
     openAttachModal(hit);
   }, true);
 
+    // ===== board-level drag & drop (project home included) =====
+  const boardHasFileItems = (dt) => {
+    try {
+      if (!dt) return false;
+      if (dt.files && dt.files.length) return true;
+      if (dt.items && dt.items.length) return Array.from(dt.items).some(it => it && it.kind === "file");
+      return false;
+    } catch { return false; }
+  };
+
+  board?.addEventListener("dragover", (e) => {
+    const dt = e.dataTransfer;
+    if (!boardHasFileItems(dt)) return;
+    e.preventDefault();
+    e.stopPropagation();
+  }, true);
+
+  board?.addEventListener("drop", async (e) => {
+    const dt = e.dataTransfer;
+    if (!boardHasFileItems(dt)) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    try { ensureAttachTray(); } catch {}
+
+    const files = (dt && dt.files && dt.files.length) ? dt.files : null;
+    if (files) {
+      await addFilesAsAttachments(files);
+      try { renderAttachTray(); } catch {}
+    }
+  }, true);
+
     /* ================= drag & drop (Ask bar attach) ================= */
   const hasFileItems = (dt) => {
     try {
