@@ -1093,7 +1093,11 @@ const closeSettings = () => {
       gap:10px;
       justify-content:flex-start;
       align-items:center;
-    `;
+
+      pointer-events:auto; /* 重要：ask-wrap が pointer-events:none のため */
+    `;git add .
+git commit -m "AUREA: restore UI, fix OAuth flow and app bindings"
+git push
 
     if (host) host.insertBefore(tray, ask);
     else document.body.appendChild(tray);
