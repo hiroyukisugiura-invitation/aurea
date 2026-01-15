@@ -529,6 +529,18 @@ const showAiActivity = (name) => {
     // ===== Settings selects: option text normalize (ja/en) =====
     const isEn = (lang === "en");
 
+    // ===== AI Reports (Account > AI Stack) =====
+    const arK = document.getElementById("settingsAiReportsLabel");
+    const arV = document.getElementById("settingsAiReportsDesc");
+    if (arK) arK.textContent = "AI Reports";
+    if (arV) arV.textContent = isEn ? "Show model-level outputs" : "AI別レポートを表示";
+
+    // AI Reports modal (if exists)
+    const arTitle = document.getElementById("aureaAiReportsModalTitle");
+    const arSub = document.getElementById("aureaAiReportsModalSub");
+    if (arTitle) arTitle.textContent = isEn ? "AI Logs" : "AIログ";
+    if (arSub) arSub.textContent = isEn ? "Model-level outputs" : "モデル別の生出力";
+
     // Theme select options
     const themeSel = document.querySelector(".settings-modal #settingsTheme");
     if (themeSel) {
