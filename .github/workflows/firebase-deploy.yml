@@ -32,3 +32,6 @@ jobs:
 
       - name: Deploy
         run: firebase deploy --project aurea-2026 --only functions,hosting
+        env:
+          AUREA_DEBUG: ${{ secrets.AUREA_DEBUG }}
+          AUREA_MULTI_AI: ${{ secrets.AUREA_MULTI_AI }}
