@@ -2,7 +2,7 @@ const { onRequest } = require("firebase-functions/v2/https");
 const express = require("express");
 const admin = require("firebase-admin");
 const Stripe = require("stripe");
-const { defineSecret } = require("firebase-functions/params");
+const { defineSecret, defineString } = require("firebase-functions/params");
 
 const STRIPE_SECRET_KEY = defineSecret("STRIPE_SECRET_KEY");
 const STRIPE_PRICE_PRO = defineSecret("STRIPE_PRICE_PRO");
@@ -162,7 +162,8 @@ const fromB64Url = (s) => {
   try { return Buffer.from(String(s || ""), "base64url").toString("utf8"); } catch { return ""; }
 };
 
-const DEBUG = String(process.env.AUREA_DEBUG || "").trim() === "1";
+const AUREA_DEBUG = defineString("AUREA_DEBUG");
+const DEBUG = String(AUREA_DEBUG.value() || "").trim() === "1";
 const dbg = (...args) => { try { if (DEBUG) console.log(...args); } catch {} };
 
 const connectGoogle = (service) => (req, res) => {
@@ -594,7 +595,8 @@ const MISTRAL_API_KEY = defineSecret("MISTRAL_API_KEY");
 // Sora（画像生成専用。OpenAIのimagesを使う場合はOPENAI_API_KEYで足りる）
 const SORA_API_KEY = defineSecret("SORA_API_KEY");
 
-const MULTI_AI_ENABLED = String(process.env.AUREA_MULTI_AI || "").trim() === "1";
+const AUREA_MULTI_AI = defineString("AUREA_MULTI_AI");
+const MULTI_AI_ENABLED = String(AUREA_MULTI_AI.value() || "").trim() === "1";
 
 const getOpenAIKey = () => {
   const k = String(OPENAI_API_KEY.value() || "").trim();
@@ -677,7 +679,7 @@ const callOpenAIText = async ({ system, user, userParts, model }) => {
     input: [
       {
         role: "system",
-        content: [{ type: "text", text: sysText }]
+        content: [{ type: "input_text", text: sysText }]
       },
       {
         role: "user",
@@ -746,10 +748,25 @@ const runSoraImage = async ({ prompt }) => {
     });
 
     const j = await r.json().catch(() => null);
-    if (!r.ok || !j) return null;
+
+    if (!r.ok || !j) {
+      const errMsg =
+        (j && j.error && (j.error.message || j.error.code))
+          ? String(j.error.message || j.error.code)
+          : `http_${r.status}`;
+      dbg("OpenAI Responses API failed:", errMsg, j);
+
+      return DEBUG ? `OpenAIError: ${errMsg}` : null;
+    }
 
     const out = String(j.output_text || "").trim();
-    return out || null;
+    if (!out) {
+      dbg("OpenAI Responses API empty output_text:", j);
+      return DEBUG ? "OpenAIError: empty_output_text" : null;
+    }
+
+    return out;
+
   } catch (e) {
     dbg("callOpenAIText failed", e);
     return null;
@@ -893,11 +910,11 @@ app.post("/api/chat", async (req, res) => {
     }
 
     const names = MULTI_AI_ENABLED
-      ? ["GPT", "Gemini", "Claude", "Perplexity", "Mistral", "Sora"]
-      : ["GPT"];
+      ? ["Gemini", "Claude", "Perplexity", "Mistral", "Sora"]
+      : [];
 
     // build user parts (multimodal)
-    const userParts = [{ type: "text", text: prompt }];
+    const userParts = [{ type: "input_text", text: prompt }];
 
     const parseCsvLine = (line) => {
       const s = String(line || "");
@@ -958,7 +975,7 @@ app.post("/api/chat", async (req, res) => {
           userParts.push({ type: "input_file", file_id: fid });
         } else {
           userParts.push({
-            type: "text",
+            type: "input_text",
             text: `Attached PDF: ${name}${mime ? ` (${mime})` : ""}${size ? ` ${size} bytes` : ""}\nNote: upload failed.`
           });
         }
@@ -1010,7 +1027,7 @@ app.post("/api/chat", async (req, res) => {
             }
 
             userParts.push({
-              type: "text",
+              type: "input_text",
               text:
                 `Attached CSV file: ${name}${mime ? ` (${mime})` : ""}\n` +
                 `Columns: ${colCount}${header.length ? ` (${cols.slice(0, 20).join(", ")}${cols.length > 20 ? ", ..." : ""})` : ""}\n` +
@@ -1021,13 +1038,13 @@ app.post("/api/chat", async (req, res) => {
             });
           } else {
             userParts.push({
-              type: "text",
+              type: "input_text",
               text: `Attached text file: ${name}${mime ? ` (${mime})` : ""}\n\n${decoded}${truncated ? `\n\n[truncated]` : ""}`
             });
           }
         } else {
           userParts.push({
-            type: "text",
+            type: "input_text",
             text: `Attached text file: ${name}${mime ? ` (${mime})` : ""}${size ? ` ${size} bytes` : ""}\nNote: decode failed.`
           });
         }
@@ -1045,7 +1062,7 @@ app.post("/api/chat", async (req, res) => {
       if (type === "file" || type === "image") {
         const reason = fallback ? `\nReason: ${fallback}` : (!data ? `\nReason: no_data` : "");
         userParts.push({
-          type: "text",
+          type: "input_text",
           text: `Attached file: ${name}${mime ? ` (${mime})` : ""}${size ? ` ${size} bytes` : ""}${reason}`
         });
       }
@@ -1056,18 +1073,6 @@ app.post("/api/chat", async (req, res) => {
       attachments.some(a => String(a?.type || "") === "image");
 
     const tasks = names.map(async (name) => {
-      if (name === "GPT") {
-        const system = buildSystemPrompt("GPT");
-        const out = await callOpenAIText({
-          system,
-          user: prompt,
-          userParts,
-          model: "gpt-5.2"
-        });
-        return { name, out: out || null };
-      }
-
-      if (!MULTI_AI_ENABLED) return { name, out: null };
 
       if (name === "Gemini") {
         const out = await runGemini({ prompt, parts: userParts });
@@ -1106,6 +1111,46 @@ app.post("/api/chat", async (req, res) => {
       const v = s.value || {};
       if (v.name && v.out) map[v.name] = v.out;
     }
+
+    const buildReportsBlock = (reports) => {
+      const keys = Object.keys(reports || {}).filter(k => k && k !== "GPT");
+      if (!keys.length) return "";
+      const lines = [];
+      lines.push("Reports:");
+      for (const k of keys) {
+        lines.push(`--- ${k} ---`);
+        lines.push(String(reports[k] || "").trim());
+      }
+      return lines.join("\n");
+    };
+
+    const reportsBlock = buildReportsBlock(map);
+
+    const gptSystem = [
+      buildSystemPrompt("GPT"),
+      "",
+      "Integration rule:",
+      "- If Reports are provided, integrate them into one final answer.",
+      "- Do not mention internal model orchestration unless explicitly asked."
+    ].join("\n");
+
+    const gptParts = userParts.slice();
+    const mergedText = reportsBlock ? `${prompt}\n\n${reportsBlock}` : prompt;
+
+    if (gptParts.length && gptParts[0] && gptParts[0].type === "text") {
+      gptParts[0] = { type: "text", text: mergedText };
+    } else {
+      gptParts.unshift({ type: "text", text: mergedText });
+    }
+
+    const gptOut = await callOpenAIText({
+      system: gptSystem,
+      user: prompt,
+      userParts: gptParts,
+      model: "gpt-5.2"
+    });
+
+    if (gptOut) map.GPT = gptOut;
 
     res.json({
       ok: true,
