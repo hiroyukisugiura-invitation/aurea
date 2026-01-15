@@ -584,11 +584,56 @@ app.post("/api/company/invite/consume", consumeInvite);
 */
 
 const OPENAI_API_KEY = defineSecret("OPENAI_API_KEY");
-// （将来用：各社キー。未設定でも落ちない）
+
+// 6大API（将来用：未設定でも落ちない / フラグで有効化）
+const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
+const CLAUDE_API_KEY = defineSecret("CLAUDE_API_KEY");
+const PERPLEXITY_API_KEY = defineSecret("PERPLEXITY_API_KEY");
+const MISTRAL_API_KEY = defineSecret("MISTRAL_API_KEY");
+
+// Sora（画像生成専用。OpenAIのimagesを使う場合はOPENAI_API_KEYで足りる）
+const SORA_API_KEY = defineSecret("SORA_API_KEY");
+
+const MULTI_AI_ENABLED = String(process.env.AUREA_MULTI_AI || "").trim() === "1";
 
 const getOpenAIKey = () => {
   const k = String(OPENAI_API_KEY.value() || "").trim();
   return k ? k : null;
+};
+
+const getGeminiKey = () => {
+  try {
+    const k = String(GEMINI_API_KEY.value() || "").trim();
+    return k ? k : null;
+  } catch { return null; }
+};
+
+const getClaudeKey = () => {
+  try {
+    const k = String(CLAUDE_API_KEY.value() || "").trim();
+    return k ? k : null;
+  } catch { return null; }
+};
+
+const getPerplexityKey = () => {
+  try {
+    const k = String(PERPLEXITY_API_KEY.value() || "").trim();
+    return k ? k : null;
+  } catch { return null; }
+};
+
+const getMistralKey = () => {
+  try {
+    const k = String(MISTRAL_API_KEY.value() || "").trim();
+    return k ? k : null;
+  } catch { return null; }
+};
+
+const getSoraKey = () => {
+  try {
+    const k = String(SORA_API_KEY.value() || "").trim();
+    return k ? k : null;
+  } catch { return null; }
 };
 
 const uploadOpenAIFile = async ({ base64, filename, mime }) => {
@@ -639,7 +684,50 @@ const callOpenAIText = async ({ system, user, userParts, model }) => {
         content: parts
       }
     ]
-  };
+};
+
+// ===== Multi-AI runners (SAFE STUBS / disabled by default) =====
+// NOTE: MULTI_AI_ENABLED !== true の間は一切呼ばれない
+
+const runGemini = async ({ prompt, parts }) => {
+  if (!MULTI_AI_ENABLED) return null;
+  const key = getGeminiKey();
+  if (!key) return null;
+  // stub
+  return null;
+};
+
+const runClaude = async ({ prompt, parts }) => {
+  if (!MULTI_AI_ENABLED) return null;
+  const key = getClaudeKey();
+  if (!key) return null;
+  // stub
+  return null;
+};
+
+const runPerplexity = async ({ prompt, parts }) => {
+  if (!MULTI_AI_ENABLED) return null;
+  const key = getPerplexityKey();
+  if (!key) return null;
+  // stub
+  return null;
+};
+
+const runMistral = async ({ prompt, parts }) => {
+  if (!MULTI_AI_ENABLED) return null;
+  const key = getMistralKey();
+  if (!key) return null;
+  // stub
+  return null;
+};
+
+const runSoraImage = async ({ prompt }) => {
+  if (!MULTI_AI_ENABLED) return null;
+  const key = getSoraKey() || getOpenAIKey();
+  if (!key) return null;
+  // stub
+  return null;
+};
 
   const controller = new AbortController();
   const t = setTimeout(() => {
@@ -688,7 +776,36 @@ const buildSystemPrompt = (aiName) => {
   if (n === "Sora") {
     return "You are Sora. If the user requests an image, return an image prompt and style notes.";
   }
-  return "You are GPT. Provide the final integrated answer and recommendations.";
+
+  // GPT（最終回答 / 添付解析テンプレ）
+  return [
+    "You are GPT. Provide the final integrated answer.",
+    "",
+    "Attachment handling rules:",
+    "- If a file is attached and the user prompt is empty/implicit, proactively analyze the attachment.",
+    "- Be concise, structured, and actionable.",
+    "",
+    "When the attachment is a CSV:",
+    "- Identify columns and likely data types.",
+    "- Summarize key patterns, anomalies, and useful derived metrics.",
+    "- If appropriate, propose next analyses and questions to confirm intent.",
+    "",
+    "When the attachment is a PDF:",
+    "- Provide a short outline (sections) and key takeaways.",
+    "- Extract critical entities/dates/numbers if present.",
+    "- Flag uncertainty where the file content is ambiguous.",
+    "",
+    "When the attachment is an image:",
+    "- Describe what is visible and extract any readable text if relevant.",
+    "",
+    "When the attachment is text/markdown:",
+    "- Summarize, then list action items and open questions.",
+    "",
+    "Output format:",
+    "- Start with the most useful conclusion.",
+    "- Then bullet points or short sections.",
+    "- Avoid filler."
+  ].join("\n");
 };
 
 const shouldUseSora = (text) => {
@@ -775,7 +892,9 @@ app.post("/api/chat", async (req, res) => {
       return;
     }
 
-    const names = ["GPT"];
+    const names = MULTI_AI_ENABLED
+      ? ["GPT", "Gemini", "Claude", "Perplexity", "Mistral", "Sora"]
+      : ["GPT"];
 
     // build user parts (multimodal)
     const userParts = [{ type: "text", text: prompt }];
@@ -932,22 +1051,73 @@ app.post("/api/chat", async (req, res) => {
       }
     }
 
-    const system = buildSystemPrompt("GPT");
+    const useSora =
+      shouldUseSora(prompt) ||
+      attachments.some(a => String(a?.type || "") === "image");
 
-    const out = await callOpenAIText({
-      system,
-      user: prompt,
-      userParts,
-      model: "gpt-5.2"
+    const tasks = names.map(async (name) => {
+      if (name === "GPT") {
+        const system = buildSystemPrompt("GPT");
+        const out = await callOpenAIText({
+          system,
+          user: prompt,
+          userParts,
+          model: "gpt-5.2"
+        });
+        return { name, out: out || null };
+      }
+
+      if (!MULTI_AI_ENABLED) return { name, out: null };
+
+      if (name === "Gemini") {
+        const out = await runGemini({ prompt, parts: userParts });
+        return { name, out: out || null };
+      }
+
+      if (name === "Claude") {
+        const out = await runClaude({ prompt, parts: userParts });
+        return { name, out: out || null };
+      }
+
+      if (name === "Perplexity") {
+        const out = await runPerplexity({ prompt, parts: userParts });
+        return { name, out: out || null };
+      }
+
+      if (name === "Mistral") {
+        const out = await runMistral({ prompt, parts: userParts });
+        return { name, out: out || null };
+      }
+
+      if (name === "Sora") {
+        // 非画像リクエストでは結果に含めない（画像は上の image 分岐で返す）
+        if (!useSora) return { name, out: null };
+        return { name, out: null };
+      }
+
+      return { name, out: null };
     });
 
+    const settled = await Promise.allSettled(tasks);
+
     const map = {};
-    if (out) map.GPT = out;
+    for (const s of settled) {
+      if (!s || s.status !== "fulfilled") continue;
+      const v = s.value || {};
+      if (v.name && v.out) map[v.name] = v.out;
+    }
 
     res.json({
       ok: true,
-      result: map
+      result: map,
+      debug: DEBUG
+        ? {
+            multiAiEnabled: MULTI_AI_ENABLED,
+            returnedKeys: Object.keys(map || {})
+          }
+        : undefined
     });
+
   } catch (e) {
     const msg = String(e && e.message ? e.message : e || "");
     res.status(500).json({ ok: false, reason: "chat_failed", msg });
@@ -963,9 +1133,15 @@ exports.api = onRequest(
       STRIPE_PRICE_TEAM,
       STRIPE_PRICE_ENTERPRISE,
       STRIPE_WEBHOOK_SECRET,
+
       OPENAI_API_KEY,
+
+      GEMINI_API_KEY,
+      CLAUDE_API_KEY,
+      PERPLEXITY_API_KEY,
+      MISTRAL_API_KEY,
+      SORA_API_KEY,
     ]
   },
   app
 );
-

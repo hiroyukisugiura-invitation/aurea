@@ -2799,10 +2799,21 @@ const closeSettings = () => {
 
     // streaming中は送信ボタンを無効化（表示は維持）
     if (sendBtn) {
+      const hasText = (askInput?.value || "").trim().length > 0;
+      const hasAttachments = pendingAttachments.length > 0;
+      const canSend = hasText || hasAttachments;
+
       sendBtn.style.display = "";
-      sendBtn.disabled = !!on || !(askInput?.value.trim());
-      sendBtn.style.opacity = sendBtn.disabled ? ".45" : "";
-      sendBtn.style.cursor = sendBtn.disabled ? "not-allowed" : "";
+
+      if (on) {
+        sendBtn.disabled = true;
+        sendBtn.style.opacity = ".45";
+        sendBtn.style.cursor = "not-allowed";
+      } else {
+        sendBtn.disabled = !canSend;
+        sendBtn.style.opacity = canSend ? "" : ".45";
+        sendBtn.style.cursor = canSend ? "" : "not-allowed";
+      }
     }
   };
 
