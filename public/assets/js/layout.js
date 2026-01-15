@@ -2078,7 +2078,23 @@ const closeSettings = () => {
             `.trim();
         }).join("");
 
-        return `${headHtml}<br><br>${detailsHtml}`;
+        const canToggle = (state.settings?.showAiReports !== false);
+
+        const openBtn = canToggle
+          ? `<button class="ai-reports-open" type="button" data-action="open-ai-reports" style="
+              margin:6px 0 10px;
+              height:30px;
+              padding:0 12px;
+              border-radius:999px;
+              border:1px solid rgba(255,255,255,.14);
+              background:rgba(255,255,255,.06);
+              color:rgba(255,255,255,.90);
+              font-size:12px;
+              cursor:pointer;
+            ">AI Reports を開く</button>`
+          : "";
+
+        return `${headHtml}<br>${openBtn}<br>${detailsHtml}`.replace(/<br><br>/g, "<br>");
       };
 
       const renderMessageHtml = (msg) => {
@@ -3562,6 +3578,23 @@ btnNewChat?.addEventListener("click", (e) => {
   /* ================= delegate clicks ================= */
   document.addEventListener("click", async (e) => {
     const t = e.target;
+
+        // open all AI report details within the same message bubble
+    const openReportsBtn = t.closest("button.ai-reports-open[data-action='open-ai-reports']");
+    if (openReportsBtn) {
+      e.preventDefault();
+
+      const bubble = openReportsBtn.closest(".bubble");
+      if (!bubble) return;
+
+      bubble.querySelectorAll("details.ai-report").forEach((d) => {
+        try { d.setAttribute("open", ""); } catch {}
+      });
+
+      // keep the view stable
+      syncScrollState();
+      return;
+    }
 
     /* ===== Apps: SaaS card click → connect (same tab) ===== */
     const saasCard = t.closest(".panel-apps .apps-grid .saas");
