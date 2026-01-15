@@ -136,10 +136,11 @@ const showAiActivity = (name) => {
 
     // settings
     settings: {
-      theme: "dark",        // "system" | "light" | "dark"
-      sendMode: "cmdEnter", // "cmdEnter" | "enter"
-      dataStorage: "cloud", // "cloud" | "local"
-      language: "ja"        // i18nは次工程で使用
+      theme: "dark",
+      sendMode: "cmdEnter",
+      dataStorage: "cloud",
+      language: "ja",
+      showAiReports: true
     },
 
     // apps/connectors
@@ -627,6 +628,10 @@ const openSettings = async () => {
   syncSettingsUi();
   applyI18n();
 };
+    const chkAi = document.getElementById("settingsShowAiReports");
+    if (chkAi) {
+      chkAi.checked = state.settings?.showAiReports !== false;
+    }
 
 const closeSettings = () => {
   const ai = document.getElementById("aiStackOverlay");
@@ -4414,6 +4419,15 @@ const hideAuthGate = () => {
 
   // Settings bindings (General / Apps / Data / Account)
   const bindSettings = () => {
+
+        const chkAi = document.getElementById("settingsShowAiReports");
+    if (chkAi) {
+      chkAi.addEventListener("change", () => {
+        state.settings.showAiReports = !!chkAi.checked;
+        save(state);
+        renderView();
+      });
+    }
 
     /* ===== General ===== */
     const selTheme = document.querySelector(".settings-modal #settingsTheme");
