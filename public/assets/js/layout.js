@@ -533,19 +533,13 @@ const showAiActivity = (name) => {
     const arTitle = document.getElementById("aureaAiReportsModalTitle");
     const arSub = document.getElementById("aureaAiReportsModalSub");
     if (arTitle) arTitle.textContent = isEn ? "AI Logs" : "AIログ";
-    if (arSub) arSub.textContent = isEn ? "Model-level outputs" : "AI Reports（モデル別の生出力）";
+    if (arSub) arSub.textContent = isEn ? "Model-level outputs" : "モデル別の生出力";
 
     // ===== AI Reports (Account > AI Stack) =====
     const arK = document.getElementById("settingsAiReportsLabel");
     const arV = document.getElementById("settingsAiReportsDesc");
     if (arK) arK.textContent = "AI Reports";
     if (arV) arV.textContent = isEn ? "Show model-level outputs" : "AI別レポートを表示";
-
-    // AI Reports modal (if exists)
-    const arTitle = document.getElementById("aureaAiReportsModalTitle");
-    const arSub = document.getElementById("aureaAiReportsModalSub");
-    if (arTitle) arTitle.textContent = isEn ? "AI Logs" : "AIログ";
-    if (arSub) arSub.textContent = isEn ? "Model-level outputs" : "モデル別の生出力";
 
     // Theme select options
     const themeSel = document.querySelector(".settings-modal #settingsTheme");
@@ -809,178 +803,6 @@ const closeSettings = () => {
     if (e.key !== "Escape") return;
     if (aiStackOverlay && aiStackOverlay.style.display !== "none") closeAiStackPopup();
   });
-
-  /* ================= AI reports modal (popup) ================= */
-  let aiReportsModal = null;
-  let aiReportsModalBody = null;
-  let aiReportsModalBound = false;
-
-  const isAiReportsModalOpen = () => {
-    return !!aiReportsModal && aiReportsModal.style.display !== "none";
-  };
-
-  const closeAiReportsModal = () => {
-    if (!aiReportsModal) return;
-    aiReportsModal.style.display = "none";
-    aiReportsModal.setAttribute("aria-hidden", "true");
-    aiReportsModal.dataset.mid = "";
-    if (aiReportsModalBody) aiReportsModalBody.innerHTML = "";
-  };
-
-  const parseReportsBlocks = (raw) => {
-    const s = String(raw || "");
-    const idx = s.indexOf("\nReports:\n");
-    if (idx < 0) return { head: s, blocks: [] };
-
-    const head = s.slice(0, idx);
-    const tail = s.slice(idx + "\nReports:\n".length);
-
-    const lines = tail.split("\n");
-    const blocks = [];
-    let cur = null;
-
-    const flush = () => {
-      if (cur) {
-        cur.body = (cur.body || []).join("\n").trim();
-        blocks.push(cur);
-        cur = null;
-      }
-    };
-
-    for (const line of lines) {
-      const m1 = /^---\s*(.+?)\s*---\s*$/.exec(line);
-      if (m1) {
-        flush();
-        cur = { name: m1[1], body: [] };
-        continue;
-      }
-      if (cur) cur.body.push(line);
-    }
-    flush();
-
-    return { head, blocks };
-  };
-
-  const ensureAiReportsModal = () => {
-    if (aiReportsModal) return aiReportsModal;
-
-    aiReportsModal = document.createElement("div");
-    aiReportsModal.id = "aureaAiReportsModal";
-    aiReportsModal.setAttribute("aria-hidden", "true");
-    aiReportsModal.style.cssText = `
-      position:fixed; inset:0;
-      display:none; align-items:center; justify-content:center;
-      background:rgba(0,0,0,.45);
-      z-index:10095;
-      padding:18px;
-    `;
-
-    aiReportsModal.innerHTML = `
-      <div style="
-        width:min(980px, calc(100% - 24px));
-        max-height:calc(100vh - 64px);
-        background:rgba(20,21,22,.96);
-        border:1px solid rgba(255,255,255,.10);
-        border-radius:18px;
-        box-shadow:0 10px 30px rgba(0,0,0,.45);
-        overflow:hidden;
-        backdrop-filter: blur(14px);
-        -webkit-backdrop-filter: blur(14px);
-        color:rgba(255,255,255,.92);
-        font-family: -apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Hiragino Sans','Noto Sans JP',sans-serif;
-        display:flex;
-        flex-direction:column;
-        min-width:0;
-      ">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.08);">
-          <div style="min-width:0;">
-            <div style="font-size:14px;font-weight:700;">AI Logs</div>
-            <div style="font-size:12px;opacity:.68;">AI Reports（モデル別の生出力）</div>
-          </div>
-          <button type="button" data-action="close" style="
-            width:36px;height:36px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
-            background:rgba(255,255,255,.06);color:rgba(255,255,255,.92);
-            cursor:pointer;font-size:18px;line-height:34px;flex:0 0 auto;
-          ">×</button>
-        </div>
-
-        <div id="aureaAiReportsModalBody" style="padding:14px 16px;overflow:auto;min-height:0;flex:1 1 auto;"></div>
-      </div>
-    `;
-
-    document.body.appendChild(aiReportsModal);
-    aiReportsModalBody = document.getElementById("aureaAiReportsModalBody");
-
-    if (!aiReportsModalBound) {
-      aiReportsModalBound = true;
-
-      aiReportsModal.addEventListener("click", (e) => {
-        if (e.target === aiReportsModal) closeAiReportsModal();
-      });
-
-      aiReportsModal.addEventListener("click", (e) => {
-        const t = e.target;
-        if (t && t.closest && t.closest("[data-action='close']")) {
-          e.preventDefault();
-          closeAiReportsModal();
-        }
-      });
-
-      document.addEventListener("keydown", (e) => {
-        if (e.key !== "Escape") return;
-        if (!isAiReportsModalOpen()) return;
-        closeAiReportsModal();
-      }, true);
-    }
-
-    return aiReportsModal;
-  };
-
-  const openAiReportsModal = (mid, rawContent) => {
-    ensureAiReportsModal();
-    if (!aiReportsModal || !aiReportsModalBody) return;
-
-    const parsed = parseReportsBlocks(rawContent);
-    const blocks = parsed.blocks || [];
-
-    const detailsHtml = blocks.map((b) => {
-      const nm = String(b.name || "").trim();
-      const body = String(b.body || "").trim();
-      const isClaude = (nm === "Claude");
-
-      return `
-        <details class="ai-report"${isClaude ? " open" : ""} style="
-          border:1px solid rgba(255,255,255,.10);
-          border-radius:14px;
-          padding:10px 12px;
-          background:rgba(255,255,255,.03);
-          margin:0 0 10px;
-        ">
-          <summary style="
-            cursor:pointer;
-            font-size:13px;
-            font-weight:700;
-            color:rgba(255,255,255,.92);
-            outline:none;
-          ">${escHtml(nm)}</summary>
-
-          <div style="
-            margin-top:10px;
-            font-size:12px;
-            line-height:1.7;
-            color:rgba(255,255,255,.86);
-            white-space:pre-wrap;
-            word-break:break-word;
-          ">${escHtml(body)}</div>
-        </details>
-      `.trim();
-    }).join("");
-
-    aiReportsModalBody.innerHTML = detailsHtml || `<div style="opacity:.72;">No reports.</div>`;
-    aiReportsModal.dataset.mid = String(mid || "");
-    aiReportsModal.style.display = "flex";
-    aiReportsModal.setAttribute("aria-hidden", "false");
-  };
 
   /* ================= AI reports modal (popup) ================= */
   let aiReportsModal = null;
@@ -3984,21 +3806,6 @@ btnNewChat?.addEventListener("click", (e) => {
     }
 
     // open AI Reports modal (logs)
-    const openLogs = t.closest(".act[data-action='open-ai-reports']");
-    if (openLogs) {
-      e.preventDefault();
-
-      const mid = String(openLogs.dataset.mid || "");
-      const th = getThreadByIdInScope(getActiveThreadId());
-      const msg = th?.messages?.find(m => String(m.id || "") === mid);
-
-      if (msg) {
-        openAiReportsModal(mid, String(msg.content || ""));
-      }
-      return;
-    }
-
-        // open AI Reports modal (logs)
     const openLogs = t.closest(".act[data-action='open-ai-reports']");
     if (openLogs) {
       e.preventDefault();
