@@ -477,6 +477,8 @@ app.post("/api/stripe/test-complete", async (req, res) => {
 
   try {
     let uid = String(req.body?.uid || "").trim();
+    const plan = String(req.body?.plan || "").trim();
+
     if (!uid) {
       const email = String(req.body?.email || "").trim();
       if (email) {
@@ -488,11 +490,26 @@ app.post("/api/stripe/test-complete", async (req, res) => {
         }
       }
     }
+
     if (!uid) {
       res.status(400).json({ ok: false, reason: "missing_uid" });
       return;
     }
 
+    // plan が指定されていれば、その plan を Firestore に書く（Stripeは触らない）
+    if (plan) {
+      await db.collection("users").doc(uid).set(
+        {
+          plan,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        },
+        { merge: true }
+      );
+      res.json({ ok: true });
+      return;
+    }
+
+    // plan 未指定なら Free に戻す（可能なら subscription を cancel）
     const snap = await db.collection("users").doc(uid).get();
     const d = snap.exists ? (snap.data() || {}) : {};
     const subId = String(d.stripeSubscriptionId || "").trim();
@@ -516,31 +533,7 @@ app.post("/api/stripe/test-complete", async (req, res) => {
     const type = String(e && e.type ? e.type : "");
     const code = String(e && e.code ? e.code : "");
     const param = String(e && e.param ? e.param : "");
-    res.status(400).json({ ok: false, reason: "downgrade_failed", type, code, param, msg });
-  }
-});
-
-/* ================= TEMP: Force plan (remove later) ================= */
-app.post("/api/stripe/test-complete", async (req, res) => {
-  try {
-    const uid = String(req.body?.uid || "").trim();
-    const plan = String(req.body?.plan || "").trim();
-    if (!uid || !plan) {
-      res.status(400).json({ ok: false, reason: "missing_params" });
-      return;
-    }
-
-    await db.collection("users").doc(uid).set(
-      {
-        plan,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      },
-      { merge: true }
-    );
-
-    res.json({ ok: true });
-  } catch {
-    res.status(400).json({ ok: false, reason: "failed" });
+    res.status(400).json({ ok: false, reason: "test_complete_failed", type, code, param, msg });
   }
 });
 
@@ -697,8 +690,13 @@ const runGemini = async ({ prompt, parts }) => {
     return body ? `${head}\n\n${body}`.trim() : head;
   };
 
-  const text = toText(parts);
+  let text = toText(parts);
   if (!text) return null;
+
+  // short prompt guard: Gemini can return empty on ultra-short inputs
+  if (text.trim().length < 24) {
+    text = `${text}\n\nReturn 2 bullet points and 1 next action.`;
+  }
 
   const controller = new AbortController();
   const timer = setTimeout(() => {
@@ -740,10 +738,32 @@ const runGemini = async ({ prompt, parts }) => {
     }
 
     const cand = j.candidates && j.candidates[0];
-    const parts0 = cand && cand.content && Array.isArray(cand.content.parts) ? cand.content.parts : [];
-    const out = parts0.map(x => String(x && x.text ? x.text : "")).join("\n").trim();
 
-    return out || null;
+    // primary: candidates[0].content.parts[].text
+    let out = "";
+    try {
+      const parts0 = cand && cand.content && Array.isArray(cand.content.parts) ? cand.content.parts : [];
+      out = parts0.map(x => String(x && x.text ? x.text : "")).join("\n").trim();
+    } catch {}
+
+    // fallback: candidates[0].content.parts[].(any string fields)
+    if (!out) {
+      try {
+        const parts0 = cand && cand.content && Array.isArray(cand.content.parts) ? cand.content.parts : [];
+        const xs = [];
+        for (const p of parts0) {
+          if (!p || typeof p !== "object") continue;
+          for (const k of Object.keys(p)) {
+            const v = p[k];
+            if (typeof v === "string" && v.trim()) xs.push(v.trim());
+          }
+        }
+        out = xs.join("\n").trim();
+      } catch {}
+    }
+
+    // fallback: empty output should still be observable as a non-empty string
+    return out || "Gemini: (no output)";
 
   } catch (e) {
     dbg("Gemini API exception:", e);
@@ -988,6 +1008,7 @@ const runMistral = async ({ prompt, parts }) => {
     const payload = {
       model: "mistral-large-latest",
       messages: [
+        { role: "system", content: "Reply in the same language as the user prompt. If unclear, reply in Japanese." },
         { role: "user", content: text }
       ],
       temperature: 0.2,
@@ -1254,6 +1275,14 @@ app.post("/api/chat", async (req, res) => {
         return;
       }
 
+      const enhancedPrompt = [
+        prompt,
+        "",
+        "Constraints:",
+        "- No watermark, no logos, no text unless explicitly requested.",
+        "- High quality, clean composition.",
+      ].join("\n");
+
       try {
         const r = await fetch("https://api.openai.com/v1/images", {
           method: "POST",
@@ -1263,20 +1292,27 @@ app.post("/api/chat", async (req, res) => {
           },
           body: JSON.stringify({
             model: "sora-2",
-            prompt,
-            size: "1024x1024"
+            prompt: enhancedPrompt,
+            size: "1024x1024",
+            response_format: "b64_json"
           })
         });
 
         const j = await r.json().catch(() => null);
 
-        const url =
-          (j && Array.isArray(j.data) && j.data[0] && (j.data[0].url || j.data[0].b64_json))
-            ? (j.data[0].url ? String(j.data[0].url) : `data:image/png;base64,${String(j.data[0].b64_json)}`)
+        const b64 =
+          (j && Array.isArray(j.data) && j.data[0] && j.data[0].b64_json)
+            ? String(j.data[0].b64_json)
             : "";
 
+        const url = b64 ? `data:image/png;base64,${b64}` : "";
+
         if (!r.ok || !url) {
-          res.status(500).json({ ok: false, reason: "image_generation_failed" });
+          const msg =
+            (j && j.error && (j.error.message || j.error.code))
+              ? String(j.error.message || j.error.code)
+              : `http_${r.status}`;
+          res.status(500).json({ ok: false, reason: "image_generation_failed", msg: DEBUG ? msg : undefined });
           return;
         }
 
@@ -1290,8 +1326,8 @@ app.post("/api/chat", async (req, res) => {
         return;
 
       } catch (e) {
-        void e;
-        res.status(500).json({ ok: false, reason: "image_generation_failed" });
+        const msg = String(e && e.message ? e.message : e || "");
+        res.status(500).json({ ok: false, reason: "image_generation_failed", msg: DEBUG ? msg : undefined });
         return;
       }
     }

@@ -3057,7 +3057,32 @@ const closeSettings = () => {
 
       if (r.ok && j && j.ok && j.result && typeof j.result === "object") {
         apiMap = j.result;
+
+        // server-sync mode: render immediately (no UI-stub orchestration)
+        if (apiMap && typeof apiMap === "object") {
+          const gpt = String(apiMap.GPT || "").trim();
+
+          const keys = Object.keys(apiMap || {}).filter(k => k && k !== "GPT");
+          const lines = [gpt || ""];
+
+          if (keys.length) {
+            lines.push("");
+            lines.push("Reports:");
+            for (const k of keys) {
+              const v = String(apiMap[k] || "").trim();
+              lines.push(`--- ${k} ---`);
+              lines.push(v);
+            }
+          }
+
+          updateMessage(m.id, lines.join("\n").trim());
+          renderChat();
+          setStreaming(false);
+          renderSidebar();
+          return;
+        }
       }
+
     } catch {
       apiMap = null;
     }
