@@ -641,20 +641,33 @@ const callOpenAIText = async ({ system, user, userParts, model }) => {
     ]
   };
 
-  const r = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${key}`
-    },
-    body: JSON.stringify(payload)
-  });
+  const controller = new AbortController();
+  const t = setTimeout(() => {
+    try { controller.abort(); } catch {}
+  }, 25000);
 
-  const j = await r.json().catch(() => null);
-  if (!r.ok || !j) return null;
+  try {
+    const r = await fetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${key}`
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
 
-  const out = String(j.output_text || "").trim();
-  return out || null;
+    const j = await r.json().catch(() => null);
+    if (!r.ok || !j) return null;
+
+    const out = String(j.output_text || "").trim();
+    return out || null;
+  } catch (e) {
+    dbg("callOpenAIText failed", e);
+    return null;
+  } finally {
+    clearTimeout(t);
+  }
 };
 
 const buildSystemPrompt = (aiName) => {
@@ -756,14 +769,44 @@ app.post("/api/chat", async (req, res) => {
     }
 
     // v1: 添付はまだAIに渡さず、存在だけ認識（後工程で実装）
-    const useSora =
-      shouldUseSora(prompt) ||
-      attachments.some(a => String(a.type || "") === "image");
+    const key = getOpenAIKey();
+    if (!key) {
+      res.status(500).json({ ok: false, reason: "openai_key_missing" });
+      return;
+    }
 
-    const names = ["GPT", "Gemini", "Claude", "Perplexity", "Mistral", "Sora"];
+    const names = ["GPT"];
 
     // build user parts (multimodal)
     const userParts = [{ type: "text", text: prompt }];
+
+    const parseCsvLine = (line) => {
+      const s = String(line || "");
+      const out = [];
+      let cur = "";
+      let inQ = false;
+
+      for (let i = 0; i < s.length; i++) {
+        const ch = s[i];
+        if (ch === '"') {
+          if (inQ && s[i + 1] === '"') {
+            cur += '"';
+            i++;
+          } else {
+            inQ = !inQ;
+          }
+          continue;
+        }
+        if (ch === "," && !inQ) {
+          out.push(cur);
+          cur = "";
+          continue;
+        }
+        cur += ch;
+      }
+      out.push(cur);
+      return out;
+    };
 
     for (const a of attachments) {
       const type = String(a?.type || "").trim();
@@ -804,34 +847,6 @@ app.post("/api/chat", async (req, res) => {
       }
 
       // text files (txt/md/csv): decode base64 -> inject as text
-      const parseCsvLine = (line) => {
-        const s = String(line || "");
-        const out = [];
-        let cur = "";
-        let inQ = false;
-
-        for (let i = 0; i < s.length; i++) {
-          const ch = s[i];
-          if (ch === '"') {
-            if (inQ && s[i + 1] === '"') {
-              cur += '"';
-              i++;
-            } else {
-              inQ = !inQ;
-            }
-            continue;
-          }
-          if (ch === "," && !inQ) {
-            out.push(cur);
-            cur = "";
-            continue;
-          }
-          cur += ch;
-        }
-        out.push(cur);
-        return out;
-      };
-
       if (type === "file" && isTextLike && data) {
         let decoded = "";
         try {
@@ -916,49 +931,18 @@ app.post("/api/chat", async (req, res) => {
         });
       }
     }
-        continue;
-      }
 
-      // image
-      if (type === "image" && mime.startsWith("image/") && data) {
-        const url = `data:${mime};base64,${data}`;
-        userParts.push({ type: "input_image", image_url: { url } });
-        continue;
-      }
+    const system = buildSystemPrompt("GPT");
 
-      // other file (metadata only)
-      if (type === "file") {
-        const size = Number(a?.size || 0) || 0;
-        userParts.push({
-          type: "text",
-          text: `Attached file: ${name}${mime ? ` (${mime})` : ""}${size ? ` ${size} bytes` : ""}`
-        });
-      }
-    }
-
-    const tasks = names.map(async (name) => {
-      if (name === "Sora" && !useSora) return { name, out: null };
-
-      const system = buildSystemPrompt(name);
-
-      const out = await callOpenAIText({
-        system,
-        user: prompt,
-        userParts,
-        model: "gpt-5.2"
-      });
-
-      if (!out) return { name, out: null };
-
-      return { name, out };
+    const out = await callOpenAIText({
+      system,
+      user: prompt,
+      userParts,
+      model: "gpt-5.2"
     });
 
-    const results = await Promise.all(tasks);
-
     const map = {};
-    for (const r of results) {
-      if (r.out) map[r.name] = r.out;
-    }
+    if (out) map.GPT = out;
 
     res.json({
       ok: true,
