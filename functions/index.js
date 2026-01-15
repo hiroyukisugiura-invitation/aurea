@@ -2,7 +2,7 @@ const { onRequest } = require("firebase-functions/v2/https");
 const express = require("express");
 const admin = require("firebase-admin");
 const Stripe = require("stripe");
-const { defineSecret, defineString } = require("firebase-functions/params");
+const { defineSecret } = require("firebase-functions/params");
 
 const STRIPE_SECRET_KEY = defineSecret("STRIPE_SECRET_KEY");
 const STRIPE_PRICE_PRO = defineSecret("STRIPE_PRICE_PRO");
