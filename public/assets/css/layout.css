@@ -143,7 +143,7 @@ body.theme-light .ask-note{
 .sidebar{
   background:linear-gradient(180deg, rgba(255,255,255,.03), transparent 40%), var(--panel2);
   border-right:1px solid var(--line);
-  padding:16px 8px; /* ← 左右余白を詰めて“白帯”を消す */
+  padding:16px 8px;
   display:flex;
   flex-direction:column;
   gap:14px;
@@ -152,6 +152,8 @@ body.theme-light .ask-note{
   height:100vh;
   position:sticky;
   top:0;
+
+  overflow:hidden; /* ★ sidebar自体はスクロールさせない */
 }
 
 .sb-top{
@@ -159,6 +161,10 @@ body.theme-light .ask-note{
   flex-direction:column;
   gap:8px;
   padding:4px 6px 0;
+
+  overflow:auto;       /* ★ ここだけスクロール */
+  min-height:0;
+  flex:1 1 auto;
 }
 
 /* Search (top) */
@@ -435,7 +441,15 @@ details > summary::-webkit-details-marker{ display:none; }
 .sb-act.danger{ color:rgba(255,120,120,.95); }
 
 /* User */
-.sb-bottom{ margin-top:auto; padding:6px; }
+.sb-bottom{
+  margin-top:auto;
+  padding:6px;
+
+  flex:0 0 auto;     /* ★ 縮まない */
+  position:sticky;
+  bottom:8px;
+  z-index:5;
+}
 .user-card{
   width:100%;
   display:flex;
