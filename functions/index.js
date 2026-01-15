@@ -660,6 +660,384 @@ const uploadOpenAIFile = async ({ base64, filename, mime }) => {
   return String(j.id);
 };
 
+// ===== Multi-AI runners (TOP LEVEL) =====
+// NOTE: MULTI_AI_ENABLED !== true の間は一切呼ばれない
+
+const runGemini = async ({ prompt, parts }) => {
+  if (!MULTI_AI_ENABLED) return null;
+  const key = getGeminiKey();
+  if (!key) return null;
+
+  const toText = (ps) => {
+    const arr = Array.isArray(ps) ? ps : [];
+    const out = [];
+
+    for (const p of arr) {
+      if (!p) continue;
+
+      if (p.type === "input_text") {
+        const t = String(p.text || "").trim();
+        if (t) out.push(t);
+        continue;
+      }
+
+      if (p.type === "input_image") {
+        out.push("[image attached]");
+        continue;
+      }
+
+      if (p.type === "input_file") {
+        out.push("[file attached]");
+        continue;
+      }
+    }
+
+    const head = String(prompt || "").trim();
+    const body = out.join("\n\n").trim();
+    return body ? `${head}\n\n${body}`.trim() : head;
+  };
+
+  const text = toText(parts);
+  if (!text) return null;
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => {
+    try { controller.abort(); } catch {}
+  }, 25000);
+
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(key)}`;
+
+    const payload = {
+      contents: [
+        {
+          role: "user",
+          parts: [{ text }]
+        }
+      ],
+      generationConfig: {
+        temperature: 0.3,
+        maxOutputTokens: 600
+      }
+    };
+
+    const r = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
+
+    const j = await r.json().catch(() => null);
+
+    if (!r.ok || !j) {
+      const msg =
+        (j && j.error && (j.error.message || j.error.status))
+          ? String(j.error.message || j.error.status)
+          : `http_${r.status}`;
+      dbg("Gemini API failed:", msg, j);
+      return null;
+    }
+
+    const cand = j.candidates && j.candidates[0];
+    const parts0 = cand && cand.content && Array.isArray(cand.content.parts) ? cand.content.parts : [];
+    const out = parts0.map(x => String(x && x.text ? x.text : "")).join("\n").trim();
+
+    return out || null;
+
+  } catch (e) {
+    dbg("Gemini API exception:", e);
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
+const runClaude = async ({ prompt, parts }) => {
+  if (!MULTI_AI_ENABLED) return null;
+  const key = getClaudeKey();
+  if (!key) return null;
+
+  const toText = (ps) => {
+    const arr = Array.isArray(ps) ? ps : [];
+    const out = [];
+
+    for (const p of arr) {
+      if (!p) continue;
+
+      if (p.type === "input_text") {
+        const t = String(p.text || "").trim();
+        if (t) out.push(t);
+        continue;
+      }
+
+      if (p.type === "input_image") {
+        out.push("[image attached]");
+        continue;
+      }
+
+      if (p.type === "input_file") {
+        out.push("[file attached]");
+        continue;
+      }
+    }
+
+    const head = String(prompt || "").trim();
+    const body = out.join("\n\n").trim();
+    return body ? `${head}\n\n${body}`.trim() : head;
+  };
+
+  const text = toText(parts);
+  if (!text) return null;
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => {
+    try { controller.abort(); } catch {}
+  }, 25000);
+
+  try {
+    const payload = {
+      model: "claude-sonnet-4-5",
+      max_tokens: 700,
+      temperature: 0.3,
+      messages: [
+        { role: "user", content: text }
+      ]
+    };
+
+    const r = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": key,
+        "anthropic-version": "2023-06-01"
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
+
+    const j = await r.json().catch(() => null);
+
+    if (!r.ok || !j) {
+      const msg =
+        (j && j.error && (j.error.message || j.error.type))
+          ? String(j.error.message || j.error.type)
+          : `http_${r.status}`;
+      dbg("Claude API failed:", msg, j);
+      return null;
+    }
+
+    const content = Array.isArray(j.content) ? j.content : [];
+    const out = content
+      .filter(x => x && x.type === "text")
+      .map(x => String(x.text || ""))
+      .join("\n")
+      .trim();
+
+    return out || null;
+
+  } catch (e) {
+    dbg("Claude API exception:", e);
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
+const runPerplexity = async ({ prompt, parts }) => {
+  if (!MULTI_AI_ENABLED) return null;
+  const key = getPerplexityKey();
+  if (!key) return null;
+
+  const toText = (ps) => {
+    const arr = Array.isArray(ps) ? ps : [];
+    const out = [];
+
+    for (const p of arr) {
+      if (!p) continue;
+
+      if (p.type === "input_text") {
+        const t = String(p.text || "").trim();
+        if (t) out.push(t);
+        continue;
+      }
+
+      if (p.type === "input_image") {
+        out.push("[image attached]");
+        continue;
+      }
+
+      if (p.type === "input_file") {
+        out.push("[file attached]");
+        continue;
+      }
+    }
+
+    const head = String(prompt || "").trim();
+    const body = out.join("\n\n").trim();
+    return body ? `${head}\n\n${body}`.trim() : head;
+  };
+
+  const text0 = toText(parts);
+  if (!text0) return null;
+
+  // citations を返しやすくするための最小追記
+  const text = `${text0}\n\nIf you use external information, include citations.`;
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => {
+    try { controller.abort(); } catch {}
+  }, 25000);
+
+  try {
+    const payload = {
+      model: "sonar-pro",
+      messages: [
+        { role: "user", content: text }
+      ],
+      temperature: 0.2,
+      max_tokens: 900
+    };
+
+    const r = await fetch("https://api.perplexity.ai/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${key}`
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
+
+    const j = await r.json().catch(() => null);
+
+    if (!r.ok || !j) {
+      const msg =
+        (j && j.error && (j.error.message || j.error.type))
+          ? String(j.error.message || j.error.type)
+          : `http_${r.status}`;
+      dbg("Perplexity API failed:", msg, j);
+      return null;
+    }
+
+    const out =
+      j.choices && j.choices[0] && j.choices[0].message && typeof j.choices[0].message.content === "string"
+        ? String(j.choices[0].message.content).trim()
+        : "";
+
+    const cites = Array.isArray(j.citations) ? j.citations.filter(Boolean) : [];
+
+    if (!out) return null;
+
+    if (!cites.length) return out;
+
+    const src = cites.slice(0, 8).map((u) => `- ${String(u)}`).join("\n");
+    return `${out}\n\nSources:\n${src}`.trim();
+
+  } catch (e) {
+    dbg("Perplexity API exception:", e);
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
+const runMistral = async ({ prompt, parts }) => {
+  if (!MULTI_AI_ENABLED) return null;
+  const key = getMistralKey();
+  if (!key) return null;
+
+  const toText = (ps) => {
+    const arr = Array.isArray(ps) ? ps : [];
+    const out = [];
+
+    for (const p of arr) {
+      if (!p) continue;
+
+      if (p.type === "input_text") {
+        const t = String(p.text || "").trim();
+        if (t) out.push(t);
+        continue;
+      }
+
+      if (p.type === "input_image") {
+        out.push("[image attached]");
+        continue;
+      }
+
+      if (p.type === "input_file") {
+        out.push("[file attached]");
+        continue;
+      }
+    }
+
+    const head = String(prompt || "").trim();
+    const body = out.join("\n\n").trim();
+    return body ? `${head}\n\n${body}`.trim() : head;
+  };
+
+  const text = toText(parts);
+  if (!text) return null;
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => {
+    try { controller.abort(); } catch {}
+  }, 25000);
+
+  try {
+    const payload = {
+      model: "mistral-large-latest",
+      messages: [
+        { role: "user", content: text }
+      ],
+      temperature: 0.2,
+      max_tokens: 700
+    };
+
+    const r = await fetch("https://api.mistral.ai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${key}`
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
+
+    const j = await r.json().catch(() => null);
+
+    if (!r.ok || !j) {
+      const msg =
+        (j && j.error && (j.error.message || j.error.type))
+          ? String(j.error.message || j.error.type)
+          : `http_${r.status}`;
+      dbg("Mistral API failed:", msg, j);
+      return null;
+    }
+
+    const out =
+      j.choices && j.choices[0] && j.choices[0].message && typeof j.choices[0].message.content === "string"
+        ? String(j.choices[0].message.content).trim()
+        : "";
+
+    return out || null;
+
+  } catch (e) {
+    dbg("Mistral API exception:", e);
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
+const runSoraImage = async ({ prompt }) => {
+  if (!MULTI_AI_ENABLED) return null;
+  const key = getSoraKey() || getOpenAIKey();
+  if (!key) return null;
+  // stub
+  return null;
+};
+
 const callOpenAIText = async ({ system, user, userParts, model }) => {
   const key = getOpenAIKey();
   if (!key) return null;
@@ -672,10 +1050,14 @@ const callOpenAIText = async ({ system, user, userParts, model }) => {
   const parts =
     Array.isArray(userParts) && userParts.length
       ? userParts
-      : [{ type: "text", text: userText }];
+      : [{ type: "input_text", text: userText }];
 
   const payload = {
     model: m,
+
+    // force text output (workaround for empty output_text cases)
+    text: { format: { type: "text" } },
+
     input: [
       {
         role: "system",
@@ -686,49 +1068,6 @@ const callOpenAIText = async ({ system, user, userParts, model }) => {
         content: parts
       }
     ]
-};
-
-// ===== Multi-AI runners (SAFE STUBS / disabled by default) =====
-// NOTE: MULTI_AI_ENABLED !== true の間は一切呼ばれない
-
-const runGemini = async ({ prompt, parts }) => {
-  if (!MULTI_AI_ENABLED) return null;
-  const key = getGeminiKey();
-  if (!key) return null;
-  // stub
-  return null;
-};
-
-const runClaude = async ({ prompt, parts }) => {
-  if (!MULTI_AI_ENABLED) return null;
-  const key = getClaudeKey();
-  if (!key) return null;
-  // stub
-  return null;
-};
-
-const runPerplexity = async ({ prompt, parts }) => {
-  if (!MULTI_AI_ENABLED) return null;
-  const key = getPerplexityKey();
-  if (!key) return null;
-  // stub
-  return null;
-};
-
-const runMistral = async ({ prompt, parts }) => {
-  if (!MULTI_AI_ENABLED) return null;
-  const key = getMistralKey();
-  if (!key) return null;
-  // stub
-  return null;
-};
-
-const runSoraImage = async ({ prompt }) => {
-  if (!MULTI_AI_ENABLED) return null;
-  const key = getSoraKey() || getOpenAIKey();
-  if (!key) return null;
-  // stub
-  return null;
 };
 
   const controller = new AbortController();
@@ -759,10 +1098,45 @@ const runSoraImage = async ({ prompt }) => {
       return DEBUG ? `OpenAIError: ${errMsg}` : null;
     }
 
-    const out = String(j.output_text || "").trim();
+    let out = String(j.output_text || "").trim();
+
+    // fallback: parse output[] items when output_text is empty
     if (!out) {
-      dbg("OpenAI Responses API empty output_text:", j);
-      return DEBUG ? "OpenAIError: empty_output_text" : null;
+      try {
+        const items = Array.isArray(j.output) ? j.output : [];
+        const texts = [];
+
+        for (const it of items) {
+          if (!it) continue;
+
+          // message item
+          if (String(it.type || "") === "message") {
+            const cc = Array.isArray(it.content) ? it.content : [];
+            for (const c of cc) {
+              if (!c) continue;
+              const t = String(c.type || "");
+              if (t === "output_text" || t === "summary_text") {
+                const s = String(c.text || "").trim();
+                if (s) texts.push(s);
+              }
+              // some variants may return { type:"text", text:"..." } inside message content
+              if (t === "text") {
+                const s = String(c.text || "").trim();
+                if (s) texts.push(s);
+              }
+            }
+          }
+        }
+
+        out = texts.join("\n").trim();
+      } catch (e) {
+        dbg("OpenAI Responses API parse output[] failed:", e);
+      }
+    }
+
+    if (!out) {
+      dbg("OpenAI Responses API empty output:", j);
+      return DEBUG ? "OpenAIError: empty_output" : null;
     }
 
     return out;
@@ -779,16 +1153,33 @@ const buildSystemPrompt = (aiName) => {
   const n = String(aiName || "").trim();
 
   if (n === "Gemini") {
-    return "You are Gemini. Do broad research-style exploration. Return concise bullet points.";
+    return [
+      "You are Gemini.",
+      "Role: Divergent thinking + idea generation.",
+      "Return: concise bullet points.",
+      "Do not over-verify; propose options and angles."
+    ].join("\n");
   }
   if (n === "Claude") {
-    return "You are Claude. Do long-form analysis and structure. Return a clear outline and risks.";
+    return [
+      "You are Claude.",
+      "Role: Structure + deep reasoning.",
+      "Return: a clear outline, risks, and assumptions."
+    ].join("\n");
   }
   if (n === "Perplexity") {
-    return "You are Perplexity. Verify claims and list what should be checked. Return a verification checklist.";
+    return [
+      "You are Perplexity.",
+      "Role: Verification + sources.",
+      "Return: checks + sources when applicable."
+    ].join("\n");
   }
   if (n === "Mistral") {
-    return "You are Mistral. Produce a fast concise answer and next actions.";
+    return [
+      "You are Mistral.",
+      "Role: Fast concise answer + next actions.",
+      "Return: short actionable steps."
+    ].join("\n");
   }
   if (n === "Sora") {
     return "You are Sora. If the user requests an image, return an image prompt and style notes.";
@@ -797,6 +1188,9 @@ const buildSystemPrompt = (aiName) => {
   // GPT（最終回答 / 添付解析テンプレ）
   return [
     "You are GPT. Provide the final integrated answer.",
+    "",
+    "Integration priority:",
+    "- Use Claude for structure, Perplexity for verification/sources, Gemini for options/angles, Mistral for concise next steps.",
     "",
     "Attachment handling rules:",
     "- If a file is attached and the user prompt is empty/implicit, proactively analyze the attachment.",
@@ -1107,9 +1501,33 @@ app.post("/api/chat", async (req, res) => {
 
     const map = {};
     for (const s of settled) {
-      if (!s || s.status !== "fulfilled") continue;
-      const v = s.value || {};
-      if (v.name && v.out) map[v.name] = v.out;
+      if (!s) continue;
+
+      // fulfilled
+      if (s.status === "fulfilled") {
+        const v = s.value || {};
+        const name = String(v.name || "").trim();
+        if (!name) continue;
+
+        const out = (v.out == null) ? "" : String(v.out);
+
+        // 本番：中身があるものだけ返す
+        if (!DEBUG) {
+          if (out.trim()) map[name] = out;
+          continue;
+        }
+
+        // DEBUG：空も見えるように返す
+        map[name] = out.trim() ? out : "[empty]";
+        continue;
+      }
+
+      // rejected（DEBUG時のみ可視化）
+      if (DEBUG && s.status === "rejected") {
+        const reason = s.reason;
+        const msg = String(reason && reason.message ? reason.message : reason || "").trim() || "rejected";
+        map["__rejected__"] = map["__rejected__"] ? (map["__rejected__"] + `\n${msg}`) : msg;
+      }
     }
 
     const buildReportsBlock = (reports) => {
@@ -1137,10 +1555,10 @@ app.post("/api/chat", async (req, res) => {
     const gptParts = userParts.slice();
     const mergedText = reportsBlock ? `${prompt}\n\n${reportsBlock}` : prompt;
 
-    if (gptParts.length && gptParts[0] && gptParts[0].type === "text") {
-      gptParts[0] = { type: "text", text: mergedText };
+    if (gptParts.length && gptParts[0] && gptParts[0].type === "input_text") {
+      gptParts[0] = { type: "input_text", text: mergedText };
     } else {
-      gptParts.unshift({ type: "text", text: mergedText });
+      gptParts.unshift({ type: "input_text", text: mergedText });
     }
 
     const gptOut = await callOpenAIText({

@@ -2064,8 +2064,9 @@ const closeSettings = () => {
         const detailsHtml = blocks.map((b) => {
           const nm = String(b.name || "").trim();
           const body = String(b.body || "").trim();
+          const isClaude = (nm === "Claude");
           return `
-              <details class="ai-report">
+              <details class="ai-report"${isClaude ? " open" : ""}>
                 <summary class="ai-report__sum">${escHtml(nm)}</summary>
                 <div class="ai-report__body">${escHtml(body).replace(/\n/g, "<br>")}</div>
               </details>
