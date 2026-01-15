@@ -162,8 +162,7 @@ const fromB64Url = (s) => {
   try { return Buffer.from(String(s || ""), "base64url").toString("utf8"); } catch { return ""; }
 };
 
-const AUREA_DEBUG = defineString("AUREA_DEBUG");
-const DEBUG = String(AUREA_DEBUG.value() || "").trim() === "1";
+const DEBUG = String(process.env.AUREA_DEBUG || "").trim() === "1";
 const dbg = (...args) => { try { if (DEBUG) console.log(...args); } catch {} };
 
 const connectGoogle = (service) => (req, res) => {
@@ -588,8 +587,7 @@ const MISTRAL_API_KEY = defineSecret("MISTRAL_API_KEY");
 // Sora（画像生成専用。OpenAIのimagesを使う場合はOPENAI_API_KEYで足りる）
 const SORA_API_KEY = defineSecret("SORA_API_KEY");
 
-const AUREA_MULTI_AI = defineString("AUREA_MULTI_AI");
-const MULTI_AI_ENABLED = String(AUREA_MULTI_AI.value() || "").trim() === "1";
+const MULTI_AI_ENABLED = String(process.env.AUREA_MULTI_AI || "").trim() === "1";
 
 const getOpenAIKey = () => {
   const k = String(OPENAI_API_KEY.value() || "").trim();
