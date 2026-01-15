@@ -1157,10 +1157,17 @@ const closeSettings = () => {
       `;
 
       const name = String(a.name || "file").trim();
-      const meta = `${bytesToHuman(a.size)}${a.mime ? ` · ${a.mime}` : ""}`;
 
-      const isImg = String(a.kind || "") === "image";
-      const isPdf = (String(a.mime || "") === "application/pdf") || String(a.name || "").toLowerCase().endsWith(".pdf");
+      const lower = String(a.name || "").toLowerCase();
+      const routeRaw = String(a.route || "").trim();
+      const isImg = routeRaw === "image" || String(a.kind || "") === "image";
+      const isPdf = routeRaw === "pdf" || (String(a.mime || "") === "application/pdf") || lower.endsWith(".pdf");
+      const isCsv = routeRaw === "text" && ((String(a.mime || "") === "text/csv") || lower.endsWith(".csv"));
+
+      const routeLabel = isImg ? "IMG" : (isPdf ? "PDF" : (isCsv ? "CSV" : (routeRaw === "text" ? "TXT" : "FILE")));
+      const fallback = String(a.fallback || "").trim();
+      const metaBase = `${routeLabel} · ${bytesToHuman(a.size)}${a.mime ? ` · ${a.mime}` : ""}`;
+      const meta = fallback ? `${metaBase} · ${fallback}` : metaBase;
 
       const thumb = (isImg && a.dataUrl)
         ? `<img src="${escHtml(a.dataUrl)}" alt="" style="width:22px;height:22px;border-radius:6px;object-fit:cover;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.03);" />`
@@ -1386,6 +1393,14 @@ const closeSettings = () => {
         }
       }
 
+      const isPdf = (mime === "application/pdf") || lower.endsWith(".pdf");
+      const route = (kind === "image") ? "image" : (isPdf ? "pdf" : (isTextLike ? "text" : "file"));
+
+      let fallback = "";
+      if (route === "text" && !dataUrl && (f.size || 0) > (512 * 1024)) fallback = "text_too_large_for_preview";
+      if (route === "image" && !dataUrl) fallback = "no_preview_data";
+      if (route === "pdf") fallback = ""; // pdfはプレビュー不要
+
       pendingAttachments.push({
         id: uid(),
         file: f,
@@ -1393,6 +1408,8 @@ const closeSettings = () => {
         size: f.size || 0,
         mime,
         kind,
+        route,
+        fallback,
         dataUrl
       });
     }
@@ -1428,6 +1445,20 @@ const closeSettings = () => {
     const src = Array.isArray(atts) ? atts : [];
     const out = [];
 
+    const arrayBufferToBase64 = (ab) => {
+      try {
+        const bytes = new Uint8Array(ab || new ArrayBuffer(0));
+        let binary = "";
+        const chunk = 0x8000;
+        for (let i = 0; i < bytes.length; i += chunk) {
+          binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+        }
+        return btoa(binary);
+      } catch {
+        return "";
+      }
+    };
+
     for (const a of src) {
       const name = String(a?.name || "file");
       const mime = String(a?.mime || "");
@@ -1435,6 +1466,8 @@ const closeSettings = () => {
       const kind = String(a?.kind || "file");
 
       let data = "";
+      let route = "file";
+      let fallback = "";
 
       const lower = name.toLowerCase();
       const isPdf = (mime === "application/pdf") || lower.endsWith(".pdf");
@@ -1445,36 +1478,61 @@ const closeSettings = () => {
         lower.endsWith(".md") ||
         lower.endsWith(".csv");
 
-      // v1: image -> base64 (already prepared as dataUrl)
-      if (kind === "image" && a?.dataUrl && String(a.dataUrl).startsWith("data:")) {
-        const s = String(a.dataUrl);
-        const idx = s.indexOf("base64,");
-        if (idx >= 0) data = s.slice(idx + 7);
-      }
+      if (kind === "image") route = "image";
+      else if (isPdf) route = "pdf";
+      else if (isTextLike) route = "text";
 
-      // v1: text files (txt/md/csv) -> base64 (already prepared as dataUrl)
-      if (!data && kind !== "image" && isTextLike && a?.dataUrl && String(a.dataUrl).startsWith("data:")) {
-        const s = String(a.dataUrl);
-        const idx = s.indexOf("base64,");
-        if (idx >= 0) data = s.slice(idx + 7);
-      }
-
-      // v1: PDF -> read file and pack base64 (size guard)
-      if (!data && kind !== "image" && isPdf && a?.file && size > 0) {
-        const MAX_PDF = 8 * 1024 * 1024; // 8MB
-        if (size <= MAX_PDF) {
-          const url = await fileToDataUrl(a.file);
-          const idx = String(url || "").indexOf("base64,");
-          if (idx >= 0) data = String(url).slice(idx + 7);
+      try {
+        // v1: image -> base64 (already prepared as dataUrl)
+        if (route === "image" && a?.dataUrl && String(a.dataUrl).startsWith("data:")) {
+          const s = String(a.dataUrl);
+          const idx = s.indexOf("base64,");
+          if (idx >= 0) data = s.slice(idx + 7);
         }
+
+        // v1: text files (txt/md/csv) -> base64 (already prepared as dataUrl)
+        if (!data && route === "text" && a?.dataUrl && String(a.dataUrl).startsWith("data:")) {
+          const s = String(a.dataUrl);
+          const idx = s.indexOf("base64,");
+          if (idx >= 0) data = s.slice(idx + 7);
+        }
+
+        // fallback: text files -> read file and pack base64 (size guard)
+        if (!data && route === "text" && a?.file && size > 0) {
+          const MAX_TEXT = 2 * 1024 * 1024; // 2MB
+          if (size <= MAX_TEXT) {
+            const ab = await a.file.arrayBuffer();
+            data = arrayBufferToBase64(ab);
+          } else {
+            fallback = "text_too_large";
+          }
+        }
+
+        // v1: PDF -> read file and pack base64 (size guard)
+        if (!data && route === "pdf" && a?.file && size > 0) {
+          const MAX_PDF = 8 * 1024 * 1024; // 8MB
+          if (size <= MAX_PDF) {
+            const url = await fileToDataUrl(a.file);
+            const idx = String(url || "").indexOf("base64,");
+            if (idx >= 0) data = String(url).slice(idx + 7);
+          } else {
+            fallback = "pdf_too_large";
+          }
+        }
+      } catch {
+        fallback = fallback || "read_error";
       }
+
+      if (!data && !fallback) fallback = "no_data";
 
       out.push({
-        type: (kind === "image") ? "image" : "file",
+        type: (route === "image") ? "image" : "file",
+        route,
         mime,
         name,
         size,
-        data
+        data,
+        fallback
       });
     }
 
@@ -3808,7 +3866,7 @@ const hideAuthGate = () => {
     }
     document.body.classList.remove("data-auth-required");
   } catch (e) {
-    console.warn("hideAuthGate failed", e);
+    dbg("hideAuthGate failed", e);
   }
 };
 

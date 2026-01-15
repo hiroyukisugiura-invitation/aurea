@@ -10,6 +10,30 @@ const STRIPE_PRICE_TEAM = defineSecret("STRIPE_PRICE_TEAM");
 const STRIPE_PRICE_ENTERPRISE = defineSecret("STRIPE_PRICE_ENTERPRISE");
 const STRIPE_WEBHOOK_SECRET = defineSecret("STRIPE_WEBHOOK_SECRET");
 
+/**
+ * INTERNAL DOC (non-public)
+ *
+ * Supported attachments:
+ * - image: jpg / png  -> input_image (data URL base64)
+ * - pdf:  pdf         -> uploadOpenAIFile -> input_file
+ * - text: txt / md    -> decode base64 -> injected as text
+ * - csv:  csv         -> decode base64 -> summary (header/rows/sample table)
+ *
+ * Client -> Server routing fields:
+ * - attachment.route: "image" | "pdf" | "text" | "file"
+ * - attachment.fallback: reason when data missing/too_large/read_error
+ *
+ * Size guards:
+ * - PDF: 8MB (client packs base64; server uploads)
+ * - text/csv: 120k chars injected max; csv sample first 20 rows
+ *
+ * Order guarantee:
+ * - attachments are processed in received order and pushed into userParts sequentially
+ *
+ * Logging:
+ * - set AUREA_DEBUG=1 to enable server debug logs (dbg)
+ */
+ 
 // Secret が無い状態で Stripe を初期化しない（解析落ち防止）
 const getStripe = () => {
   const key = String(STRIPE_SECRET_KEY.value() || "").trim();
@@ -137,6 +161,9 @@ const toB64Url = (s) => {
 const fromB64Url = (s) => {
   try { return Buffer.from(String(s || ""), "base64url").toString("utf8"); } catch { return ""; }
 };
+
+const DEBUG = String(process.env.AUREA_DEBUG || "").trim() === "1";
+const dbg = (...args) => { try { if (DEBUG) console.log(...args); } catch {} };
 
 const connectGoogle = (service) => (req, res) => {
   const baseScopes = ["openid", "email", "profile"];
@@ -740,12 +767,26 @@ app.post("/api/chat", async (req, res) => {
 
     for (const a of attachments) {
       const type = String(a?.type || "").trim();
+      const route = String(a?.route || "").trim();
+      const fallback = String(a?.fallback || "").trim();
       const mime = String(a?.mime || "").trim();
       const data = String(a?.data || "").trim();
       const name = String(a?.name || "file").trim();
+      const size = Number(a?.size || 0) || 0;
+
+      const lower = name.toLowerCase();
+      const isPdf = (route === "pdf") || (mime === "application/pdf") || lower.endsWith(".pdf");
+      const isCsv = (mime === "text/csv") || lower.endsWith(".csv");
+      const isTextLike =
+        route === "text" ||
+        mime.startsWith("text/") ||
+        mime === "text/csv" ||
+        lower.endsWith(".txt") ||
+        lower.endsWith(".md") ||
+        lower.endsWith(".csv");
 
       // PDF: upload -> file_id -> input_file
-      if (type === "file" && (mime === "application/pdf" || name.toLowerCase().endsWith(".pdf")) && data) {
+      if (type === "file" && isPdf && data) {
         const fid = await uploadOpenAIFile({
           base64: data,
           filename: name || "file.pdf",
@@ -753,18 +794,43 @@ app.post("/api/chat", async (req, res) => {
         });
         if (fid) {
           userParts.push({ type: "input_file", file_id: fid });
+        } else {
+          userParts.push({
+            type: "text",
+            text: `Attached PDF: ${name}${mime ? ` (${mime})` : ""}${size ? ` ${size} bytes` : ""}\nNote: upload failed.`
+          });
         }
         continue;
       }
 
       // text files (txt/md/csv): decode base64 -> inject as text
-      const lower = name.toLowerCase();
-      const isTextLike =
-        mime.startsWith("text/") ||
-        mime === "text/csv" ||
-        lower.endsWith(".txt") ||
-        lower.endsWith(".md") ||
-        lower.endsWith(".csv");
+      const parseCsvLine = (line) => {
+        const s = String(line || "");
+        const out = [];
+        let cur = "";
+        let inQ = false;
+
+        for (let i = 0; i < s.length; i++) {
+          const ch = s[i];
+          if (ch === '"') {
+            if (inQ && s[i + 1] === '"') {
+              cur += '"';
+              i++;
+            } else {
+              inQ = !inQ;
+            }
+            continue;
+          }
+          if (ch === "," && !inQ) {
+            out.push(cur);
+            cur = "";
+            continue;
+          }
+          cur += ch;
+        }
+        out.push(cur);
+        return out;
+      };
 
       if (type === "file" && isTextLike && data) {
         let decoded = "";
@@ -776,13 +842,80 @@ app.post("/api/chat", async (req, res) => {
 
         if (decoded) {
           const MAX_CHARS = 120000;
-          if (decoded.length > MAX_CHARS) decoded = decoded.slice(0, MAX_CHARS);
+          let truncated = false;
+          if (decoded.length > MAX_CHARS) {
+            decoded = decoded.slice(0, MAX_CHARS);
+            truncated = true;
+          }
 
+          if (isCsv) {
+            const raw = decoded.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+            const lines = raw.split("\n").filter(l => l.trim().length > 0);
+
+            const headerLine = lines[0] || "";
+            const header = parseCsvLine(headerLine).map(x => String(x || "").trim());
+            const totalRows = Math.max(0, lines.length - 1);
+
+            const sampleMax = 20;
+            const sampleLines = lines.slice(1, 1 + sampleMax);
+            const sampleRows = sampleLines.map(parseCsvLine);
+
+            const safe = (v) => String(v ?? "").replace(/\|/g, "\\|").replace(/\n/g, " ").trim();
+
+            const cols = header.length ? header : ["(no header)"];
+            const colCount = cols.length;
+
+            const md = [];
+            md.push(`| ${cols.map(safe).join(" | ")} |`);
+            md.push(`| ${cols.map(() => "---").join(" | ")} |`);
+
+            for (const r of sampleRows) {
+              const row = [];
+              for (let i = 0; i < colCount; i++) row.push(safe(r[i] ?? ""));
+              md.push(`| ${row.join(" | ")} |`);
+            }
+
+            userParts.push({
+              type: "text",
+              text:
+                `Attached CSV file: ${name}${mime ? ` (${mime})` : ""}\n` +
+                `Columns: ${colCount}${header.length ? ` (${cols.slice(0, 20).join(", ")}${cols.length > 20 ? ", ..." : ""})` : ""}\n` +
+                `Rows: ${totalRows}\n` +
+                `${truncated ? `Note: content was truncated.\n` : ""}\n` +
+                `Sample (first ${Math.min(sampleMax, totalRows)} rows):\n` +
+                `${md.join("\n")}`
+            });
+          } else {
+            userParts.push({
+              type: "text",
+              text: `Attached text file: ${name}${mime ? ` (${mime})` : ""}\n\n${decoded}${truncated ? `\n\n[truncated]` : ""}`
+            });
+          }
+        } else {
           userParts.push({
             type: "text",
-            text: `Attached text file: ${name}${mime ? ` (${mime})` : ""}\n\n${decoded}`
+            text: `Attached text file: ${name}${mime ? ` (${mime})` : ""}${size ? ` ${size} bytes` : ""}\nNote: decode failed.`
           });
         }
+        continue;
+      }
+
+      // image
+      if ((type === "image" || route === "image") && mime.startsWith("image/") && data) {
+        const url = `data:${mime};base64,${data}`;
+        userParts.push({ type: "input_image", image_url: { url } });
+        continue;
+      }
+
+      // other / fallback (metadata + reason)
+      if (type === "file" || type === "image") {
+        const reason = fallback ? `\nReason: ${fallback}` : (!data ? `\nReason: no_data` : "");
+        userParts.push({
+          type: "text",
+          text: `Attached file: ${name}${mime ? ` (${mime})` : ""}${size ? ` ${size} bytes` : ""}${reason}`
+        });
+      }
+    }
         continue;
       }
 
