@@ -1554,12 +1554,15 @@ const closeSettings = () => {
     if (!askInput || !sendBtn) return;
 
     const hasText = askInput.value.trim().length > 0;
+    const hasAttachments = pendingAttachments.length > 0;
 
-    // send（↑）は常時表示、未入力は disabled（GPT準拠）
+    // send（↑）は常時表示、未入力は disabled（GPT準拠：添付があれば有効）
+    const canSend = hasText || hasAttachments;
+
     sendBtn.style.display = "";
-    sendBtn.disabled = !hasText;
-    sendBtn.style.opacity = hasText ? "" : ".45";
-    sendBtn.style.cursor = hasText ? "" : "not-allowed";
+    sendBtn.disabled = !canSend;
+    sendBtn.style.opacity = canSend ? "" : ".45";
+    sendBtn.style.cursor = canSend ? "" : "not-allowed";
   };
 
   /* ================= project modal ================= */
@@ -2365,21 +2368,28 @@ const closeSettings = () => {
     const input = document.getElementById("aureaProjectHomeAsk");
 
     const start = async () => {
-      const text = (input?.value || "").trim();
-      if (!text && pendingAttachments.length === 0) return;
+      const hasAttachments = pendingAttachments.length > 0;
+      let text = (input?.value || "").trim();
+
+      // GPT準拠：テキストなし＋添付あり → 自動分析プロンプト補完
+      if (!text && hasAttachments) {
+        text = (state.settings?.language === "en")
+          ? "Please analyze the attached file."
+          : "このファイルを分析してください";
+      }
+
+      if (!text && !hasAttachments) return;
 
       // PJ内で新規トーク作成 → そのトークに送信（GPT同等）
       createProjectThread(pid);
 
-      if (text) {
-        appendMessage("user", text);
-      }
+      appendMessage("user", text);
 
       if (input) input.value = "";
 
       // 添付を確定して multiAiReply へ（解析・打ち返し）
       const rawAttachments = takePendingAttachments();
-      await multiAiReply(text || tr("promptEmpty"), rawAttachments);
+      await multiAiReply(text, rawAttachments);
     };
 
     const pjPlus = wrap.querySelector(".pj-home-plus");
@@ -3110,8 +3120,18 @@ const closeSettings = () => {
 
   const send = async () => {
     if (!askInput) return;
-    const text = askInput.value.trim();
-    if (!text) return;
+
+    const hasAttachments = pendingAttachments.length > 0;
+    let text = askInput.value.trim();
+
+    // GPT準拠：テキストなし＋添付あり → 自動分析プロンプト補完
+    if (!text && hasAttachments) {
+      text = (state.settings?.language === "en")
+        ? "Please analyze the attached file."
+        : "このファイルを分析してください";
+    }
+
+    if (!text && !hasAttachments) return;
 
     // PJトップからの送信は、PJ内の新規トークを作ってから送る（GPT仕様）
     if (state.view === "project" && state.activeProjectId) {
