@@ -75,12 +75,40 @@ const showAiActivity = (name) => {
 /* ================= AI run indicator (brand rail) ================= */
 let aiRunIndicatorEl = null;
 let aiRunOrder = [];
+let aiRunEnsureTimer = null;
+let aiRunLastStatuses = null;
 
 const ensureAiRunIndicator = () => {
   if (aiRunIndicatorEl) return aiRunIndicatorEl;
 
   const rail = document.querySelector(".brand-rail");
-  if (!rail) return null;
+  if (!rail) {
+    // brand-rail が後から生成されるケースに備えて、1回だけ遅延リトライ
+    if (!aiRunEnsureTimer) {
+      let tries = 0;
+      aiRunEnsureTimer = setInterval(() => {
+        tries += 1;
+
+        const r = document.querySelector(".brand-rail");
+        if (r) {
+          clearInterval(aiRunEnsureTimer);
+          aiRunEnsureTimer = null;
+
+          const created = ensureAiRunIndicator();
+          if (created && aiRunLastStatuses) {
+            try { setAiRunIndicator({ phase: "run", statuses: aiRunLastStatuses }); } catch {}
+          }
+          return;
+        }
+
+        if (tries >= 60) {
+          clearInterval(aiRunEnsureTimer);
+          aiRunEnsureTimer = null;
+        }
+      }, 120);
+    }
+    return null;
+  }
 
   const el = document.createElement("div");
   el.className = "ai-run-indicator";
@@ -104,6 +132,8 @@ const noteAiBecameRunning = (name) => {
 };
 
 const setAiRunIndicator = ({ phase, statuses }) => {
+  aiRunLastStatuses = statuses || {};
+
   const el = ensureAiRunIndicator();
   if (!el) return;
 
@@ -159,6 +189,12 @@ const clearAiRunIndicator = () => {
   if (list) list.innerHTML = "";
 
   aiRunOrder = [];
+  aiRunLastStatuses = null;
+
+  if (aiRunEnsureTimer) {
+    clearInterval(aiRunEnsureTimer);
+    aiRunEnsureTimer = null;
+  }
 };
 
   /* ================= storage ================= */
