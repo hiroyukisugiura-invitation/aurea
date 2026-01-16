@@ -30,7 +30,8 @@
       stop: "停止",
       askNote: "AUREA の回答は\"複数のAI検索情報\"を集約/解析/判断/要約をしていますが、必ずしも正確とは限りませんので、重要な情報は更に確認をしてください。",
       promptEmpty: "（未入力）",
-
+      statusAnalyzing: "解析中",
+      statusGenerating: "回答生成中",
       aureaPrefix: "（AUREA）",
       replyPlaceholder: "※ここは後で /api/chat に接続します。",
       imageSaved: "（画像を保存しました）",
@@ -216,6 +217,8 @@
       stop: "Stop",
       askNote: "AUREA aggregates/analyzes/judges/summarizes information from multiple AI searches, but it may not be accurate. Please verify important information.",
       promptEmpty: "(Empty)",
+      statusAnalyzing: "Analyzing",
+      statusGenerating: "Generating answer",
       aureaPrefix: "(AUREA)",
       replyPlaceholder: "This will be connected to /api/chat later.",
       imageSaved: "(Image saved)",

@@ -72,6 +72,95 @@ const showAiActivity = (name) => {
   }, 1200);
 };
 
+/* ================= AI run indicator (brand rail) ================= */
+let aiRunIndicatorEl = null;
+let aiRunOrder = [];
+
+const ensureAiRunIndicator = () => {
+  if (aiRunIndicatorEl) return aiRunIndicatorEl;
+
+  const rail = document.querySelector(".brand-rail");
+  if (!rail) return null;
+
+  const el = document.createElement("div");
+  el.className = "ai-run-indicator";
+
+  el.innerHTML = `
+    <div class="ai-run__line ai-run__l1"></div>
+    <div class="ai-run__line ai-run__l2"></div>
+    <div class="ai-run__sp"></div>
+    <div class="ai-run__list"></div>
+  `;
+
+  rail.appendChild(el);
+  aiRunIndicatorEl = el;
+  return el;
+};
+
+const noteAiBecameRunning = (name) => {
+  const n = String(name || "").trim();
+  if (!n) return;
+  aiRunOrder = [n, ...aiRunOrder.filter(x => x !== n)];
+};
+
+const setAiRunIndicator = ({ phase, statuses }) => {
+  const el = ensureAiRunIndicator();
+  if (!el) return;
+
+  const l1 = el.querySelector(".ai-run__l1");
+  const l2 = el.querySelector(".ai-run__l2");
+  const list = el.querySelector(".ai-run__list");
+
+  const s = statuses || {};
+
+  // 稼働判定（running のみ）
+  const anyRunning = Object.keys(s).some(k => s[k] === "running");
+  const gptRunning = (s.GPT === "running");
+
+  // 1) 上段2行（翻訳）
+  if (l1) l1.textContent = anyRunning ? tr("statusAnalyzing") : "";
+  // GPTが走り始めたら「回答生成中」を出す（それ以外は空）
+  if (l2) l2.textContent = (anyRunning && gptRunning) ? tr("statusGenerating") : "";
+
+  // 2) 稼働AI名（動いたAIが常に最上段）
+  const running = aiRunOrder.filter(n => s[n] === "running");
+
+  // 初回（order未確定）でも表示できるようフォールバック
+  if (!running.length) {
+    const fallback = Object.keys(s).filter(k => s[k] === "running");
+    for (const k of fallback) noteAiBecameRunning(k);
+  }
+
+  const running2 = aiRunOrder.filter(n => s[n] === "running");
+
+  if (list) {
+    const max = 3;
+    const items = running2.slice(0, max).map(n => `<div class="ai-run__ai">${escHtml(n)}</div>`);
+    if (running2.length > max) items.push(`<div class="ai-run__ai ai-run__ai--more">…</div>`);
+    list.innerHTML = items.join("");
+  }
+
+  // 3) 表示ON/OFF（runningがある時だけ）
+  el.classList.toggle("on", running2.length > 0);
+};
+
+const clearAiRunIndicator = () => {
+  const el = ensureAiRunIndicator();
+  if (!el) return;
+
+  el.classList.remove("on");
+
+  const l1 = el.querySelector(".ai-run__l1");
+  const l2 = el.querySelector(".ai-run__l2");
+  const list = el.querySelector(".ai-run__list");
+
+  if (l1) l1.textContent = "";
+  if (l2) l2.textContent = "";
+  if (list) list.innerHTML = "";
+
+  aiRunOrder = [];
+};
+
   /* ================= storage ================= */
   const STORAGE_KEY_LOCAL = "aurea_main_v1_local";
   const STORAGE_KEY_CLOUD = "aurea_main_v1_cloud";
@@ -3127,6 +3216,7 @@ const closeSettings = () => {
     multiAiAbort = true;
     if (streamTimer) { clearInterval(streamTimer); streamTimer = null; }
     setStreaming(false);
+    try { clearAiRunIndicator(); } catch {}
   };
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -3291,6 +3381,9 @@ const closeSettings = () => {
 
     const renderProgress = (finalText = "") => {
       if (multiAiAbort || streamAbort || runId !== multiAiRunId) return;
+
+      try { setAiRunIndicator({ phase: "run", statuses }); } catch {}
+
       const header = buildMultiAiHeader(statuses);
       const content = finalText ? `${header}\n\n${finalText}` : `${header}\n\n`;
       updateMessage(m.id, content);
@@ -3398,6 +3491,7 @@ const closeSettings = () => {
       if (multiAiAbort || streamAbort || runId !== multiAiRunId) return;
 
       statuses[ai.name] = "running";
+      try { noteAiBecameRunning(ai.name); } catch {}
       renderProgress("");
 
       try {
@@ -3430,6 +3524,7 @@ const closeSettings = () => {
 
     // GPT final synthesis (UI stub for now)
     statuses.GPT = "running";
+    try { noteAiBecameRunning("GPT"); } catch {}
     renderProgress("");
 
     const final = integrateFinal({ userText, reports, usedSora });
@@ -3454,6 +3549,7 @@ const closeSettings = () => {
         statuses.GPT = "done";
         renderProgress(final);
         setStreaming(false);
+        try { clearAiRunIndicator(); } catch {}
         renderSidebar();
       }
     }, 18);
