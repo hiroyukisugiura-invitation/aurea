@@ -120,9 +120,17 @@ const ensureAiRunIndicator = () => {
     <div class="ai-run__list"></div>
   `;
 
-  rail.appendChild(el);
-  aiRunIndicatorEl = el;
-  return el;
+rail.appendChild(el);
+
+/* aria-hidden 対策：インジケーター表示中は可視化 */
+try {
+  if (rail.getAttribute("aria-hidden") === "true") {
+    rail.setAttribute("aria-hidden", "false");
+  }
+} catch {}
+
+aiRunIndicatorEl = el;
+return el;
 };
 
 const noteAiBecameRunning = (name) => {
@@ -187,6 +195,11 @@ const clearAiRunIndicator = () => {
   if (l1) l1.textContent = "";
   if (l2) l2.textContent = "";
   if (list) list.innerHTML = "";
+
+  try {
+  const rail = document.querySelector(".brand-rail");
+  if (rail) rail.setAttribute("aria-hidden", "true");
+} catch {}
 
   aiRunOrder = [];
   aiRunLastStatuses = null;
