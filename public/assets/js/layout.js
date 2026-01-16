@@ -2217,68 +2217,162 @@ const closeSettings = () => {
       bubble.className = "bubble";
 
       const renderReportsAsDetails = (raw) => {
-        if (!raw.includes("\nReports:\n")) {
-          return escHtml(raw).replace(/\n/g, "<br>");
+        const s0 = String(raw || "");
+
+        const lines0 = s0.split("\n");
+        const lines = [];
+        for (const ln of lines0) {
+          const t0 = String(ln || "").trim();
+          if (!t0) { lines.push(""); continue; }
+
+          // hide "AI Repo" labels inside the answer text
+          if (/^\[?\s*AI\s*(Repo|Rep|Reports)\s*\]?$/.test(t0)) continue;
+          if (/^AI\s*(Repo|Rep|Reports)\s*[:：]\s*/.test(t0)) continue;
+
+          lines.push(String(ln || ""));
         }
 
-        const parts = raw.split("\nReports:\n");
-        const head = parts[0] || "";
-        const tail = parts.slice(1).join("\nReports:\n");
+        let html = "";
+        let inUl = false;
+        let inOl = false;
+        let inCode = false;
+        let codeBuf = [];
 
-        const lines = tail.split("\n");
-        const blocks = [];
-        let cur = null;
+        const closeLists = () => {
+          if (inUl) { html += `</ul>`; inUl = false; }
+          if (inOl) { html += `</ol>`; inOl = false; }
+        };
 
-        const flush = () => {
-          if (cur) {
-            cur.body = (cur.body || []).join("\n").trim();
-            blocks.push(cur);
-            cur = null;
+        const openUl = () => {
+          if (inOl) { html += `</ol>`; inOl = false; }
+          if (!inUl) {
+            html += `<ul style="margin:8px 0 12px 18px;padding:0;">`;
+            inUl = true;
           }
         };
 
-        for (const line of lines) {
-          const m1 = /^---\s*(.+?)\s*---\s*$/.exec(line);
-          if (m1) {
-            flush();
-            cur = { name: m1[1], body: [] };
+        const openOl = () => {
+          if (inUl) { html += `</ul>`; inUl = false; }
+          if (!inOl) {
+            html += `<ol style="margin:8px 0 12px 18px;padding:0;">`;
+            inOl = true;
+          }
+        };
+
+        const formatInline = (src) => {
+          const s = String(src || "");
+
+          const codeParts = [];
+          const s1 = s.replace(/`([^`]+)`/g, (_, c) => {
+            const id = codeParts.length;
+            codeParts.push(String(c || ""));
+            return `@@CODE${id}@@`;
+          });
+
+          const boldParts = [];
+          const s2 = s1.replace(/\*\*([^*]+)\*\*/g, (_, b) => {
+            const id = boldParts.length;
+            boldParts.push(String(b || ""));
+            return `@@BOLD${id}@@`;
+          });
+
+          let out = escHtml(s2);
+
+          out = out.replace(/@@BOLD(\d+)@@/g, (_, n) => {
+            const v = escHtml(boldParts[Number(n)] || "");
+            return `<span style="font-weight:700;">${v}</span>`;
+          });
+
+          out = out.replace(/@@CODE(\d+)@@/g, (_, n) => {
+            const v = escHtml(codeParts[Number(n)] || "");
+            return `<span style="font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,'Liberation Mono','Courier New',monospace;font-size:12px;padding:1px 6px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);">${v}</span>`;
+          });
+
+          return out;
+        };
+
+        const addPara = (t) => {
+          closeLists();
+          if (!t) return;
+          html += `<div style="margin:0 0 10px;line-height:1.7;">${t}</div>`;
+        };
+
+        const flushCode = () => {
+          if (!codeBuf.length) return;
+          closeLists();
+          const code = escHtml(codeBuf.join("\n"));
+          html += `<pre style="margin:10px 0 12px;padding:12px 12px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.10);overflow:auto;"><code style="font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,'Liberation Mono','Courier New',monospace;font-size:12px;line-height:1.55;white-space:pre;">${code}</code></pre>`;
+          codeBuf = [];
+        };
+
+        for (const line0 of lines) {
+          const line = String(line0 || "");
+          const t = line.trim();
+
+          if (/^```/.test(t)) {
+            if (inCode) {
+              inCode = false;
+              flushCode();
+            } else {
+              inCode = true;
+              codeBuf = [];
+            }
             continue;
           }
-          if (cur) cur.body.push(line);
+
+          if (inCode) {
+            codeBuf.push(line.replace(/\r/g, ""));
+            continue;
+          }
+
+          if (!t) {
+            closeLists();
+            html += `<div style="height:10px;"></div>`;
+            continue;
+          }
+
+          const mH = /^(#{1,3})\s+(.+)$/.exec(t);
+          if (mH) {
+            const lvl = mH[1].length;
+            const tt = formatInline(mH[2]);
+            closeLists();
+            const fs = (lvl === 1) ? 16 : (lvl === 2) ? 14 : 13;
+            const op = (lvl === 1) ? .98 : .94;
+            html += `<div style="margin:10px 0 8px;font-weight:800;font-size:${fs}px;letter-spacing:-.2px;opacity:${op};">${tt}</div>`;
+            continue;
+          }
+
+          const mBullet = /^[-•*]\s+(.+)$/.exec(t) || /^・\s*(.+)$/.exec(t);
+          if (mBullet) {
+            openUl();
+            html += `<li style="margin:0 0 6px;line-height:1.65;">${formatInline(mBullet[1])}</li>`;
+            continue;
+          }
+
+          const mNum = /^(\d+)\.\s+(.+)$/.exec(t);
+          if (mNum) {
+            openOl();
+            html += `<li style="margin:0 0 6px;line-height:1.65;">${formatInline(mNum[2])}</li>`;
+            continue;
+          }
+
+          const mKey = /^(.{1,60}?):\s*(.*)$/.exec(t);
+          if (mKey) {
+            const k = escHtml(mKey[1]);
+            const v = formatInline(mKey[2] || "");
+            const keySpan = `<span style="color:rgba(159,180,255,.95);font-weight:800;">${k}</span>`;
+            const rest = v ? ` ${v}` : "";
+            addPara(`${keySpan}:${rest}`);
+            continue;
+          }
+
+          addPara(formatInline(t));
         }
-        flush();
 
-        const headHtml = escHtml(head).replace(/\n/g, "<br>");
+        if (inCode) flushCode();
+        closeLists();
 
-        const detailsHtml = blocks.map((b) => {
-          const nm = String(b.name || "").trim();
-          const body = String(b.body || "").trim();
-          const isClaude = (nm === "Claude");
-          return `
-              <details class="ai-report"${isClaude ? " open" : ""}>
-                <summary class="ai-report__sum">${escHtml(nm)}</summary>
-                <div class="ai-report__body">${escHtml(body).replace(/\n/g, "<br>")}</div>
-              </details>
-            `.trim();
-        }).join("");
-
-        const canToggle = (state.settings?.showAiReports !== false);
-
-        const openBtn = canToggle
-          ? `<button class="ai-reports-open" type="button" data-action="open-ai-reports" style="
-              margin:6px 0 10px;
-              height:30px;
-              padding:0 12px;
-              border-radius:999px;
-              border:1px solid rgba(255,255,255,.14);
-              background:rgba(255,255,255,.06);
-              color:rgba(255,255,255,.90);
-              font-size:12px;
-              cursor:pointer;
-            ">AI Reports を開く</button>`
-          : "";
-
-        return `${headHtml}<br>${openBtn}<br>${detailsHtml}`.replace(/<br><br>/g, "<br>");
+        return html || escHtml(s0).replace(/\n/g, "<br>");
       };
 
       const renderMessageHtml = (msg) => {
@@ -2343,27 +2437,6 @@ const closeSettings = () => {
         actions.style.gap = "8px";
         actions.style.alignItems = "center";
 
-        const rawForReports = String(m?.content || "");
-        const hasReports = (state.settings?.showAiReports !== false) && rawForReports.includes("\nReports:\n");
-
-        if (hasReports) {
-          const logBtn = document.createElement("div");
-          logBtn.className = "act";
-          logBtn.setAttribute("role", "button");
-          logBtn.setAttribute("tabindex", "0");
-          logBtn.dataset.action = "open-ai-reports";
-          logBtn.dataset.mid = m.id;
-          logBtn.innerHTML = `
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M4 4h16v16H4z"></path>
-              <path d="M8 8h8"></path>
-              <path d="M8 12h8"></path>
-              <path d="M8 16h6"></path>
-            </svg>
-          `;
-          actions.appendChild(logBtn);
-        }
-
         const act = document.createElement("div");
         act.className = "act";
         act.setAttribute("role", "button");
@@ -2377,6 +2450,7 @@ const closeSettings = () => {
           </svg>
         `;
         actions.appendChild(act);
+
         wrap.appendChild(actions);
       }
 
@@ -3787,39 +3861,6 @@ btnNewChat?.addEventListener("click", (e) => {
   /* ================= delegate clicks ================= */
   document.addEventListener("click", async (e) => {
     const t = e.target;
-
-        // open all AI report details within the same message bubble
-    const openReportsBtn = t.closest("button.ai-reports-open[data-action='open-ai-reports']");
-    if (openReportsBtn) {
-      e.preventDefault();
-
-      const bubble = openReportsBtn.closest(".bubble");
-      if (!bubble) return;
-
-      bubble.querySelectorAll("details.ai-report").forEach((d) => {
-        try { d.setAttribute("open", ""); } catch {}
-      });
-
-      // keep the view stable
-      syncScrollState();
-      return;
-    }
-
-    // open AI Reports modal (logs)
-    const openLogs = t.closest(".act[data-action='open-ai-reports']");
-    if (openLogs) {
-      e.preventDefault();
-
-      const mid = String(openLogs.dataset.mid || "");
-      const th = getThreadByIdInScope(getActiveThreadId());
-      const msg = th?.messages?.find(m => String(m.id || "") === mid);
-
-      if (msg) {
-        openAiReportsModal(mid, String(msg.content || ""));
-        applyI18n();
-      }
-      return;
-    }
 
     /* ===== Apps: SaaS card click → connect (same tab) ===== */
     const saasCard = t.closest(".panel-apps .apps-grid .saas");
