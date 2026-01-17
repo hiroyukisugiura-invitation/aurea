@@ -3272,6 +3272,9 @@ const closeSettings = () => {
   let streamTimer = null;
   let streamAbort = false;
 
+  // /api/chat fetch abort (STOPで確実に止める)
+  let apiChatAbortCtrl = null;
+
   // multi-AI run control
   let multiAiAbort = false;
   let multiAiRunId = 0;
@@ -3324,10 +3327,20 @@ const closeSettings = () => {
   const stopStreaming = () => {
     streamAbort = true;
     multiAiAbort = true;
+
+    // 進行中runを無効化（後から返ってきたレスポンスを捨てる）
+    multiAiRunId += 1;
+
+    // 進行中fetchを中断
+    try { apiChatAbortCtrl?.abort(); } catch {}
+    apiChatAbortCtrl = null;
+
     if (streamTimer) { clearInterval(streamTimer); streamTimer = null; }
+
     setStreaming(false);
     try { clearAiRunIndicator(); } catch {}
     try { window.__AUREA_STREAMING_MID__ = ""; } catch {}
+    renderChat();
   };
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -3435,10 +3448,14 @@ const closeSettings = () => {
           }
         };
 
+        try { apiChatAbortCtrl?.abort(); } catch {}
+        apiChatAbortCtrl = new AbortController();
+
         const r = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
+          signal: apiChatAbortCtrl.signal
         });
 
         const j = await r.json().catch(() => null);
@@ -3467,7 +3484,27 @@ const closeSettings = () => {
 
       } catch {}
 
-      // fail-safe
+      // fail-safe（backend未接続でも Sora発動＝必ず画像を返す）
+      try {
+        const p = String(userText || "").trim();
+        const url = makePlaceholderImageDataUrl(p);
+
+        try {
+          addImageToLibrary({
+            prompt: p,
+            src: url,
+            from: { threadId: getActiveThreadId(), context: state.context }
+          });
+        } catch {}
+
+        const imgMsg = `AUREA_IMAGE\n${url}\n${p}`;
+        updateMessage(m.id, imgMsg);
+        renderChat();
+        setStreaming(false);
+        renderSidebar();
+        return;
+      } catch {}
+
       updateMessage(m.id, "Image generation failed.");
       renderChat();
       setStreaming(false);
@@ -3512,10 +3549,14 @@ const closeSettings = () => {
         }
       };
 
+      try { apiChatAbortCtrl?.abort(); } catch {}
+      apiChatAbortCtrl = new AbortController();
+
       const r = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        signal: apiChatAbortCtrl.signal
       });
 
       const j = await r.json().catch(() => null);
