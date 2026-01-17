@@ -151,35 +151,38 @@ const setAiRunIndicator = ({ phase, statuses }) => {
 
   const s = statuses || {};
 
-  // 稼働判定（running のみ）
+  // active 判定：queued/running が1つでもあれば表示（done/skipだけになったら非表示）
+  const anyActive = Object.keys(s).some(k => (s[k] === "queued" || s[k] === "running"));
   const anyRunning = Object.keys(s).some(k => s[k] === "running");
   const gptRunning = (s.GPT === "running");
 
-  // 1) 上段2行（翻訳）
-  if (l1) l1.textContent = anyRunning ? tr("statusAnalyzing") : "";
-  // GPTが走り始めたら「回答生成中」を出す（それ以外は空）
-  if (l2) l2.textContent = (anyRunning && gptRunning) ? tr("statusGenerating") : "";
+  // 1) 上段2行（翻訳）…queued中でも出す
+  if (l1) l1.textContent = anyActive ? tr("statusAnalyzing") : "";
+  if (l2) l2.textContent = (anyActive && gptRunning) ? tr("statusGenerating") : "";
 
-  // 2) 稼働AI名（動いたAIが常に最上段）
+  // 2) 稼働AI名（running優先 / 0件なら queued を表示）
   const running = aiRunOrder.filter(n => s[n] === "running");
 
   // 初回（order未確定）でも表示できるようフォールバック
-  if (!running.length) {
-    const fallback = Object.keys(s).filter(k => s[k] === "running");
-    for (const k of fallback) noteAiBecameRunning(k);
+  if (anyActive && !running.length) {
+    const fallbackRunning = Object.keys(s).filter(k => s[k] === "running");
+    for (const k of fallbackRunning) noteAiBecameRunning(k);
   }
 
   const running2 = aiRunOrder.filter(n => s[n] === "running");
 
+  const queuedList = Object.keys(s).filter(k => s[k] === "queued" && k !== "GPT");
+  const showList = (running2.length ? running2 : queuedList);
+
   if (list) {
     const max = 3;
-    const items = running2.slice(0, max).map(n => `<div class="ai-run__ai">${escHtml(n)}</div>`);
-    if (running2.length > max) items.push(`<div class="ai-run__ai ai-run__ai--more">…</div>`);
+    const items = showList.slice(0, max).map(n => `<div class="ai-run__ai">${escHtml(n)}</div>`);
+    if (showList.length > max) items.push(`<div class="ai-run__ai ai-run__ai--more">…</div>`);
     list.innerHTML = items.join("");
   }
 
-  // 3) 表示ON/OFF（runningがある時だけ）
-  el.classList.toggle("on", running2.length > 0);
+  // 3) 表示ON/OFF（activeがある時だけ）
+  el.classList.toggle("on", anyActive);
 };
 
 const clearAiRunIndicator = () => {
@@ -1490,8 +1493,6 @@ const closeSettings = () => {
       chip.className = "aurea-attach-chip";
       chip.dataset.aid = a.id;
 
-      const isSingle = (pendingAttachments.length === 1);
-
       chip.style.cssText = `
         flex:0 0 auto;
         border-radius:14px;
@@ -1577,37 +1578,28 @@ const closeSettings = () => {
 
     wrap.innerHTML = `
       <div style="
-        width:min(860px, calc(100% - 24px));
-        max-height:calc(100vh - 64px);
-        background:rgba(20,21,22,.96);
-        border:1px solid rgba(255,255,255,.10);
+        width:min(420px, calc(100% - 24px));
+        background:rgba(20,21,22,96);
+        border:1px solid rgba(255,255,255,10);
         border-radius:18px;
-        box-shadow:0 10px 30px rgba(0,0,0,.45);
+        box-shadow:0 10px 30px rgba(0,0,0,45);
         overflow:hidden;
         backdrop-filter: blur(14px);
         -webkit-backdrop-filter: blur(14px);
-        color:rgba(255,255,255,.92);
+        color:rgba(255,255,255,92);
         font-family: -apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Hiragino Sans','Noto Sans JP',sans-serif;
-        display:flex;
-        flex-direction:column;
-        min-width:0;
       ">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.08);">
-          <div id="aureaAttachModalTitle" style="font-size:14px;font-weight:600;">Attachment</div>
-          <button type="button" data-action="close" style="
-            width:36px;height:36px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
-            background:rgba(255,255,255,.06);color:rgba(255,255,255,.92);
-            cursor:pointer;font-size:18px;line-height:34px;
-          ">×</button>
-        </div>
-
-        <div id="aureaAttachModalBody" style="padding:14px 16px;overflow:auto;min-height:0;flex:1 1 auto;"></div>
-
-        <div style="padding:14px 16px;border-top:1px solid rgba(255,255,255,.08);display:flex;justify-content:flex-end;gap:10px;">
-          <button type="button" data-action="remove" style="
-            height:36px;padding:0 12px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
-            background:transparent;color:rgba(255,255,255,.86);cursor:pointer;font-size:13px;
-          ">Remove</button>
+        <div style="padding:14px 16px;font-size:14px;font-weight:600;">${L_CONFIRM}</div>
+        <div id="aureaConfirmText" style="padding:14px 16px;font-size:13px;line-height:1.6;color:rgba(255,255,255,82);"></div>
+        <div style="padding:14px 16px;display:flex;justify-content:flex-end;gap:10px;">
+          <button id="aureaConfirmCancel" type="button" style="
+            height:34px;padding:0 12px;border-radius:10px;border:1px solid rgba(255,255,255,12);
+            background:transparent;color:rgba(255,255,255,80);cursor:pointer;font-size:13px;
+          ">${L_CANCEL}</button>
+          <button id="aureaConfirmOk" type="button" style="
+            height:34px;padding:0 12px;border-radius:10px;border:1px solid rgba(255,255,255,12);
+            background:rgba(255,255,255,08);color:rgba(255,255,255,92);cursor:pointer;font-size:13px;
+          ">${L_OK}</button>
         </div>
       </div>
     `;
@@ -3547,7 +3539,7 @@ const closeSettings = () => {
       if (r.ok && j && j.ok && j.result && typeof j.result === "object") {
         apiMap = j.result;
 
-        // server-sync mode: render immediately (no UI-stub orchestration)
+        // server-sync mode: still stream GPT text (GPT-like)
         if (apiMap && typeof apiMap === "object") {
           const gpt = String(apiMap.GPT || "").trim();
 
@@ -3565,10 +3557,43 @@ const closeSettings = () => {
 
           setMessageMeta(m.id, { reportsRaw: lines.join("\n").trim() });
 
-          updateMessage(m.id, gpt || "");
+          // indicator: show generating while GPT streams
+          statuses.GPT = "running";
+          try { noteAiBecameRunning("GPT"); } catch {}
+          try { setAiRunIndicator({ phase: "run", statuses }); } catch {}
+
+          updateMessage(m.id, "");
           renderChat();
-          setStreaming(false);
-          renderSidebar();
+
+          // stream final text
+          const final = gpt || "";
+          let i = 0;
+          const step = Math.max(1, Math.floor(final.length / 180));
+          streamTimer = setInterval(() => {
+            if (multiAiAbort || streamAbort || runId !== multiAiRunId) {
+              if (streamTimer) { clearInterval(streamTimer); streamTimer = null; }
+              setStreaming(false);
+              return;
+            }
+
+            i += step;
+            const chunk = final.slice(0, i);
+            updateMessage(m.id, chunk);
+            renderChat();
+
+            if (i >= final.length) {
+              clearInterval(streamTimer);
+              streamTimer = null;
+
+              statuses.GPT = "done";
+              try { setAiRunIndicator({ phase: "run", statuses }); } catch {}
+
+              setStreaming(false);
+              try { clearAiRunIndicator(); } catch {}
+              renderSidebar();
+            }
+          }, 18);
+
           return;
         }
       }
