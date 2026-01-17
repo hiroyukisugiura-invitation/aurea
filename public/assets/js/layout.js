@@ -2179,6 +2179,17 @@ const closeSettings = () => {
     save(state);
   };
 
+  const setMessageMeta = (mid, patch = {}) => {
+    const t = getThreadByIdInContext(getActiveThreadId());
+    if (!t) return;
+    const m = t.messages.find(x => x.id === mid);
+    if (!m) return;
+    if (!m.meta || typeof m.meta !== "object") m.meta = {};
+    Object.assign(m.meta, patch || {});
+    t.updatedAt = nowISO();
+    save(state);
+  };
+
   /* ================= images library ================= */
   const makePlaceholderImageDataUrl = (prompt) => {
     // quick placeholder (no external deps): simple SVG as data URL
@@ -3345,30 +3356,8 @@ const closeSettings = () => {
 
   const integrateFinal = ({ userText, reports, usedSora }) => {
     // UI-only: GPT final synthesis placeholder (backend will replace)
-    const lines = [];
-    lines.push(`${tr("aureaPrefix")}`);
-    lines.push("");
-    lines.push(userText);
-    lines.push("");
-    lines.push(tr("replyPlaceholder"));
-
-    // Attach full reports (UI will render as expandable details)
-    const names = Object.keys(reports || {});
-    if (names.length) {
-      lines.push("");
-      lines.push("Reports:");
-      for (const n of names) {
-        lines.push(`--- ${n} ---`);
-        lines.push(String(reports[n] || "").trim());
-      }
-    }
-
-    if (usedSora) {
-      lines.push("");
-      lines.push("Sora: active (image)");
-    }
-
-    return lines.join("\n");
+    // 本文は「回答のみ」(Reports/Sources/ログはRepoアイコン側で表示)
+    return tr("replyPlaceholder");
   };
 
   const multiAiReply = async (userText, rawAttachments = []) => {
@@ -3449,9 +3438,7 @@ const closeSettings = () => {
 
       try { setAiRunIndicator({ phase: "run", statuses }); } catch {}
 
-      const header = buildMultiAiHeader(statuses);
-      const content = finalText ? `${header}\n\n${finalText}` : `${header}\n\n`;
-      updateMessage(m.id, content);
+      updateMessage(m.id, finalText || "");
       renderChat();
     };
 
@@ -3520,10 +3507,9 @@ const closeSettings = () => {
           const gpt = String(apiMap.GPT || "").trim();
 
           const keys = Object.keys(apiMap || {}).filter(k => k && k !== "GPT");
-          const lines = [gpt || ""];
+          const lines = [];
 
           if (keys.length) {
-            lines.push("");
             lines.push("Reports:");
             for (const k of keys) {
               const v = String(apiMap[k] || "").trim();
@@ -3532,7 +3518,9 @@ const closeSettings = () => {
             }
           }
 
-          updateMessage(m.id, lines.join("\n").trim());
+          setMessageMeta(m.id, { reportsRaw: lines.join("\n").trim() });
+
+          updateMessage(m.id, gpt || "");
           renderChat();
           setStreaming(false);
           renderSidebar();
@@ -3587,9 +3575,22 @@ const closeSettings = () => {
       return;
     }
 
+    // Repo用：AI別レポートを保存（本文には出さない）
+    try {
+      const names = Object.keys(reports || {});
+      const lines = [];
+      if (names.length) {
+        lines.push("Reports:");
+        for (const n of names) {
+          lines.push(`--- ${n} ---`);
+          lines.push(String(reports[n] || "").trim());
+        }
+      }
+      setMessageMeta(m.id, { reportsRaw: lines.join("\n").trim() });
+    } catch {}
+
     // GPT final synthesis (UI stub for now)
     statuses.GPT = "running";
-    try { noteAiBecameRunning("GPT"); } catch {}
     renderProgress("");
 
     const final = integrateFinal({ userText, reports, usedSora });
@@ -4222,14 +4223,17 @@ btnNewChat?.addEventListener("click", (e) => {
       return;
     }
 
-    // open AI reports
+    // open AI reports (repo icon)
     const repBtn = t.closest(".act[data-action='open-reports']");
     if (repBtn) {
       e.preventDefault();
+
       const mid = repBtn.dataset.mid;
       const th = getThreadByIdInScope(getActiveThreadId());
       const msg = th?.messages?.find(m => m.id === mid);
-      openAiReportsModal(mid, msg?.content || "");
+
+      const raw = String(msg?.meta?.reportsRaw || "").trim();
+      openAiReportsModal(mid, raw);
       return;
     }
 
