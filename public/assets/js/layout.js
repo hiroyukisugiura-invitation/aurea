@@ -196,11 +196,6 @@ const clearAiRunIndicator = () => {
   if (l2) l2.textContent = "";
   if (list) list.innerHTML = "";
 
-  try {
-  const rail = document.querySelector(".brand-rail");
-  if (rail) rail.setAttribute("aria-hidden", "true");
-} catch {}
-
   aiRunOrder = [];
   aiRunLastStatuses = null;
 
@@ -3367,8 +3362,22 @@ const closeSettings = () => {
     streamAbort = false;
     multiAiAbort = false;
     setStreaming(true);
-        // ===== Sora image generation (front complete) =====
-    if (isImageGenerationRequest(userText)) {
+
+    // ===== Route guard: if image is attached, always ANALYZE (never generate) =====
+    const hasImageAttachment = Array.isArray(rawAttachments) && rawAttachments.some((a) => {
+      if (!a) return false;
+      if (String(a.kind || "") === "image") return true;
+      if (String(a.route || "") === "image") return true;
+      const f = a.file;
+      const mt = String(f && f.type ? f.type : "");
+      if (mt && mt.startsWith("image/")) return true;
+      const nm = String(a.name || "");
+      return /\.(png|jpg|jpeg|webp|gif|bmp|svg)$/i.test(nm);
+    });
+
+    // ===== Sora image generation (front complete) =====
+    // NOTE: generation is allowed only when NO image attachments (GPT-like: attached images mean "analyze")
+    if (!hasImageAttachment && isImageGenerationRequest(userText)) {
       try { showAiActivity("Sora"); } catch {}
 
       try {
