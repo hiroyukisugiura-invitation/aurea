@@ -1395,24 +1395,54 @@ const closeSettings = () => {
   const ensureAttachTray = () => {
     // 1) 通常チャット（.ask）
     const ask = document.querySelector(".ask");
+    const askInput = document.querySelector(".ask .in");
 
     // 2) PJトップ（#aureaProjectHomeAsk のある .pj-home-askbar）
     const pjAskInput = document.getElementById("aureaProjectHomeAsk");
     const pjBar = pjAskInput ? pjAskInput.closest(".pj-home-askbar") : null;
 
-    // 優先：PJトップが存在するならPJトップ、無ければ通常チャット
-    const anchor = pjBar || ask;
-    if (!anchor) return null;
+    // ===== Ask 内レイアウトを崩さず「添付→入力→ボタン」を固定するためのラップ =====
+    const ensureAskWrap = (root, rowClass, flagKey) => {
+      if (!root) return null;
+      if (root.dataset[flagKey] === "1") return root.querySelector(`.${rowClass}`) || null;
 
-    const host = anchor.parentElement || null;
+      const row = document.createElement("div");
+      row.className = rowClass;
 
-    // 既存トレイがあれば「今の画面のアンカー位置へ移動」する
+      // 既存の子要素を row に移動（順序維持）
+      while (root.firstChild) row.appendChild(root.firstChild);
+
+      root.appendChild(row);
+      root.dataset[flagKey] = "1";
+      return row;
+    };
+
+    let anchorInput = null;
+    let trayHost = null;
+    let row = null;
+
+    if (pjBar && pjAskInput) {
+      // PJトップ：pj-home-askbar を縦積みにして、添付を input の上へ
+      row = ensureAskWrap(pjBar, "pj-home-askrow", "aureaAttachWrapped");
+      anchorInput = pjAskInput;
+      trayHost = pjBar;
+    } else if (ask && askInput) {
+      // 通常：ask を縦積みにして、添付を textarea の上へ
+      row = ensureAskWrap(ask, "ask-row", "aureaAttachWrapped");
+      anchorInput = askInput;
+      trayHost = ask;
+    } else {
+      return null;
+    }
+
+    // 既存トレイがあれば「今の画面の input 直前」に移動
     if (attachTrayEl) {
       try {
-        if (host && attachTrayEl.parentElement !== host) {
-          host.insertBefore(attachTrayEl, anchor);
-        } else if (host && attachTrayEl.nextSibling !== anchor) {
-          host.insertBefore(attachTrayEl, anchor);
+        if (trayHost && attachTrayEl.parentElement !== trayHost) {
+          trayHost.insertBefore(attachTrayEl, row || trayHost.firstChild);
+        }
+        if (trayHost && attachTrayEl.nextSibling !== (row || null)) {
+          trayHost.insertBefore(attachTrayEl, row || trayHost.firstChild);
         }
       } catch {}
       return attachTrayEl;
@@ -1422,21 +1452,19 @@ const closeSettings = () => {
     tray.id = "aureaAttachTray";
     tray.style.cssText = `
       width:100%;
-      max-width:760px;
-      margin:0 auto;
-      padding:0 10px 10px;
-      box-sizing:border-box;
-
       display:none;
-      flex-wrap:wrap;
-      gap:10px;
-      justify-content:flex-start;
+      gap:8px;
       align-items:center;
-
+      justify-content:flex-start;
+      flex-wrap:nowrap;
+      overflow-x:auto;
+      padding:0 2px 8px;
+      box-sizing:border-box;
       pointer-events:auto;
     `;
 
-    if (host) host.insertBefore(tray, anchor);
+    // 添付は「row（入力＋ボタン）」の “上” に差し込む
+    if (trayHost) trayHost.insertBefore(tray, row || trayHost.firstChild);
     else document.body.appendChild(tray);
 
     attachTrayEl = tray;
@@ -1462,20 +1490,23 @@ const closeSettings = () => {
       chip.className = "aurea-attach-chip";
       chip.dataset.aid = a.id;
 
+      const isSingle = (pendingAttachments.length === 1);
+
       chip.style.cssText = `
-        max-width:360px;
-        border-radius:999px;
+        flex:0 0 auto;
+        border-radius:14px;
         border:1px solid rgba(255,255,255,.12);
         background:rgba(255,255,255,.06);
         color:rgba(255,255,255,.92);
         cursor:pointer;
-        padding:7px 10px;
+        padding:${isSingle ? "8px 10px" : "6px 8px"};
         display:flex;
         align-items:center;
         gap:10px;
         font-size:12px;
         line-height:1;
         font-family:var(--font);
+        max-width:${isSingle ? "520px" : "260px"};
       `;
 
       const name = String(a.name || "file").trim();
@@ -1491,11 +1522,16 @@ const closeSettings = () => {
       const metaBase = `${routeLabel} · ${bytesToHuman(a.size)}${a.mime ? ` · ${a.mime}` : ""}`;
       const meta = fallback ? `${metaBase} · ${fallback}` : metaBase;
 
+       const isSingle = (pendingAttachments.length === 1);
+      const imgW = isSingle ? 160 : 44;
+      const imgH = isSingle ? 100 : 44;
+      const imgR = isSingle ? 12 : 10;
+
       const thumb = (isImg && a.dataUrl)
-        ? `<img src="${escHtml(a.dataUrl)}" alt="" style="width:22px;height:22px;border-radius:6px;object-fit:cover;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.03);" />`
+        ? `<img src="${escHtml(a.dataUrl)}" alt="" style="width:${imgW}px;height:${imgH}px;border-radius:${imgR}px;object-fit:cover;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.03);" />`
         : isPdf
-          ? `<span aria-hidden="true" style="width:30px;height:22px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.12);background:rgba(255,60,60,.16);color:rgba(255,255,255,.92);font-size:10px;font-weight:700;letter-spacing:.04em;">PDF</span>`
-          : `<span aria-hidden="true" style="width:22px;height:22px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.03);opacity:.85;">📄</span>`;
+          ? `<span aria-hidden="true" style="width:${isSingle ? 72 : 44}px;height:${isSingle ? 44 : 44}px;border-radius:${imgR}px;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.12);background:rgba(255,60,60,.16);color:rgba(255,255,255,.92);font-size:10px;font-weight:700;letter-spacing:.04em;">PDF</span>`
+          : `<span aria-hidden="true" style="width:${imgW}px;height:${imgH}px;border-radius:${imgR}px;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.03);opacity:.85;">📄</span>`;
 
       chip.innerHTML = `
         ${thumb}
