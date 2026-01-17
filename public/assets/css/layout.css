@@ -591,34 +591,33 @@ body.view-project .brand-rail{
   transform-origin:50% 0%;
 }
 
-/* ===== AI run indicator (under AUREA logo) ===== */
+/* ===== AI run indicator (GPT-like: frameless, text meteor) ===== */
 .ai-run-indicator{
   position:absolute;
   left:0;
-  top:232px;                 /* ロゴ直下 */
-  width:56px;                /* brand-rail 幅内に収めて履歴に被せない */
+  top:232px;     /* AUREAロゴ直下 */
+  width:56px;    /* brand-rail 内 */
 
-  padding:10px 6px 10px;
-  border-radius:16px;
-  background:rgba(255,255,255,.05);
-  border:1px solid var(--line);
-  box-shadow:0 10px 30px rgba(0,0,0,.28);
+  padding:0;
+  background:transparent;
+  border:0;
+  box-shadow:none;
 
   opacity:0;
   transform:translateY(6px);
   transition:opacity .18s ease, transform .18s ease;
   pointer-events:none;
-  overflow:hidden;
 }
 .ai-run-indicator.on{
   opacity:1;
   transform:translateY(0);
 }
 
+/* 「解析中」「回答生成中」(必要なら表示) */
 .ai-run-indicator .ai-run__line{
   font-size:11px;
   line-height:1.25;
-  color:rgba(255,255,255,.72);
+  color:rgba(255,255,255,.70);
   letter-spacing:.2px;
   white-space:nowrap;
   overflow:hidden;
@@ -633,90 +632,83 @@ body.view-project .brand-rail{
   gap:6px;
 }
 
+/* AI名：文字自体が流星（左→右に発光が流れる） */
 .ai-run-indicator .ai-run__ai{
   font-size:12px;
   line-height:1.2;
-  color:rgba(255,255,255,.92);
   white-space:nowrap;
   overflow:hidden;
+
+  background:linear-gradient(
+    90deg,
+    rgba(255,255,255,.55) 0%,
+    rgba(255,255,255,.55) 35%,
+    rgba(182,199,255,.98) 50%,
+    rgba(255,255,255,.55) 65%,
+    rgba(255,255,255,.55) 100%
+  );
+  background-size:220% 100%;
+  background-position:0% 50%;
+
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+
+  animation:aiTextMeteor 1.0s linear infinite;
 }
-.ai-run-indicator .ai-run__ai--more{
-  color:rgba(255,255,255,.58);
-}
+
+/* JSが span.ai-run__ai-txt を使う場合も同じ見た目に揃える */
 .ai-run-indicator .ai-run__ai-txt{
-  display:inline-block;
-  transform:translateX(0);
-  animation:aiNameFlow 1.2s linear infinite;
+  display:inline;
+  background:inherit;
+  background-size:inherit;
+  background-position:inherit;
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+  animation:aiTextMeteor 1.0s linear infinite;
 }
 
-@keyframes aiNameFlow{
-  0%{ transform:translateX(0); opacity:.95; }
-  100%{ transform:translateX(-18px); opacity:.95; }
+.ai-run-indicator .ai-run__ai--more{
+  color:rgba(255,255,255,.55);
+  background:none;
+  -webkit-background-clip:initial;
+  background-clip:initial;
+  animation:none;
 }
 
-/* “流星ゲージ” */
-.ai-run-indicator::before{
-  content:"";
-  position:absolute;
-  left:6px;
-  right:6px;
-  top:8px;
-  height:3px;
-  border-radius:999px;
-  background:rgba(255,255,255,.14);
-}
-.ai-run-indicator::after{
-  content:"";
-  position:absolute;
-  left:6px;
-  right:6px;
-  top:8px;
-  height:3px;
-  border-radius:999px;
-  background:
-    radial-gradient(circle at 10% 50%, rgba(255,255,255,.95) 0 2px, transparent 3px),
-    linear-gradient(90deg, transparent, rgba(255,255,255,.78), transparent);
-  animation:aiMeteor .90s linear infinite;
-  opacity:.98;
-  filter:drop-shadow(0 0 6px rgba(255,255,255,.18));
-}
-
-@keyframes aiMeteor{
-  0%{ transform:translateX(-75%); opacity:.12; }
-  18%{ opacity:.98; }
-  100%{ transform:translateX(75%); opacity:.12; }
+@keyframes aiTextMeteor{
+  0%{ background-position:0% 50%; }
+  100%{ background-position:220% 50%; }
 }
 
 /* light theme */
-body.theme-light .ai-run-indicator{
-  background:rgba(255,255,255,.92);
-  border:1px solid var(--line);
-  box-shadow:0 10px 26px rgba(0,0,0,.10);
-}
 body.theme-light .ai-run-indicator .ai-run__line{
-  color:rgba(0,0,0,.60);
+  color:rgba(0,0,0,.55);
 }
-body.theme-light .ai-run-indicator .ai-run__ai{
-  color:rgba(0,0,0,.88);
+body.theme-light .ai-run-indicator .ai-run__ai,
+body.theme-light .ai-run-indicator .ai-run__ai-txt{
+  background:linear-gradient(
+    90deg,
+    rgba(0,0,0,.45) 0%,
+    rgba(0,0,0,.45) 35%,
+    rgba(80,120,255,.90) 50%,
+    rgba(0,0,0,.45) 65%,
+    rgba(0,0,0,.45) 100%
+  );
+  background-size:220% 100%;
+  background-position:0% 50%;
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+  animation:aiTextMeteor 1.0s linear infinite;
 }
 body.theme-light .ai-run-indicator .ai-run__ai--more{
   color:rgba(0,0,0,.55);
-}
-body.theme-light .ai-run-indicator .ai-run__ai-txt{
-  animation:aiNameFlowLight 1.2s linear infinite;
-}
-@keyframes aiNameFlowLight{
-  0%{ transform:translateX(0); opacity:.95; }
-  100%{ transform:translateX(-18px); opacity:.95; }
-}
-body.theme-light .ai-run-indicator::before{
-  background:rgba(0,0,0,.10);
-}
-body.theme-light .ai-run-indicator::after{
-  background:
-    radial-gradient(circle at 10% 50%, rgba(0,0,0,.78) 0 2px, transparent 3px),
-    linear-gradient(90deg, transparent, rgba(0,0,0,.60), transparent);
-  filter:drop-shadow(0 0 6px rgba(0,0,0,.10));
+  background:none;
+  -webkit-background-clip:initial;
+  background-clip:initial;
+  animation:none;
 }
 
 /* Chat */
