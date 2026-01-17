@@ -176,7 +176,7 @@ const setAiRunIndicator = ({ phase, statuses }) => {
 
   if (list) {
     const max = 3;
-    const items = showList.slice(0, max).map(n => `<div class="ai-run__ai">${escHtml(n)}</div>`);
+    const items = showList.slice(0, max).map(n => `<div class="ai-run__ai"><span class="ai-run__ai-txt">${escHtml(n)}</span></div>`);
     if (showList.length > max) items.push(`<div class="ai-run__ai ai-run__ai--more">…</div>`);
     list.innerHTML = items.join("");
   }
@@ -2607,6 +2607,12 @@ const closeSettings = () => {
       wrap.appendChild(bubble);
 
       if (m.role === "assistant") {
+        const isStreamingMsg = (typeof window.__AUREA_STREAMING_MID__ === "string" && window.__AUREA_STREAMING_MID__ === m.id);
+        if (isStreamingMsg) {
+          chatRoot.appendChild(wrap);
+          continue;
+        }
+
         const actions = document.createElement("div");
         actions.className = "actions";
         actions.style.display = "flex";
@@ -3321,6 +3327,7 @@ const closeSettings = () => {
     if (streamTimer) { clearInterval(streamTimer); streamTimer = null; }
     setStreaming(false);
     try { clearAiRunIndicator(); } catch {}
+    try { window.__AUREA_STREAMING_MID__ = ""; } catch {}
   };
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -3391,6 +3398,8 @@ const closeSettings = () => {
   const multiAiReply = async (userText, rawAttachments = []) => {
     const m = appendMessage("assistant", "");
     if (!m) return;
+
+    try { window.__AUREA_STREAMING_MID__ = String(m.id || ""); } catch {}
 
     streamAbort = false;
     multiAiAbort = false;
@@ -3595,6 +3604,7 @@ const closeSettings = () => {
 
               setStreaming(false);
               try { clearAiRunIndicator(); } catch {}
+              try { window.__AUREA_STREAMING_MID__ = ""; } catch {}
               renderSidebar();
             }
           }, 18);
@@ -3691,6 +3701,7 @@ const closeSettings = () => {
         renderProgress(final);
         setStreaming(false);
         try { clearAiRunIndicator(); } catch {}
+        try { window.__AUREA_STREAMING_MID__ = ""; } catch {}
         renderSidebar();
       }
     }, 18);
