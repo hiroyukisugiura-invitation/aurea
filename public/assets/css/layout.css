@@ -1125,9 +1125,12 @@ body.view-images .board{
   display:flex;
   align-items:flex-end;
   gap:10px;
+  width:100%;
+  min-width:0;
 }
 
 .ask .left, .ask .right{ display:flex; align-items:center; gap:8px; }
+.ask .right{ margin-left:auto; }
 .ask .in{
   flex:1;
   min-width:0;
@@ -1392,6 +1395,8 @@ body.view-project .view{
   display:flex;
   align-items:center;
   gap:10px;
+  width:100%;
+  min-width:0;
 }
 
 body.theme-light .pj-home-askbar{
@@ -2871,10 +2876,7 @@ body.view-project:not(.has-chat) .scroll-down-btn{
   color:rgba(255,255,255,.7);
 }
 
-/* ===== Confirm popup: remove divider lines (history delete) ===== */
-/* 上下の区切り線を強制的に無効化 */
-[aurea-confirm],
-[aurea-confirm] *{
-  border-top: none !important;
-  border-bottom: none !important;
-}
+/* ===== Confirm popup (history delete)
+   divider lines are handled in layout.js (inline styles)
+   no CSS override needed here
+===== */

@@ -1965,9 +1965,9 @@ const closeSettings = () => {
         color:rgba(255,255,255,.92);
         font-family: -apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Hiragino Sans','Noto Sans JP',sans-serif;
       ">
-        <div style="padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.08);font-size:14px;font-weight:600;">${L_CONFIRM}</div>
+        <div style="padding:14px 16px;font-size:14px;font-weight:600;">${L_CONFIRM}</div>
         <div id="aureaConfirmText" style="padding:14px 16px;font-size:13px;line-height:1.6;color:rgba(255,255,255,.82);"></div>
-        <div style="padding:14px 16px;border-top:1px solid rgba(255,255,255,.08);display:flex;justify-content:flex-end;gap:10px;">
+        <div style="padding:14px 16px;display:flex;justify-content:flex-end;gap:10px;">
           <button id="aureaConfirmCancel" type="button" style="
             height:34px;padding:0 12px;border-radius:10px;border:1px solid rgba(255,255,255,.12);
             background:transparent;color:rgba(255,255,255,.80);cursor:pointer;font-size:13px;
