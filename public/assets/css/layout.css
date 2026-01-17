@@ -1100,12 +1100,12 @@ body.view-images .board{
   border:1px solid rgba(255,255,255,.10);
   border-radius:22px;
 
+  /* デフォルトは細長（以前の仕様） */
   display:flex;
-  flex-direction:column;
-  align-items:stretch;
+  align-items:flex-end;
+  gap:10px;
 
   padding:10px 12px;
-  gap:8px;
 
   box-shadow:0 18px 45px rgba(0,0,0,.42);
   backdrop-filter: blur(14px);
@@ -1113,7 +1113,14 @@ body.view-images .board{
   pointer-events:auto;
 }
 
-/* Ask 内の “入力＋ボタン行” はここで保持 */
+/* 添付がある時だけ Ask を縦積みにする（[添付]→[コメント]→[+送信]） */
+.ask[data-attach="1"]{
+  flex-direction:column;
+  align-items:stretch;
+  gap:8px;
+}
+
+/* Ask 内の “入力＋ボタン行” */
 .ask-row{
   display:flex;
   align-items:flex-end;
@@ -2862,4 +2869,12 @@ body.view-project:not(.has-chat) .scroll-down-btn{
   padding:8px 12px;
   font-size:12px;
   color:rgba(255,255,255,.7);
+}
+
+/* ===== Confirm popup: remove divider lines (history delete) ===== */
+/* 上下の区切り線を強制的に無効化 */
+[aurea-confirm],
+[aurea-confirm] *{
+  border-top: none !important;
+  border-bottom: none !important;
 }

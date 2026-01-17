@@ -1480,6 +1480,12 @@ const closeSettings = () => {
 
     tray.innerHTML = "";
 
+    const askEl = document.querySelector(".ask");
+    if (askEl) {
+      if (pendingAttachments.length) askEl.setAttribute("data-attach", "1");
+      else askEl.removeAttribute("data-attach");
+    }
+
     if (!pendingAttachments.length) {
       tray.style.display = "none";
       return;
@@ -1492,6 +1498,8 @@ const closeSettings = () => {
       chip.type = "button";
       chip.className = "aurea-attach-chip";
       chip.dataset.aid = a.id;
+
+      const isSingle = (pendingAttachments.length === 1);
 
       chip.style.cssText = `
         flex:0 0 auto;
@@ -1523,7 +1531,6 @@ const closeSettings = () => {
       const metaBase = `${routeLabel} · ${bytesToHuman(a.size)}${a.mime ? ` · ${a.mime}` : ""}`;
       const meta = fallback ? `${metaBase} · ${fallback}` : metaBase;
 
-       const isSingle = (pendingAttachments.length === 1);
       const imgW = isSingle ? 160 : 44;
       const imgH = isSingle ? 100 : 44;
       const imgR = isSingle ? 12 : 10;
@@ -1541,7 +1548,6 @@ const closeSettings = () => {
         <span data-action="remove" aria-label="remove" style="opacity:.72;margin-left:auto;display:inline-flex;width:22px;height:22px;align-items:center;justify-content:center;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);">×</span>
       `;
 
-      // ✅ 削除（×）はここで直バインド（確実）
       const rm = chip.querySelector("[data-action='remove']");
       if (rm) {
         rm.addEventListener("click", (e) => {
@@ -1551,9 +1557,7 @@ const closeSettings = () => {
         });
       }
 
-      // ✅ チップクリックはプレビュー（確実）
       chip.addEventListener("click", (e) => {
-        // × のクリックは上で stopPropagation 済み
         e.preventDefault();
         openAttachModal(a);
       });
@@ -1690,6 +1694,7 @@ const closeSettings = () => {
     if (!id) return;
     pendingAttachments = pendingAttachments.filter(a => a.id !== id);
     renderAttachTray();
+    updateSendButtonVisibility();
   };
 
   const sniffKind = (mime, name) => {
