@@ -290,7 +290,6 @@
     <input class="tab-input" type="radio" name="tab" id="tab-general" checked>
     <input class="tab-input" type="radio" name="tab" id="tab-apps">
     <input class="tab-input" type="radio" name="tab" id="tab-data">
-    <input class="tab-input" type="radio" name="tab" id="tab-trainer">
     <input class="tab-input" type="radio" name="tab" id="tab-account">
 
     <div class="overlay">
@@ -317,11 +316,6 @@
             <label class="nav-item" for="tab-data" role="listitem">
               <span class="nav-ic"><i class="fa-solid fa-database"></i></span>
               <span class="nav-txt" data-i18n="data">データ</span>
-            </label>
-
-            <label class="nav-item" for="tab-trainer" role="listitem">
-              <span class="nav-ic"><i class="fa-solid fa-layer-group"></i></span>
-              <span class="nav-txt" data-i18n="trainer">AUREA Data Trainer</span>
             </label>
 
             <label class="nav-item" for="tab-account" role="listitem">
@@ -448,42 +442,6 @@
                     <span data-i18n="delete">削除</span>
                   </button>
                 </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- ===== Trainer ===== -->
-          <div class="panel panel-trainer">
-            <header class="content-hd">
-              <div style="min-width:0">
-                <div class="content-title" data-i18n="trainer">AUREA Data Trainer (※ Enterprise 専用機能 )</div>
-                <div class="sec-desc" data-i18n="trainerDesc">
-                  独自に社内AIを育てて業務効率化へ
-                </div>
-              </div>
-            </header>
-
-            <div class="content-bd">
-              <div class="section">
-                <div class="sec-title" data-i18n="trainerSection">AUREAを育てる（AET）</div>
-                <div class="sec-desc" data-i18n="trainerSectionDesc">
-                  「こんな質問にはこれ」といったケースを登録し、社内AIの回答精度を育てます
-                </div>
-                <div style="height:1px;background:rgba(255,255,255,.08);margin:12px 0;"></div>
-
-                <div class="row" style="border-top:0;padding-top:12px">
-                  <div class="l">
-                    <div class="k">最適回答を登録</div>
-                    <div class="v">"質問" → "最適回答"を登録</div>
-                  </div>
-                  <button class="btn" type="button" id="btnAddTrainerCase">
-                    <i class="fa-solid fa-plus"></i>
-                    <span>ケースを管理</span>
-                  </button>
-                </div>
-
-                <!-- Trainer cases list mount (この一覧は表示しない：ケース管理ポップで操作する) -->
-                <div id="trainerCases"></div>
               </div>
             </div>
           </div>

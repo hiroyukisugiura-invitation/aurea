@@ -40,7 +40,6 @@
 
   // debug logger (layout.js)
   const dbg = (...args) => { try { console.info(...args); } catch {} };
-
   /* ================= AI activity fade ================= */
 let aiActivityRoot = null;
 
@@ -75,7 +74,7 @@ const showAiActivity = (name) => {
   }, 1200);
 };
 
-/* ================= streaming meteor label (left thin dot) ================= */
+/* ================= streaming meteor label (GPT-like) ================= */
 let aiMeteorFxInjected = false;
 
 const ensureAiMeteorFx = () => {
@@ -86,28 +85,22 @@ const ensureAiMeteorFx = () => {
   st.setAttribute("data-aurea-meteor-fx", "1");
   st.textContent = `
     @keyframes aureaMeteorSweep {
-      0%   { transform: translateX(-24px); opacity: 0; }
+      0%   { transform: translateX(-22px); opacity: 0; }
       12%  { opacity: 1; }
-      100% { transform: translateX(110px); opacity: 0; }
+      100% { transform: translateX(96px); opacity: 0; }
     }
 
-    /* 既存の丸（assistantマーク）がある場合は非表示（UI乱立防止） */
-    .msg.assistant::before{
+    /* streaming中だけ既存の丸（assistantマーク）を消す（UI乱立防止） */
+    .msg.assistant.is-streaming::before{
       display:none !important;
       content:none !important;
-    }
-    .msg.assistant .avatar,
-    .msg.assistant .av,
-    .msg.assistant .mark,
-    .msg.assistant .dot{
-      display:none !important;
     }
 
     .msg.assistant{
       position:relative;
     }
 
-    /* 文字だけを出す */
+    /* 枠なし・文字だけ（左の薄い丸位置） */
     .msg.assistant .aurea-streammark{
       position:absolute;
       left:-6px;
@@ -118,7 +111,6 @@ const ensureAiMeteorFx = () => {
       z-index:2;
     }
 
-    /* 枠なし・背景なし・文字だけ */
     .msg.assistant .aurea-streammark__txt{
       position:relative;
       font-size:12px;
@@ -133,13 +125,12 @@ const ensureAiMeteorFx = () => {
       overflow:hidden;
     }
 
-    /* 文字の上を流星が走る */
     .msg.assistant .aurea-streammark__txt::after{
       content:"";
       position:absolute;
       top:50%;
-      left:-24px;
-      width:20px;
+      left:-22px;
+      width:18px;
       height:2px;
       transform:translateY(-50%);
       background:linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(159,180,255,.92) 40%, rgba(255,255,255,0) 100%);
@@ -152,14 +143,22 @@ const ensureAiMeteorFx = () => {
       display:none !important;
     }
   `.trim();
+
   document.head.appendChild(st);
 };
 
-const getStreamingLabel = () => {
-  const s = aiRunLastStatuses || {};
-  const gptRunning = (s && s.GPT === "running");
-  return gptRunning ? "回答文作成中" : "解析中";
+const setStreamingLabelMode = (mode) => {
+  const v = (mode === "generating") ? "generating" : "analyzing";
+  try { window.__AUREA_STREAMING_LABEL_MODE__ = v; } catch {}
 };
+
+const getStreamingLabel = () => {
+  const v = String(window.__AUREA_STREAMING_LABEL_MODE__ || "analyzing");
+  return (v === "generating") ? "回答文作成中" : "解析中";
+};
+
+/* ================= streaming meteor label (left thin dot) ================= */
+/* (removed: duplicated meteor label block; keep only the first GPT-like implementation) */
 
 /* ================= AI run indicator (brand rail) ================= */
 let aiRunIndicatorEl = null;
@@ -731,7 +730,6 @@ const clearAiRunIndicator = () => {
     setText(".settings-modal label[for='tab-general'] .nav-txt", tr("general"));
     setText(".settings-modal label[for='tab-apps'] .nav-txt", tr("apps"));
     setText(".settings-modal label[for='tab-data'] .nav-txt", tr("data"));
-    setText(".settings-modal label[for='tab-trainer'] .nav-txt", tr("trainer"));
     setText(".settings-modal label[for='tab-account'] .nav-txt", tr("accountSecurity"));
 
     setText(".settings-modal .panel-general .content-title", tr("general"));
@@ -809,28 +807,6 @@ const clearAiRunIndicator = () => {
     // Delete-all button label (Data panel)
     const delAll = document.getElementById("btnDeleteAllChats");
     if (delAll) delAll.textContent = isEn ? "Delete" : "削除";
-
-    // ===== Trainer (AET) : static texts (no data-i18n) =====
-    const btnTrainer = document.getElementById("btnAddTrainerCase");
-    if (btnTrainer) btnTrainer.textContent = isEn ? "+ Manage cases" : "ケースを管理";
-
-    const trainerPanel = document.querySelector(".settings-modal .panel-trainer");
-    if (trainerPanel) {
-      const swapLeafText = (from, to) => {
-        trainerPanel.querySelectorAll("*").forEach((el) => {
-          if (!(el instanceof HTMLElement)) return;
-          if (el.children && el.children.length) return;
-          const t = (el.textContent || "").trim();
-          if (t === from) el.textContent = to;
-        });
-      };
-
-      swapLeafText("最適回答を登録", isEn ? "Register best answers" : "最適回答を登録");
-      swapLeafText("\"質問\" → \"最適回答\"を登録", isEn ? 'Register "Question" → "Best answer"' : "\"質問\" → \"最適回答\"を登録");
-
-      swapLeafText("質問", isEn ? "Question" : "質問");
-      swapLeafText("最適回答", isEn ? "Best answer" : "最適回答");
-    }
 
         // ===== Search modal (popup) i18n =====
     const smInput = document.getElementById("aureaSearchModalInput");
@@ -6218,500 +6194,6 @@ const hideAuthGate = () => {
       saveUser();
     });
 
-    /* ===== Trainer (AET) ===== */
-    const TRAINER_CASES_KEY = "aurea_trainer_cases_v1";
-
-    const loadTrainerCases = () => {
-      try {
-        const raw = localStorage.getItem(TRAINER_CASES_KEY);
-        if (!raw) return [];
-        const arr = JSON.parse(raw);
-        return Array.isArray(arr) ? arr : [];
-      } catch { return []; }
-    };
-
-    const saveTrainerCases = (arr) => {
-      try { localStorage.setItem(TRAINER_CASES_KEY, JSON.stringify(Array.isArray(arr) ? arr : [])); } catch {}
-    };
-
-const renderTrainerCases = () => {
-      const mount = document.getElementById("trainerCases");
-      if (!mount) return;
-      mount.innerHTML = "";
-    }
-
-// ===== Trainer Case Dictionary (Apple辞書UI風) =====
-let trainerDictWrap = null;
-let trainerSelectedId = null;
-
-const trainerDictCollator = new Intl.Collator("ja", { numeric: true, sensitivity: "base" });
-
-const trainerDictToHiragana = (s) => {
-  // カタカナ → ひらがな
-  return s.replace(/[\u30A1-\u30F6]/g, (ch) => {
-    return String.fromCharCode(ch.charCodeAt(0) - 0x60);
-  });
-};
-
-const trainerDictSortKey = (s) => {
-  const t = String(s || "").trim().normalize("NFKC");
-  // 英字は大文字化してA-Zで揃える
-  const up = t.toUpperCase();
-  // かなはひらがなへ揃える
-  return trainerDictToHiragana(up);
-};
-
-const ensureTrainerDict = () => {
-  if (trainerDictWrap) return trainerDictWrap;
-
-  trainerDictWrap = document.createElement("div");
-  trainerDictWrap.id = "trainerDict";
-  trainerDictWrap.style.cssText = `
-    position:fixed; inset:0;
-    background:rgba(0,0,0,.45);
-    display:none; align-items:center; justify-content:center;
-    z-index:10080;
-  `;
-
-  const isEn = ((state.settings?.language || "ja") === "en");
-  const L_Q = isEn ? "Question" : "質問";
-  const L_A = isEn ? "Best answer" : "最適回答";
-
-  trainerDictWrap.innerHTML = `
-    <div style="
-      width:760px; max-height:80vh;
-      background:#1c1d1f;
-      border-radius:16px;
-      overflow:hidden;
-      display:flex; flex-direction:column;
-      box-shadow:0 20px 60px rgba(0,0,0,.5);
-      font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Hiragino Sans','Noto Sans JP',sans-serif;
-      font-size:13px;
-      line-height:1.5;
-      color:rgba(255,255,255,.92);
-    ">
-      <!-- header -->
-      <div style="
-        display:grid;
-        grid-template-columns:1fr 1fr;
-        padding:12px 16px;
-        font-weight:600;
-        border-bottom:1px solid rgba(255,255,255,.08);
-      ">
-        <div>${L_Q}</div>
-        <div>${L_A}</div>
-      </div>
-
-      <div id="trainerDictList" style="
-        flex:1; overflow:auto;
-      "></div>
-
-      <!-- footer -->
-      <div style="
-        display:flex; gap:8px; align-items:center;
-        padding:10px 12px;
-        border-top:1px solid rgba(255,255,255,.08);
-      ">
-        <button id="trainerDictAdd">＋</button>
-        <button id="trainerDictDel">−</button>
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(trainerDictWrap);
-
-  // close on outside
-  trainerDictWrap.addEventListener("click", (e) => {
-    if (e.target === trainerDictWrap) closeTrainerDict();
-  });
-
-  // add
-  trainerDictWrap.querySelector("#trainerDictAdd").onclick = () => {
-    openTrainerAddPopup();
-  };
-
-  // delete
-  trainerDictWrap.querySelector("#trainerDictDel").onclick = async () => {
-    if (!trainerSelectedId) return;
-
-    const ok = await confirmModal("削除しますか？");
-    if (!ok) return;
-
-    const next = loadTrainerCases().filter((c) => c.id !== trainerSelectedId);
-    saveTrainerCases(next);
-
-    trainerSelectedId = null;
-    renderTrainerDictList(true);
-    renderTrainerCases();
-  };
-
-  return trainerDictWrap;
-};
-
-const getTrainerCasesSorted = () => {
-  return loadTrainerCases()
-    .slice()
-    .sort((a, b) => trainerDictCollator.compare(trainerDictSortKey(a?.q), trainerDictSortKey(b?.q)));
-};
-
-const renderTrainerDictList = (autoPickFirst = false) => {
-  const list = document.getElementById("trainerDictList");
-  if (!list) return;
-
-  const cases = getTrainerCasesSorted();
-
-  if (autoPickFirst && cases.length) {
-    trainerSelectedId = cases[0].id;
-  }
-
-  list.innerHTML = "";
-
-  cases.forEach((c) => {
-    const qRaw = String(c?.q || "");
-    const aRaw = String(c?.a || "");
-
-    const q1 = qRaw.split("\n")[0] || "";
-    const a1 = aRaw.split("\n")[0] || "";
-
-    const q2 = qRaw.replace(/\s+/g, " ").trim();
-    const a2 = aRaw.replace(/\s+/g, " ").trim();
-
-    const row = document.createElement("div");
-    row.setAttribute("data-id", c.id);
-
-    row.style.cssText = `
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      padding:9px 16px;
-      cursor:pointer;
-      background:${trainerSelectedId === c.id ? "rgba(255,255,255,.06)" : "transparent"};
-      border-bottom:1px solid rgba(255,255,255,.05);
-    `;
-
-    row.title = `Q: ${q2}\nA: ${a2}`;
-
-    row.innerHTML = `
-      <div style="font-size:13px;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(q1)}</div>
-      <div style="font-size:13px;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.92;">${escHtml(a1)}</div>
-    `;
-
-    row.onclick = () => {
-      trainerSelectedId = c.id;
-      renderTrainerDictList(false);
-
-      const el = list.querySelector('[data-id="' + CSS.escape(String(c.id)) + '"]');
-      if (el) {
-        try { el.scrollIntoView({ block: "nearest" }); } catch {}
-      }
-    };
-
-    list.appendChild(row);
-  });
-
-  if (trainerSelectedId) {
-    const el = list.querySelector('[data-id="' + CSS.escape(String(trainerSelectedId)) + '"]');
-    if (el) {
-      try { el.scrollIntoView({ block: "nearest" }); } catch {}
-    }
-  }
-};
-
-const openTrainerDict = () => {
-  ensureTrainerDict();
-  bindTrainerDictHotkeysOnce();
-
-  const cases = getTrainerCasesSorted();
-  trainerSelectedId = cases.length ? cases[0].id : null;
-
-  trainerDictWrap.style.display = "flex";
-  renderTrainerDictList(false);
-
-  if (trainerSelectedId) scrollTrainerDictRowIntoView(trainerSelectedId);
-};
-
-const closeTrainerDict = () => {
-  trainerDictWrap.style.display = "none";
-};
-const isTrainerDictOpen = () => {
-  return !!trainerDictWrap && trainerDictWrap.style.display !== "none";
-};
-
-const isTrainerAddOpen = () => {
-  return !!trainerAddWrap && trainerAddWrap.style.display !== "none";
-};
-
-const isTypingTarget = (el) => {
-  if (!(el instanceof Element)) return false;
-  const tag = (el.tagName || "").toLowerCase();
-  if (tag === "textarea" || tag === "input") return true;
-  return el.isContentEditable === true;
-};
-
-const scrollTrainerDictRowIntoView = (id) => {
-  const list = document.getElementById("trainerDictList");
-  if (!list) return;
-  const row = list.querySelector(`[data-id="${CSS.escape(String(id || ""))}"]`);
-  if (!row) return;
-  try { row.scrollIntoView({ block: "nearest" }); } catch {}
-};
-
-const selectTrainerDictByDelta = (delta) => {
-  const cases = getTrainerCasesSorted();
-  if (!cases.length) return;
-
-  const ids = cases.map(c => c.id);
-  let idx = trainerSelectedId ? ids.indexOf(trainerSelectedId) : -1;
-
-  if (idx < 0) idx = (delta >= 0) ? -1 : 0;
-  idx = idx + delta;
-
-  if (idx < 0) idx = 0;
-  if (idx >= ids.length) idx = ids.length - 1;
-
-  trainerSelectedId = ids[idx];
-  renderTrainerDictList();
-  scrollTrainerDictRowIntoView(trainerSelectedId);
-};
-
-let trainerHotkeysBound = false;
-
-const bindTrainerDictHotkeysOnce = () => {
-  if (trainerHotkeysBound) return;
-  trainerHotkeysBound = true;
-
-  document.addEventListener("keydown", async (e) => {
-    if (!isTrainerDictOpen() && !isTrainerAddOpen()) return;
-
-    // 追加ポップが開いている時：⌘+Enter で「追加」
-    if (isTrainerAddOpen()) {
-      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        e.stopPropagation();
-        const btn = trainerAddWrap?.querySelector("[data-action='add']");
-        btn?.click();
-        return;
-      }
-      // 追加ポップ中は一覧操作しない（カーソル/編集優先）
-      return;
-    }
-
-    // 辞書ポップが開いている時
-    if (!isTrainerDictOpen()) return;
-
-    // 入力中は邪魔しない
-    if (isTypingTarget(document.activeElement)) return;
-
-    // ↑↓で選択移動
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      e.stopPropagation();
-      selectTrainerDictByDelta(+1);
-      return;
-    }
-    if (e.key === "ArrowUp") {
-      e.preventDefault();
-      e.stopPropagation();
-      selectTrainerDictByDelta(-1);
-      return;
-    }
-
-    // Delete または ⌘+⌫ で削除（確認あり）
-    const wantDelete =
-      (e.key === "Delete")
-      || (e.key === "Backspace" && (e.metaKey || e.ctrlKey));
-
-    if (wantDelete) {
-      if (!trainerSelectedId) return;
-
-      e.preventDefault();
-      e.stopPropagation();
-
-      const ok = await confirmModal("削除しますか？");
-      if (!ok) return;
-
-      const next = loadTrainerCases().filter(c => c.id !== trainerSelectedId);
-      saveTrainerCases(next);
-
-      trainerSelectedId = null;
-      renderTrainerDictList();
-      renderTrainerCases();
-      return;
-    }
-  }, true);
-};
-
-// ---- add popup (スクショ2：質問/最適回答 + キャンセル/追加) ----
-let trainerAddWrap = null;
-
-const ensureTrainerAddPopup = () => {
-  if (trainerAddWrap) return trainerAddWrap;
-
-  trainerAddWrap = document.createElement("div");
-  trainerAddWrap.id = "trainerAddPopup";
-  trainerAddWrap.setAttribute("aria-hidden", "true");
-  trainerAddWrap.style.cssText = `
-    position:fixed; inset:0;
-    display:none; align-items:center; justify-content:center;
-    background:rgba(0,0,0,.35);
-    z-index:10090;
-    padding:18px;
-  `;
-
-  trainerAddWrap.innerHTML = `
-    <div style="
-      width:min(860px, calc(100% - 24px));
-      max-height:calc(100vh - 64px);
-      background:rgba(20,21,22,.96);
-      border:1px solid rgba(255,255,255,.10);
-      border-radius:22px;
-      box-shadow:0 10px 30px rgba(0,0,0,.45);
-      overflow:hidden;
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      color:rgba(255,255,255,.92);
-      font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Hiragino Sans','Noto Sans JP',sans-serif;
-      display:flex;
-      flex-direction:column;
-      min-width:0;
-      padding:18px 18px 14px;
-      gap:14px;
-    ">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
-        <div style="font-size:14px;font-weight:600;opacity:.92;">ケースを追加</div>
-        <button type="button" data-action="close" style="
-          width:36px;height:36px;border-radius:12px;
-          border:1px solid rgba(255,255,255,.12);
-          background:rgba(255,255,255,.06);
-          color:rgba(255,255,255,.92);
-          cursor:pointer;
-          font-size:18px;
-          line-height:34px;
-        ">×</button>
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:8px;">
-        <div style="font-size:13px;font-weight:600;opacity:.92;">質問</div>
-        <textarea id="trainerAddQ" rows="3" style="
-          width:100%;
-          border-radius:18px;
-          border:1px solid rgba(255,255,255,.10);
-          background:rgba(255,255,255,.04);
-          color:rgba(255,255,255,.92);
-          outline:none;
-          padding:12px 14px;
-          font-size:13px;
-          line-height:1.7;
-          resize:vertical;
-          min-height:84px;
-        "></textarea>
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:8px;min-height:0;">
-        <div style="font-size:13px;font-weight:600;opacity:.92;">最適回答</div>
-        <textarea id="trainerAddA" rows="8" style="
-          width:100%;
-          border-radius:18px;
-          border:1px solid rgba(255,255,255,.10);
-          background:rgba(255,255,255,.04);
-          color:rgba(255,255,255,.92);
-          outline:none;
-          padding:12px 14px;
-          font-size:13px;
-          line-height:1.7;
-          resize:vertical;
-          min-height:240px;
-        "></textarea>
-      </div>
-
-      <div style="display:flex;justify-content:flex-end;gap:12px;padding-top:4px;">
-        <button type="button" data-action="cancel" style="
-          height:44px;
-          padding:0 18px;
-          border-radius:14px;
-          border:1px solid rgba(255,255,255,.12);
-          background:rgba(255,255,255,.05);
-          color:rgba(255,255,255,.90);
-          cursor:pointer;
-          font-size:13px;
-        ">キャンセル</button>
-
-        <button type="button" data-action="add" style="
-          height:44px;
-          padding:0 18px;
-          border-radius:14px;
-          border:1px solid rgba(255,255,255,.12);
-          background:rgba(255,255,255,.10);
-          color:rgba(255,255,255,.92);
-          cursor:pointer;
-          font-size:13px;
-          font-weight:600;
-        ">追加</button>
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(trainerAddWrap);
-
-  trainerAddWrap.addEventListener("click", (e) => {
-    if (e.target === trainerAddWrap) closeTrainerAddPopup();
-  });
-
-  trainerAddWrap.addEventListener("click", (e) => {
-    const t = e.target;
-
-    if (t.closest("[data-action='close']")) { e.preventDefault(); closeTrainerAddPopup(); return; }
-    if (t.closest("[data-action='cancel']")) { e.preventDefault(); closeTrainerAddPopup(); return; }
-
-    const addBtn = t.closest("[data-action='add']");
-    if (!addBtn) return;
-
-    e.preventDefault();
-
-    const q = (document.getElementById("trainerAddQ")?.value || "").trim();
-    const a = (document.getElementById("trainerAddA")?.value || "").trim();
-    if (!q || !a) return;
-
-    const arr = loadTrainerCases();
-    arr.unshift({ id: uid(), q, a, createdAt: nowISO() });
-    saveTrainerCases(arr);
-
-    closeTrainerAddPopup();
-    renderTrainerDictList();
-    renderTrainerCases();
-  });
-
-  return trainerAddWrap;
-};
-
-const openTrainerAddPopup = () => {
-  ensureTrainerAddPopup();
-
-  const q = document.getElementById("trainerAddQ");
-  const a = document.getElementById("trainerAddA");
-  if (q) q.value = "";
-  if (a) a.value = "";
-
-  trainerAddWrap.style.display = "flex";
-  trainerAddWrap.setAttribute("aria-hidden", "false");
-  setTimeout(() => q?.focus(), 0);
-};
-
-const closeTrainerAddPopup = () => {
-  if (!trainerAddWrap) return;
-  trainerAddWrap.style.display = "none";
-  trainerAddWrap.setAttribute("aria-hidden", "true");
-};
-
-// button bind
-document.getElementById("btnAddTrainerCase")
-  ?.addEventListener("click", e => {
-    e.preventDefault();
-    openTrainerDict();
-  });
-
-// 初期描画
-renderTrainerCases();
-
     // Legal modal (3 items)
     const legalOverlay = document.getElementById("legalOverlay");
     const btnCloseLegalModal = document.getElementById("btnCloseLegalModal");
@@ -6729,7 +6211,7 @@ renderTrainerCases();
             支払時期：申込時に確定、以後は更新日に自動課金<br>
             提供時期：決済完了後、直ちに利用可能<br>
             返品・キャンセル：デジタルサービスの性質上、不可（法令に基づく場合を除く）<br>
-            お問い合わせ：from.invitation@gmail.com、担当まで
+            お問い合わせ：contact@aurea-ai.app　担当まで
           </div>
         `,
         en: `
@@ -6741,7 +6223,7 @@ renderTrainerCases();
             Payment timing: Confirmed at purchase; automatically charged on renewal date thereafter<br>
             Service availability: Available immediately after successful payment<br>
             Refunds/Cancellations: Generally not available due to the nature of digital services (except where required by law)<br>
-            Contact: from.invitation@gmail.com (Attn.)
+            Contact:contact@aurea-ai.app　(Attn.)
           </div>
         `
       },

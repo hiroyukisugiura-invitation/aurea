@@ -1632,7 +1632,6 @@ body.theme-light .images-empty{
 .settings-modal #tab-general:checked ~ .overlay .modal .nav label[for="tab-general"],
 .settings-modal #tab-apps:checked ~ .overlay .modal .nav label[for="tab-apps"],
 .settings-modal #tab-data:checked ~ .overlay .modal .nav label[for="tab-data"],
-.settings-modal #tab-trainer:checked ~ .overlay .modal .nav label[for="tab-trainer"],
 .settings-modal #tab-account:checked ~ .overlay .modal .nav label[for="tab-account"]{
   background:var(--soft);
   border-color:var(--line);
@@ -1658,54 +1657,6 @@ body.theme-light .images-empty{
 .settings-modal #tab-general:checked ~ .overlay .modal .content .panel-general{display:flex}
 .settings-modal #tab-apps:checked ~ .overlay .modal .content .panel-apps{display:flex}
 .settings-modal #tab-data:checked ~ .overlay .modal .content .panel-data{display:flex}
-
-.settings-modal #tab-trainer:checked ~ .overlay .modal .content .panel-trainer{
-  display:flex;
-  min-height:0;
-  height:100%;
-  flex:1 1 auto;
-  overflow:hidden;
-}
-
-/* Trainer：上（AET説明＋ケースを追加）は固定、ケース一覧だけスクロール（.section 前提） */
-.settings-modal #tab-trainer:checked ~ .overlay .modal .content .panel-trainer .content-bd{
-  padding:14px 18px 18px;
-  min-height:0;
-  height:100%;
-  flex:1 1 auto;
-  display:flex;
-  flex-direction:column;
-  overflow:hidden;
-}
-
-/* Trainer：このタブの .section を“カセット本体”にする（ここがflexコンテナ） */
-.settings-modal #tab-trainer:checked ~ .overlay .modal .content .panel-trainer .content-bd > .section{
-  min-height:0;
-  flex:1 1 0%;
-  display:flex;
-  flex-direction:column;
-}
-
-/* Trainer：固定ブロック（説明/ボタン等）は縮まない */
-.settings-modal #tab-trainer:checked ~ .overlay .modal .content .panel-trainer .content-bd > .section > :not(#trainerCases){
-  flex:0 0 auto;
-}
-
-/* 一覧マウント（renderTrainerCases が描画する場所） */
-.settings-modal #tab-trainer:checked ~ .overlay .modal .content .panel-trainer #trainerCases{
-  min-height:0;
-  flex:1 1 0%;
-
-  overflow:auto;
-  -webkit-overflow-scrolling:touch;
-
-  border-top:1px solid var(--line);
-  padding-top:0;
-  padding-right:4px;
-  overscroll-behavior:contain;
-  margin-top:0;
-}
-
 .settings-modal #tab-account:checked ~ .overlay .modal .content .panel-account{display:flex}
 
 .settings-modal .content-hd{
@@ -2090,7 +2041,6 @@ body.theme-light .images-empty{
   .settings-modal #tab-general:checked ~ .overlay .modal .nav label[for="tab-general"],
   .settings-modal #tab-apps:checked ~ .overlay .modal .nav label[for="tab-apps"],
   .settings-modal #tab-data:checked ~ .overlay .modal .nav label[for="tab-data"],
-  .settings-modal #tab-trainer:checked ~ .overlay .modal .nav label[for="tab-trainer"],
   .settings-modal #tab-account:checked ~ .overlay .modal .nav label[for="tab-account"]{
     background:var(--soft);
   }
@@ -2098,7 +2048,6 @@ body.theme-light .images-empty{
   .settings-modal #tab-general:checked ~ .overlay .modal .nav label[for="tab-general"] .nav-ic,
   .settings-modal #tab-apps:checked ~ .overlay .modal .nav label[for="tab-apps"] .nav-ic,
   .settings-modal #tab-data:checked ~ .overlay .modal .nav label[for="tab-data"] .nav-ic,
-  .settings-modal #tab-trainer:checked ~ .overlay .modal .nav label[for="tab-trainer"] .nav-ic,
   .settings-modal #tab-account:checked ~ .overlay .modal .nav label[for="tab-account"] .nav-ic{
     opacity:1;
   }
@@ -2136,37 +2085,6 @@ body.theme-light .images-empty{
     -webkit-overflow-scrolling:touch;
     min-height:0;
     flex:1 1 auto;
-  }
-
-  /* Trainerタブ：上（説明＋ケースを追加）は固定、一覧（#trainerCases）だけスクロール */
-  .settings-modal #tab-trainer:checked ~ .overlay .modal .content .panel-trainer{
-    min-height:0;
-    flex:1 1 auto;
-    overflow:hidden;
-  }
-
-  .settings-modal #tab-trainer:checked ~ .overlay .modal .content .panel-trainer .content-bd{
-    overflow:hidden; /* 上部固定 */
-    min-height:0;
-    flex:1 1 auto;
-    display:flex;
-    flex-direction:column;
-  }
-
-  .settings-modal #tab-trainer:checked ~ .overlay .modal .content .panel-trainer .content-bd > :not(#trainerCases){
-    flex:0 0 auto;
-  }
-
-  .settings-modal #tab-trainer:checked ~ .overlay .modal .content .panel-trainer #trainerCases{
-    min-height:0;
-    flex:1 1 auto;
-    overflow:auto; /* スクロールはここだけ */
-    -webkit-overflow-scrolling:touch;
-
-    border-top:1px solid var(--line);
-    padding-top:0;
-    padding-right:4px;
-    overscroll-behavior:contain;
   }
 
   .settings-modal .row{
@@ -2493,16 +2411,6 @@ body.theme-light .images-empty{
 
 .settings-modal #aiStackOverlay .ai-cond:focus{
   outline:none;
-}
-
-#trainerDict button{
-  width:32px;
-  height:32px;
-  border-radius:8px;
-  border:1px solid var(--line);
-  background:var(--card);
-  color:var(--text);
-  cursor:pointer;
 }
 
 .scroll-down-btn{
