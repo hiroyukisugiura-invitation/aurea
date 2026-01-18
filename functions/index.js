@@ -10,6 +10,9 @@ const STRIPE_PRICE_TEAM = defineSecret("STRIPE_PRICE_TEAM");
 const STRIPE_PRICE_ENTERPRISE = defineSecret("STRIPE_PRICE_ENTERPRISE");
 const STRIPE_WEBHOOK_SECRET = defineSecret("STRIPE_WEBHOOK_SECRET");
 
+const GOOGLE_OAUTH_CLIENT_ID = defineSecret("GOOGLE_OAUTH_CLIENT_ID");
+const GOOGLE_OAUTH_REDIRECT_URI = defineSecret("GOOGLE_OAUTH_REDIRECT_URI");
+
 /**
  * INTERNAL DOC (non-public)
  *
@@ -126,20 +129,24 @@ try { admin.initializeApp(); } catch (e) { void e; }
 const db = admin.firestore();
 
 /* ================= Google OAuth (v1: redirect only) =================
-  必要な環境変数:
+  Secrets (firebase-functions/params):
   - GOOGLE_OAUTH_CLIENT_ID
   - GOOGLE_OAUTH_REDIRECT_URI   (例: https://aurea-2026.web.app/api/google/callback)
   ※ client_secret は callback で token 交換する次フェーズで使用
 */
 
-const mustEnv = (key) => {
-  const v = String(process.env[key] || "").trim();
-  return v ? v : null;
+const mustGoogle = (secret) => {
+  try {
+    const v = String(secret.value() || "").trim();
+    return v ? v : null;
+  } catch {
+    return null;
+  }
 };
 
 const buildGoogleAuthUrl = ({ scope, state }) => {
-  const clientId = mustEnv("GOOGLE_OAUTH_CLIENT_ID");
-  const redirectUri = mustEnv("GOOGLE_OAUTH_REDIRECT_URI");
+  const clientId = mustGoogle(GOOGLE_OAUTH_CLIENT_ID);
+  const redirectUri = mustGoogle(GOOGLE_OAUTH_REDIRECT_URI);
 
   if (!clientId || !redirectUri) return null;
 
@@ -2036,6 +2043,10 @@ exports.api = onRequest(
       PERPLEXITY_API_KEY,
       MISTRAL_API_KEY,
       SORA_API_KEY,
+
+      GOOGLE_OAUTH_CLIENT_ID,
+      GOOGLE_OAUTH_REDIRECT_URI,
+
     ]
   },
   app
