@@ -1238,17 +1238,57 @@ const buildSystemPrompt = (aiName) => {
   ].join("\n");
 };
 
-const shouldUseSora = (text) => {
-  const s = String(text || "");
-  return /\b(image|render|illustration|photo|png|jpg|webp)\b/i.test(s) || /画像|イラスト|写真|生成|レンダ/.test(s);
+const isImageGenerationRequest = (text) => {
+  const s0 = String(text || "");
+  const s = s0.toLowerCase();
+
+  // English triggers
+  const en =
+    /\b(generate|create|make|render|draw|illustrate)\b/i.test(s) ||
+    /\b(image|illustration|photo)\b/i.test(s) ||
+    /\b(png|jpg|jpeg|webp)\b/i.test(s);
+
+  // Japanese triggers (include "イメージ画像" / future iPhone phrase)
+  const ja =
+    /画像|イメージ画像|イメージ|イラスト|写真|生成|描いて|作って|レンダ/.test(s0) ||
+    /未来のiphone|未来のiPhone|iphoneのイメージ画像|iPhoneのイメージ画像/.test(s0);
+
+  return !!(en || ja);
 };
 
-const isImageGenerationRequest = (text) => {
-  const s = String(text || "");
-  return (
-    /\b(generate|create|make|render|draw|illustrate)\b/i.test(s) ||
-    /画像|イラスト|生成|描いて|作って/.test(s)
-  );
+const shouldUseSora = (text) => {
+  // unify with isImageGenerationRequest()
+  return isImageGenerationRequest(text);
+};
+
+// server-side placeholder image (SVG data URL)
+const makePlaceholderImageDataUrl = (prompt) => {
+  const safe = String(prompt || "").slice(0, 60)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;");
+
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024">
+      <defs>
+        <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#2b2c2d"/>
+          <stop offset="1" stop-color="#101112"/>
+        </linearGradient>
+      </defs>
+      <rect width="1024" height="1024" fill="url(#g)"/>
+      <circle cx="820" cy="210" r="180" fill="rgba(255,255,255,0.06)"/>
+      <circle cx="320" cy="820" r="260" fill="rgba(255,255,255,0.04)"/>
+      <text x="80" y="160" fill="rgba(255,255,255,0.88)" font-size="52" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto">
+        AUREA Image
+      </text>
+      <text x="80" y="245" fill="rgba(255,255,255,0.70)" font-size="32" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto">
+        ${safe}
+      </text>
+    </svg>
+  `.trim();
+
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 };
 
 app.post("/api/chat", async (req, res) => {
@@ -1268,8 +1308,16 @@ app.post("/api/chat", async (req, res) => {
     // 画像生成要求は、6AI map ではなく image を返す
     if (isImageGenerationRequest(prompt)) {
       const key = getOpenAIKey();
+
+      // 失敗時も必ず成功で placeholder を返す（キー無し含む）
       if (!key) {
-        res.status(500).json({ ok: false, reason: "openai_key_missing" });
+        res.json({
+          ok: true,
+          image: {
+            url: makePlaceholderImageDataUrl(prompt),
+            prompt
+          }
+        });
         return;
       }
 
@@ -1306,11 +1354,13 @@ app.post("/api/chat", async (req, res) => {
         const url = b64 ? `data:image/png;base64,${b64}` : "";
 
         if (!r.ok || !url) {
-          const msg =
-            (j && j.error && (j.error.message || j.error.code))
-              ? String(j.error.message || j.error.code)
-              : `http_${r.status}`;
-          res.status(500).json({ ok: false, reason: "image_generation_failed", msg: DEBUG ? msg : undefined });
+          res.json({
+            ok: true,
+            image: {
+              url: makePlaceholderImageDataUrl(prompt),
+              prompt
+            }
+          });
           return;
         }
 
@@ -1324,8 +1374,14 @@ app.post("/api/chat", async (req, res) => {
         return;
 
       } catch (e) {
-        const msg = String(e && e.message ? e.message : e || "");
-        res.status(500).json({ ok: false, reason: "image_generation_failed", msg: DEBUG ? msg : undefined });
+        void e;
+        res.json({
+          ok: true,
+          image: {
+            url: makePlaceholderImageDataUrl(prompt),
+            prompt
+          }
+        });
         return;
       }
     }

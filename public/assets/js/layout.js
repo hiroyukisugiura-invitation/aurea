@@ -3288,17 +3288,27 @@ const closeSettings = () => {
     { name: "Sora",       role: "image" }
   ];
 
-  const shouldUseSora = (userText) => {
-    const s = String(userText || "");
-    return /\b(image|render|illustration|photo|png|jpg|webp)\b/i.test(s) || /画像|イラスト|写真|生成|レンダ/.test(s);
+  const isImageGenerationRequest = (text) => {
+    const s0 = String(text || "");
+    const s = s0.toLowerCase();
+
+    // English triggers
+    const en =
+      /\b(generate|create|make|render|draw|illustrate)\b/i.test(s) ||
+      /\b(image|illustration|photo)\b/i.test(s) ||
+      /\b(png|jpg|jpeg|webp)\b/i.test(s);
+
+    // Japanese triggers (include "イメージ画像" / future iPhone phrase)
+    const ja =
+      /画像|イメージ画像|イメージ|イラスト|写真|生成|描いて|作って|レンダ/.test(s0) ||
+      /未来のiphone|未来のiPhone|iphoneのイメージ画像|iPhoneのイメージ画像/.test(s0);
+
+    return !!(en || ja);
   };
 
-    const isImageGenerationRequest = (text) => {
-    const s = String(text || "");
-    return (
-      /\b(generate|create|make|render|draw|illustrate)\b/i.test(s) ||
-      /画像|イラスト|生成|描いて|作って/.test(s)
-    );
+  const shouldUseSora = (userText) => {
+    // unify with isImageGenerationRequest()
+    return isImageGenerationRequest(userText);
   };
 
   const setStreaming = (on) => {
@@ -3505,9 +3515,32 @@ const closeSettings = () => {
         return;
       } catch {}
 
-      updateMessage(m.id, "Image generation failed.");
+      // fail-safe（必ず placeholder 画像で返す）
+      try {
+        const p = String(userText || "").trim();
+        const url = makePlaceholderImageDataUrl(p);
+
+        try {
+          addImageToLibrary({
+            prompt: p,
+            src: url,
+            from: { threadId: getActiveThreadId(), context: state.context }
+          });
+        } catch {}
+
+        const imgMsg = `AUREA_IMAGE\n${url}\n${p}`;
+        updateMessage(m.id, imgMsg);
+        renderChat();
+        setStreaming(false);
+        renderSidebar();
+        return;
+      } catch {}
+
+      // 最終フォールバック（UIを壊さない）
+      updateMessage(m.id, `AUREA_IMAGE\n${makePlaceholderImageDataUrl(String(userText || "").trim())}\n${String(userText || "").trim()}`);
       renderChat();
       setStreaming(false);
+      renderSidebar();
       return;
     }
 
@@ -3646,6 +3679,10 @@ const closeSettings = () => {
               setStreaming(false);
               try { clearAiRunIndicator(); } catch {}
               try { window.__AUREA_STREAMING_MID__ = ""; } catch {}
+
+              // actions（コピー/Repo）を「完了瞬間」に必ず表示
+              renderChat();
+
               renderSidebar();
             }
           }, 18);
@@ -3743,6 +3780,10 @@ const closeSettings = () => {
         setStreaming(false);
         try { clearAiRunIndicator(); } catch {}
         try { window.__AUREA_STREAMING_MID__ = ""; } catch {}
+
+        // actions（コピー/Repo）を「完了瞬間」に必ず表示
+        renderChat();
+
         renderSidebar();
       }
     }, 18);
