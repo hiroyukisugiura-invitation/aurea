@@ -38,6 +38,9 @@
 
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
 
+  // debug logger (layout.js)
+  const dbg = (...args) => { try { console.info(...args); } catch {} };
+
   /* ================= AI activity fade ================= */
 let aiActivityRoot = null;
 
@@ -70,6 +73,90 @@ const showAiActivity = (name) => {
       try { root.removeChild(pill); } catch {}
     }, 260);
   }, 1200);
+};
+
+/* ================= streaming meteor label (left thin dot) ================= */
+let aiMeteorFxInjected = false;
+
+const ensureAiMeteorFx = () => {
+  if (aiMeteorFxInjected) return;
+  aiMeteorFxInjected = true;
+
+  const st = document.createElement("style");
+  st.setAttribute("data-aurea-meteor-fx", "1");
+  st.textContent = `
+    @keyframes aureaMeteorSweep {
+      0%   { transform: translateX(-28px); opacity: 0; }
+      10%  { opacity: 1; }
+      100% { transform: translateX(128px); opacity: 0; }
+    }
+
+    .msg.assistant{
+      position:relative;
+    }
+
+    .msg.assistant .aurea-streammark{
+      position:absolute;
+      left:-34px;
+      top:18px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      pointer-events:none;
+      user-select:none;
+      z-index:2;
+    }
+
+    .msg.assistant .aurea-streammark__dot{
+      width:22px;
+      height:22px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.22);
+      background:rgba(255,255,255,.02);
+      box-shadow:0 6px 18px rgba(0,0,0,.25);
+      flex:0 0 auto;
+    }
+
+    .msg.assistant .aurea-streammark__txt{
+      position:relative;
+      font-size:12px;
+      line-height:1;
+      color:rgba(255,255,255,.82);
+      white-space:nowrap;
+      letter-spacing:-.1px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.04);
+      overflow:hidden;
+    }
+
+    .msg.assistant .aurea-streammark__txt::after{
+      content:"";
+      position:absolute;
+      top:50%;
+      left:-28px;
+      width:22px;
+      height:2px;
+      transform:translateY(-50%);
+      background:linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(159,180,255,.95) 40%, rgba(255,255,255,0) 100%);
+      filter: blur(.2px);
+      animation:aureaMeteorSweep 1.05s linear infinite;
+      opacity:.9;
+    }
+
+    .msg.assistant .aurea-streammark[hidden]{
+      display:none !important;
+    }
+  `.trim();
+
+  document.head.appendChild(st);
+};
+
+const getStreamingLabel = () => {
+  const s = aiRunLastStatuses || {};
+  const gptRunning = (s && s.GPT === "running");
+  return gptRunning ? "回答文作成中" : "解析中";
 };
 
 /* ================= AI run indicator (brand rail) ================= */
@@ -156,9 +243,9 @@ const setAiRunIndicator = ({ phase, statuses }) => {
   const anyRunning = Object.keys(s).some(k => s[k] === "running");
   const gptRunning = (s.GPT === "running");
 
-  // 1) 上段2行（翻訳）…queued中でも出す
-  if (l1) l1.textContent = anyActive ? tr("statusAnalyzing") : "";
-  if (l2) l2.textContent = (anyActive && gptRunning) ? tr("statusGenerating") : "";
+  // 1) 上段2行（表示しない：解析中は別UIで出す）
+  if (l1) l1.textContent = "";
+  if (l2) l2.textContent = "";
 
   // 2) 稼働AI名（running優先 / 0件なら queued を表示）
   const running = aiRunOrder.filter(n => s[n] === "running");
@@ -2700,6 +2787,44 @@ const closeSettings = () => {
       const renderMessageHtml = (msg) => {
         const raw0 = String(msg?.content || "");
 
+        // User: attachments (persisted in meta) — restore on reload
+        if (msg?.role === "user") {
+          const atts = Array.isArray(msg?.meta?.attachments) ? msg.meta.attachments : [];
+          if (atts.length) {
+            const items = atts.slice(0, 8).map((a) => {
+              const name = String(a?.name || "file").trim();
+              const mime = String(a?.mime || "");
+              const route = String(a?.route || "file");
+              const isImg = (route === "image") || (String(a?.kind || "") === "image");
+              const isPdf = (route === "pdf") || (mime === "application/pdf") || name.toLowerCase().endsWith(".pdf");
+              const isText = (route === "text");
+
+              const thumb = (isImg && a?.dataUrl && String(a.dataUrl).startsWith("data:"))
+                ? `<img src="${escHtml(String(a.dataUrl))}" alt="" style="width:150px;height:96px;border-radius:14px;object-fit:cover;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.03);" />`
+                : isPdf
+                  ? `<div style="width:150px;height:96px;border-radius:14px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.12);background:rgba(255,60,60,.16);color:rgba(255,255,255,.92);font-size:11px;font-weight:800;letter-spacing:.06em;">PDF</div>`
+                  : isText
+                    ? `<div style="width:150px;height:96px;border-radius:14px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);color:rgba(255,255,255,.86);font-size:12px;font-weight:700;">TXT</div>`
+                    : `<div style="width:150px;height:96px;border-radius:14px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.03);opacity:.9;">📄</div>`;
+
+              return `<div style="flex:0 0 auto;">${thumb}</div>`;
+            }).join("");
+
+            const textHtml = raw0.trim()
+              ? `<div style="margin-top:10px;line-height:1.7;">${escHtml(raw0).replace(/\n/g, "<br>")}</div>`
+              : "";
+
+            return `
+              <div style="display:flex;flex-direction:column;gap:0;">
+                <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start;">
+                  ${items}
+                </div>
+                ${textHtml}
+              </div>
+            `.trim();
+          }
+        }
+
         // Assistant only: Sora image message
         // Format:
         // AUREA_IMAGE
@@ -2936,7 +3061,31 @@ const closeSettings = () => {
       }
 
       if (m.role === "assistant") {
+        ensureAiMeteorFx();
+
         const isStreamingMsg = (typeof window.__AUREA_STREAMING_MID__ === "string" && window.__AUREA_STREAMING_MID__ === m.id);
+
+        // 左の薄い丸マーク位置に「解析中/回答文作成中」を流星で表示（GPT同等）
+        let mark = wrap.querySelector(".aurea-streammark");
+        if (!mark) {
+          mark = document.createElement("div");
+          mark.className = "aurea-streammark";
+          mark.innerHTML = `
+            <span class="aurea-streammark__dot" aria-hidden="true"></span>
+            <span class="aurea-streammark__txt"></span>
+          `.trim();
+          wrap.insertBefore(mark, wrap.firstChild);
+        }
+
+        const txt = mark.querySelector(".aurea-streammark__txt");
+        if (txt) txt.textContent = getStreamingLabel();
+
+        if (!isStreamingMsg) {
+          mark.setAttribute("hidden", "");
+        } else {
+          mark.removeAttribute("hidden");
+        }
+
         if (isStreamingMsg) {
           chatRoot.appendChild(wrap);
           continue;
@@ -3211,14 +3360,35 @@ const closeSettings = () => {
       // PJ内で新規トーク作成 → そのトークに送信（GPT同等）
       createProjectThread(pid);
 
-      if (text) {
-        appendMessage("user", text);
+      let userMsg = null;
+
+      // 添付がある場合はテキスト無しでも user message を作って保持（GPT同等）
+      if (text || hasAttachments) {
+        userMsg = appendMessage("user", text || "");
       }
 
       if (input) input.value = "";
 
       // 添付を確定して multiAiReply へ（解析・打ち返し）
       const rawAttachments = takePendingAttachments();
+
+      // 添付を履歴に保存（Fileオブジェクトは保存しない）
+      if (userMsg && Array.isArray(rawAttachments) && rawAttachments.length) {
+        try {
+          const safeAtts = rawAttachments.map((a) => ({
+            name: String(a?.name || "file"),
+            size: Number(a?.size || 0) || 0,
+            mime: String(a?.mime || ""),
+            kind: String(a?.kind || "file"),
+            route: String(a?.route || "file"),
+            fallback: String(a?.fallback || ""),
+            dataUrl: String(a?.dataUrl || "")
+          }));
+          setMessageMeta(userMsg.id, { attachments: safeAtts });
+          renderView();
+        } catch {}
+      }
+
       await multiAiReply(text, rawAttachments);
     };
 
@@ -4201,9 +4371,11 @@ const closeSettings = () => {
     state.view = "chat";
     save(state);
 
-    // チャットログ：ユーザーが何も打っていない場合は、空メッセージを作らない
-    if (text) {
-      appendMessage("user", text);
+    // チャットログ：添付がある場合は「テキスト無し」でも user message を作って保持（GPT同等）
+    let userMsg = null;
+
+    if (text || hasAttachments) {
+      userMsg = appendMessage("user", text || "");
     }
 
     askInput.value = "";
@@ -4211,6 +4383,24 @@ const closeSettings = () => {
     updateSendButtonVisibility();
 
     const rawAttachments = takePendingAttachments();
+
+    // 添付を履歴に保存（Fileオブジェクトは保存しない）
+    if (userMsg && Array.isArray(rawAttachments) && rawAttachments.length) {
+      try {
+        const safeAtts = rawAttachments.map((a) => ({
+          name: String(a?.name || "file"),
+          size: Number(a?.size || 0) || 0,
+          mime: String(a?.mime || ""),
+          kind: String(a?.kind || "file"),
+          route: String(a?.route || "file"),
+          fallback: String(a?.fallback || ""),
+          dataUrl: String(a?.dataUrl || "")
+        }));
+        setMessageMeta(userMsg.id, { attachments: safeAtts });
+        renderView();
+      } catch {}
+    }
+
     await multiAiReply(text, rawAttachments);
   };
 

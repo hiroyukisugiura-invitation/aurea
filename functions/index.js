@@ -1250,7 +1250,7 @@ const normalizeTrainerText = (s) => {
 const loadTrainerCases = async (companyId, inlineCases) => {
   void companyId;
 
-  // client から渡された trainerCases を最優先（AUREA Data Trainer の反映用）
+  // client から渡された trainerCases を最優先
   if (Array.isArray(inlineCases) && inlineCases.length) {
     return inlineCases
       .map(x => ({
@@ -1261,7 +1261,7 @@ const loadTrainerCases = async (companyId, inlineCases) => {
       .slice(0, 200);
   }
 
-  // fallback: Firestore（従来）
+  // fallback: Firestore
   const snap = await db.collection("trainer_cases").get();
   return snap.docs.map(d => d.data()).filter(x => x && x.q && x.a);
 };
@@ -1273,15 +1273,55 @@ const findTrainerHitByEmbedding = async ({ userText, companyId, inlineCases }) =
   const cases = await loadTrainerCases(companyId, inlineCases);
   if (!cases.length) return null;
 
+  // 0) Embedding が使えない時（キー無し等）は文字一致で拾う（確実に反映させる）
+  const uKey = u0;
+  const scoredText = [];
+
+  // 上限（暴走防止）：まずは最大200件まで
+  const MAX_CASES = 200;
+  const pool0 = cases.slice(0, MAX_CASES);
+
+  for (const c of pool0) {
+    const qRaw = String(c.q || "").trim();
+    const a = String(c.a || "").trim();
+    const qNorm = normalizeTrainerText(qRaw);
+    if (!qNorm || !qRaw || !a) continue;
+
+    // 完全一致/包含を強く
+    let s = 0;
+    if (uKey === qNorm) s = 1.0;
+    else if (uKey.includes(qNorm) || qNorm.includes(uKey)) s = 0.86;
+    else {
+      // 部分一致（短文向け）
+      const w = qNorm.split(" ").filter(Boolean);
+      if (w.length) {
+        const hit = w.filter(t => uKey.includes(t)).length;
+        s = hit ? Math.min(0.84, hit / Math.max(3, w.length)) : 0;
+      }
+    }
+
+    if (s > 0) scoredText.push({ q: qRaw, a, score: s });
+  }
+
+  // 文字一致で確定ヒット
+  if (scoredText.length) {
+    scoredText.sort((x, y) => (y.score - x.score));
+    const bestT = scoredText[0];
+
+    if (bestT && bestT.score >= 0.86) {
+      return { mode: "hit", hit: bestT, candidates: scoredText.slice(0, 3) };
+    }
+    if (bestT && bestT.score >= 0.70) {
+      return { mode: "candidates", hit: null, candidates: scoredText.slice(0, 3) };
+    }
+  }
+
   // 1) user embedding
   const uEmb = await callOpenAIEmbedding({ input: u0, model: "text-embedding-3-small" });
   if (!uEmb) return null;
 
   // 2) score all cases (runtime embedding; cacheは次工程)
   const scored = [];
-
-  // 上限（暴走防止）：まずは最大200件まで
-  const MAX_CASES = 200;
   const pool = cases.slice(0, MAX_CASES);
 
   for (const c of pool) {
