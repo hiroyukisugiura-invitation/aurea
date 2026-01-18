@@ -1764,6 +1764,7 @@ const closeSettings = () => {
       if (n.endsWith(".pdf")) return "application/pdf";
       if (n.endsWith(".csv")) return "text/csv";
       if (n.endsWith(".md")) return "text/markdown";
+      if (n.endsWith(".html") || n.endsWith(".htm")) return "text/html";
       if (n.endsWith(".txt")) return "text/plain";
       return "";
     };
@@ -1784,9 +1785,12 @@ const closeSettings = () => {
       const isTextLike =
         mime.startsWith("text/") ||
         mime === "text/csv" ||
+        mime === "text/html" ||
         lower.endsWith(".txt") ||
         lower.endsWith(".md") ||
-        lower.endsWith(".csv");
+        lower.endsWith(".csv") ||
+        lower.endsWith(".html") ||
+        lower.endsWith(".htm");
 
       if (kind === "image") {
         // 8MB上限（UI負荷対策）
@@ -1878,6 +1882,7 @@ const closeSettings = () => {
         if (n.endsWith(".pdf")) return "application/pdf";
         if (n.endsWith(".csv")) return "text/csv";
         if (n.endsWith(".md")) return "text/markdown";
+        if (n.endsWith(".html") || n.endsWith(".htm")) return "text/html";
         if (n.endsWith(".txt")) return "text/plain";
         return "";
       };
@@ -2941,21 +2946,17 @@ const closeSettings = () => {
 
     const start = async () => {
       const hasAttachments = pendingAttachments.length > 0;
-      let text = (input?.value || "").trim();
+      const text = (input?.value || "").trim();
 
-      // GPT準拠：テキストなし＋添付あり → 自動分析プロンプト補完
-      if (!text && hasAttachments) {
-        text = (state.settings?.language === "en")
-          ? "Please analyze the attached file."
-          : "このファイルを分析してください";
-      }
-
+      // テキストなし＋添付あり → prompt は空のまま送る（server側でIntent Discovery）
       if (!text && !hasAttachments) return;
 
       // PJ内で新規トーク作成 → そのトークに送信（GPT同等）
       createProjectThread(pid);
 
-      appendMessage("user", text);
+      if (text) {
+        appendMessage("user", text);
+      }
 
       if (input) input.value = "";
 
@@ -3861,15 +3862,9 @@ const closeSettings = () => {
     if (!askInput) return;
 
     const hasAttachments = pendingAttachments.length > 0;
-    let text = askInput.value.trim();
+    const text = askInput.value.trim();
 
-    // GPT準拠：テキストなし＋添付あり → 自動分析プロンプト補完
-    if (!text && hasAttachments) {
-      text = (state.settings?.language === "en")
-        ? "Please analyze the attached file."
-        : "このファイルを分析してください";
-    }
-
+    // テキストなし＋添付あり → prompt は空のまま送る（server側でIntent Discovery）
     if (!text && !hasAttachments) return;
 
     // PJトップからの送信は、PJ内の新規トークを作ってから送る（GPT仕様）
@@ -3880,7 +3875,11 @@ const closeSettings = () => {
     state.view = "chat";
     save(state);
 
-    appendMessage("user", text);
+    // チャットログ：ユーザーが何も打っていない場合は、空メッセージを作らない
+    if (text) {
+      appendMessage("user", text);
+    }
+
     askInput.value = "";
     autosizeTextarea();
     updateSendButtonVisibility();

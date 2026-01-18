@@ -1478,7 +1478,14 @@ app.post("/api/chat", async (req, res) => {
       : [];
 
     // build user parts (multimodal)
-    const userParts = [{ type: "input_text", text: prompt }];
+    const isImplicitAttachmentOnly = (!prompt && attachments.length > 0);
+
+    // GPT同等：添付だけ投げられた時は、AIに「添付あり・テキスト無し」を明示して起動させる
+    const promptForModel = isImplicitAttachmentOnly
+      ? "User uploaded file(s) without any message."
+      : prompt;
+
+    const userParts = [{ type: "input_text", text: promptForModel }];
 
     const parseCsvLine = (line) => {
       const s = String(line || "");
@@ -1524,9 +1531,12 @@ app.post("/api/chat", async (req, res) => {
         route === "text" ||
         mime.startsWith("text/") ||
         mime === "text/csv" ||
+        mime === "text/html" ||
         lower.endsWith(".txt") ||
         lower.endsWith(".md") ||
-        lower.endsWith(".csv");
+        lower.endsWith(".csv") ||
+        lower.endsWith(".html") ||
+        lower.endsWith(".htm");
 
       // PDF: upload -> file_id -> input_file
       if (type === "file" && isPdf && data) {
@@ -1734,7 +1744,26 @@ app.post("/api/chat", async (req, res) => {
       ].join("\n");
     }
 
+    const intentDiscoverySystem = isImplicitAttachmentOnly
+      ? [
+          "Intent Discovery (Highest Priority when attachments exist and user text is empty):",
+          "- The user uploaded file(s) without any instruction.",
+          "- Do NOT say 'no file attached' or ask the user to upload again.",
+          "- First, do a quick minimal analysis of what the file contains (1-6 bullets).",
+          "- Then ask ONE concise question to clarify the goal, with selectable options.",
+          "",
+          "Reply format (must follow):",
+          "1) What I can see (bullets)",
+          "2) What would you like to do? (choose one)",
+          "   A. Summary / explanation",
+          "   B. Find issues / improvements",
+          "   C. Extract text / key info",
+          "   D. Answer a specific question about it"
+        ].join("\n")
+      : "";
+
     const gptSystem = [
+      intentDiscoverySystem,
       trainerSystemBlock,
       buildSystemPrompt("GPT"),
       "",
@@ -1744,7 +1773,11 @@ app.post("/api/chat", async (req, res) => {
     ].filter(Boolean).join("\n\n");
 
     const gptParts = userParts.slice();
-    const mergedText = reportsBlock ? `${prompt}\n\n${reportsBlock}` : prompt;
+
+    // 重要：prompt が空でも promptForModel を保持して上書きしない
+    const basePrompt = promptForModel || prompt || "";
+
+    const mergedText = reportsBlock ? `${basePrompt}\n\n${reportsBlock}` : basePrompt;
 
     if (gptParts.length && gptParts[0] && gptParts[0].type === "input_text") {
       gptParts[0] = { type: "input_text", text: mergedText };
