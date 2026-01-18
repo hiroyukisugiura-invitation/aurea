@@ -2567,8 +2567,9 @@ body.view-project:not(.has-chat) .scroll-down-btn{
 }
 
 /* ===== Sora image card ===== */
+/* ===== Sora / Attached image card (GPT-like smaller) ===== */
 .ai-image-card{
-  max-width:520px;
+  max-width:360px;
   border-radius:16px;
   overflow:hidden;
   background:rgba(20,21,22,.6);
@@ -2576,7 +2577,10 @@ body.view-project:not(.has-chat) .scroll-down-btn{
 }
 .ai-image-card img{
   width:100%;
+  max-height:360px;
+  object-fit:contain;
   display:block;
+  background:rgba(0,0,0,.18);
 }
 .ai-image-caption{
   padding:8px 12px;

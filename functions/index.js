@@ -1292,6 +1292,65 @@ const makePlaceholderImageDataUrl = (prompt) => {
 };
 
 app.post("/api/chat", async (req, res) => {
+      /* ================= AUREA Data Trainer (MVP) ================= */
+
+    const normalizeText = (s) => {
+      return String(s || "")
+        .toLowerCase()
+        .normalize("NFKC")
+        .replace(/[^\p{L}\p{N}\s]/gu, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    };
+
+    const scoreSimilarity = (q, u) => {
+      if (!q || !u) return 0;
+
+      // 完全包含は最優先
+      if (u.includes(q) || q.includes(u)) return 100;
+
+      const qWords = q.split(" ").filter(Boolean);
+      const uWords = u.split(" ").filter(Boolean);
+      if (!qWords.length || !uWords.length) return 0;
+
+      let hit = 0;
+      for (const w of qWords) {
+        if (uWords.includes(w)) hit++;
+      }
+
+      return Math.round((hit / qWords.length) * 100);
+    };
+
+    const loadTrainerCases = async (companyId) => {
+      // MVP: companyId 無しの場合は全件（後で company scope に分離）
+      const snap = await db.collection("trainer_cases").get();
+      return snap.docs.map(d => d.data()).filter(x => x && x.q && x.a);
+    };
+
+    const findTrainerHit = async (userText, companyId) => {
+      const u = normalizeText(userText);
+      if (!u) return null;
+
+      const cases = await loadTrainerCases(companyId);
+      let best = null;
+      let bestScore = 0;
+
+      for (const c of cases) {
+        const q = normalizeText(c.q);
+        const s = scoreSimilarity(q, u);
+        if (s > bestScore) {
+          bestScore = s;
+          best = c;
+        }
+      }
+
+      // 閾値：60%以上でヒット
+      if (best && bestScore >= 60) {
+        return { q: best.q, a: best.a, score: bestScore };
+      }
+
+      return null;
+    };
 
   try {
     // ===== Unified Request Schema =====
@@ -1305,8 +1364,22 @@ app.post("/api/chat", async (req, res) => {
     }
 
     // ===== Sora image generation (v1) =====
-    // 画像生成要求は、6AI map ではなく image を返す
-    if (isImageGenerationRequest(prompt)) {
+    // 重要：画像添付がある場合は「解析」扱い（生成ルートに入らない）
+    const hasImageAttachment = attachments.some((a) => {
+      const type = String(a?.type || "").trim();
+      const route = String(a?.route || "").trim();
+      const mime = String(a?.mime || "").trim();
+      const name = String(a?.name || "").trim().toLowerCase();
+
+      if (type === "image") return true;
+      if (route === "image") return true;
+      if (mime && mime.startsWith("image/")) return true;
+      if (/\.(png|jpg|jpeg|webp|gif|bmp|svg)$/i.test(name)) return true;
+      return false;
+    });
+
+    // 画像生成要求は、画像添付が無い時だけ image を返す
+    if (!hasImageAttachment && isImageGenerationRequest(prompt)) {
       const key = getOpenAIKey();
 
       // 失敗時も必ず成功で placeholder を返す（キー無し含む）
@@ -1330,17 +1403,20 @@ app.post("/api/chat", async (req, res) => {
       ].join("\n");
 
       try {
-        const r = await fetch("https://api.openai.com/v1/images", {
+        const r = await fetch("https://api.openai.com/v1/images/generations", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${key}`
           },
           body: JSON.stringify({
-            model: "sora-2",
+            // GPT image model（Images API official）
+            model: "gpt-image-1.5",
             prompt: enhancedPrompt,
+            n: 1,
             size: "1024x1024",
-            response_format: "b64_json"
+            output_format: "png",
+            quality: "high"
           })
         });
 
@@ -1351,7 +1427,11 @@ app.post("/api/chat", async (req, res) => {
             ? String(j.data[0].b64_json)
             : "";
 
-        const url = b64 ? `data:image/png;base64,${b64}` : "";
+        // GPT image models return base64 by default; keep URL fallback just in case
+        const url =
+          b64 ? `data:image/png;base64,${b64}`
+          : (j && Array.isArray(j.data) && j.data[0] && j.data[0].url) ? String(j.data[0].url || "").trim()
+          : "";
 
         if (!r.ok || !url) {
           res.json({
@@ -1634,13 +1714,34 @@ app.post("/api/chat", async (req, res) => {
 
     const reportsBlock = buildReportsBlock(map);
 
+        // ===== Trainer hit (highest priority knowledge) =====
+    let trainerHit = null;
+    try {
+      const companyId = context?.companyId || null;
+      trainerHit = await findTrainerHit(prompt, companyId);
+    } catch {}
+
+    let trainerSystemBlock = "";
+    if (trainerHit) {
+      trainerSystemBlock = [
+        "Company Knowledge (Highest Priority):",
+        "The following answer is authoritative and must be used as-is.",
+        "Do NOT ask follow-up questions.",
+        "Do NOT provide general explanations or alternatives.",
+        "",
+        `Question: ${trainerHit.q}`,
+        `Answer: ${trainerHit.a}`
+      ].join("\n");
+    }
+
     const gptSystem = [
+      trainerSystemBlock,
       buildSystemPrompt("GPT"),
       "",
       "Integration rule:",
       "- If Reports are provided, integrate them into one final answer.",
       "- Do not mention internal model orchestration unless explicitly asked."
-    ].join("\n");
+    ].filter(Boolean).join("\n\n");
 
     const gptParts = userParts.slice();
     const mergedText = reportsBlock ? `${prompt}\n\n${reportsBlock}` : prompt;
