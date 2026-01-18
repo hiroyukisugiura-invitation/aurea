@@ -1474,7 +1474,41 @@ const closeSettings = () => {
     return tray;
   };
 
+  let attachFxInjected = false;
+
+  const ensureAttachFx = () => {
+    if (attachFxInjected) return;
+    attachFxInjected = true;
+
+    const st = document.createElement("style");
+    st.setAttribute("data-aurea-attach-fx", "1");
+    st.textContent = `
+      @keyframes aureaDashSpin {
+        from { transform: rotate(0deg); }
+        to   { transform: rotate(360deg); }
+      }
+      .aurea-attach-chip[data-state="analyzing"]{
+        position:relative;
+        pointer-events:none;
+        opacity:.92;
+      }
+      .aurea-attach-chip[data-state="analyzing"]::after{
+        content:"";
+        position:absolute;
+        inset:6px;
+        border-radius:14px;
+        border:2px dashed rgba(255,255,255,.72);
+        pointer-events:none;
+        animation:aureaDashSpin 2.6s linear infinite;
+      }
+    `.trim();
+
+    document.head.appendChild(st);
+  };
+
   const renderAttachTray = () => {
+    ensureAttachFx();
+
     const tray = ensureAttachTray();
     if (!tray) return;
 
@@ -1498,6 +1532,10 @@ const closeSettings = () => {
       chip.type = "button";
       chip.className = "aurea-attach-chip";
       chip.dataset.aid = a.id;
+
+      // 送信中＝解析中の点線エフェクト
+      if (attachLocked) chip.dataset.state = "analyzing";
+      else delete chip.dataset.state;
 
       const isSingle = (pendingAttachments.length === 1);
 
@@ -1569,12 +1607,14 @@ const closeSettings = () => {
         rm.addEventListener("click", (e) => {
           e.preventDefault();
           e.stopPropagation();
+          if (attachLocked) return;
           removeAttachmentById(a.id);
         });
       }
 
       chip.addEventListener("click", (e) => {
         e.preventDefault();
+        if (attachLocked) return;
         openAttachModal(a);
       });
 
@@ -1845,11 +1885,19 @@ const closeSettings = () => {
     input.click();
   };
 
+  let attachLocked = false;
+
   const takePendingAttachments = () => {
-    const out = pendingAttachments.slice();
+    // 送信中はチップを残して「解析中」表示にする（GPT準拠の安心感）
+    attachLocked = true;
+    try { renderAttachTray(); } catch {}
+    return pendingAttachments.slice();
+  };
+
+  const unlockAndClearAttachments = () => {
+    attachLocked = false;
     pendingAttachments = [];
-    renderAttachTray();
-    return out;
+    try { renderAttachTray(); } catch {}
   };
 
   const buildAttachmentsPayload = async (atts) => {
@@ -2894,6 +2942,7 @@ const closeSettings = () => {
         <div class="img-meta">
           <div class="img-date">${escHtml(dateText)}</div>
           <div class="img-actions">
+            <button class="img-btn" type="button" data-action="download" title="Download">↓</button>
             <button class="img-btn" type="button" data-action="open" title="${escHtml(tr("open"))}">↗</button>
             <button class="img-btn" type="button" data-action="delete" title="${escHtml(tr("delete"))}">×</button>
           </div>
@@ -3663,6 +3712,7 @@ const closeSettings = () => {
           renderChat();
 
           setStreaming(false);
+          unlockAndClearAttachments();
           renderSidebar();
           return;
         }
@@ -3686,6 +3736,7 @@ const closeSettings = () => {
         updateMessage(m.id, imgMsg);
         renderChat();
         setStreaming(false);
+        unlockAndClearAttachments();
         renderSidebar();
         return;
       } catch {}
@@ -3707,6 +3758,7 @@ const closeSettings = () => {
         updateMessage(m.id, imgMsg);
         renderChat();
         setStreaming(false);
+        unlockAndClearAttachments();
         renderSidebar();
         return;
       } catch {}
@@ -3715,6 +3767,7 @@ const closeSettings = () => {
       updateMessage(m.id, `AUREA_IMAGE\n${makePlaceholderImageDataUrl(String(userText || "").trim())}\n${String(userText || "").trim()}`);
       renderChat();
       setStreaming(false);
+      unlockAndClearAttachments();
       renderSidebar();
       return;
     }
@@ -3795,6 +3848,7 @@ const closeSettings = () => {
         renderChat();
 
         setStreaming(false);
+        unlockAndClearAttachments();
         renderSidebar();
         return;
       }
@@ -3854,6 +3908,9 @@ const closeSettings = () => {
               setStreaming(false);
               try { clearAiRunIndicator(); } catch {}
               try { window.__AUREA_STREAMING_MID__ = ""; } catch {}
+
+              // 添付解析エフェクト解除＋クリア
+              unlockAndClearAttachments();
 
               // actions（コピー/Repo）を「完了瞬間」に必ず表示
               renderChat();
@@ -4700,6 +4757,19 @@ btnNewChat?.addEventListener("click", (e) => {
 
       if (act === "delete") {
         await deleteImageFromLibrary(id);
+        return;
+      }
+
+      if (act === "download") {
+        const a = document.createElement("a");
+        a.href = item.src;
+
+        const ts = String(item.createdAt || "").replace(/[:.]/g, "-");
+        a.download = `aurea-image-${ts || id}.png`;
+
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
         return;
       }
 

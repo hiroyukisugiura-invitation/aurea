@@ -118,8 +118,9 @@ stripeWebhook.post(
 app.use(stripeWebhook);
 
 // ===== それ以外の API は JSON =====
-app.use(express.json({ limit: "1mb" }));
-app.use(express.urlencoded({ extended: false }));
+// 添付（base64）を含むため上限を引き上げ
+app.use(express.json({ limit: "8mb" }));
+app.use(express.urlencoded({ extended: false, limit: "8mb" }));
 
 try { admin.initializeApp(); } catch (e) { void e; }
 const db = admin.firestore();
@@ -1266,30 +1267,42 @@ const findTrainerHitByEmbedding = async ({ userText, companyId }) => {
   if (!uEmb) return null;
 
   // 2) score all cases (runtime embedding; cacheは次工程)
-  let best = null;
-  let bestScore = -1;
+  const scored = [];
 
   // 上限（暴走防止）：まずは最大200件まで
   const MAX_CASES = 200;
   const pool = cases.slice(0, MAX_CASES);
 
   for (const c of pool) {
-    const q = normalizeTrainerText(c.q);
+    const qNorm = normalizeTrainerText(c.q);
+    const qRaw = String(c.q || "").trim();
     const a = String(c.a || "").trim();
-    if (!q || !a) continue;
+    if (!qNorm || !qRaw || !a) continue;
 
-    const qEmb = await callOpenAIEmbedding({ input: q, model: "text-embedding-3-small" });
+    const qEmb = await callOpenAIEmbedding({ input: qNorm, model: "text-embedding-3-small" });
     if (!qEmb) continue;
 
     const s = cosineSim(uEmb, qEmb);
-    if (s > bestScore) {
-      bestScore = s;
-      best = { q: String(c.q || "").trim(), a, score: s };
-    }
+    scored.push({ q: qRaw, a, score: s });
   }
 
-  // 閾値（保守的）：0.78 以上をヒット扱い（必要なら調整）
-  if (best && best.score >= 0.78) return best;
+  if (!scored.length) return null;
+
+  scored.sort((x, y) => (y.score - x.score));
+
+  const best = scored[0];
+
+  // 閾値：
+  // - 0.82以上：確定ヒット（そのまま回答）
+  // - 0.70〜0.82：候補提示（確認質問）
+  if (best && best.score >= 0.82) {
+    return { mode: "hit", hit: best, candidates: scored.slice(0, 3) };
+  }
+
+  if (best && best.score >= 0.70) {
+    return { mode: "candidates", hit: null, candidates: scored.slice(0, 3) };
+  }
+
   return null;
 };
 
@@ -1797,30 +1810,42 @@ app.post("/api/chat", async (req, res) => {
 
     const reportsBlock = buildReportsBlock(map);
 
-        // ===== Trainer hit (highest priority knowledge) =====
-    let trainerHit = null;
+    // ===== Trainer (embedding) =====
+    // ここを単一ソースに統合（当たる：最適回答固定 / 微妙：候補提示 / 外す：通常）
+    let trainerMode = "";
+    let trainerCandidates = [];
+    let trainerSystemBlock = "";
+
     try {
       const companyId = context?.companyId || null;
 
-      // 重要：prompt が空の場合に備えて promptForModel を使う
-      const tPrompt = (promptForModel || prompt || "").trim();
+      // prompt が空でも promptForModel を使う（添付のみ送信でも判定できる）
+      const tPrompt = String(promptForModel || prompt || "").trim();
 
-      trainerHit = tPrompt ? await findTrainerHitByEmbedding({ userText: tPrompt, companyId }) : null;
+      const r = tPrompt
+        ? await findTrainerHitByEmbedding({ userText: tPrompt, companyId })
+        : null;
+
+      if (r && r.mode === "hit" && r.hit) {
+        trainerMode = "hit";
+        trainerCandidates = Array.isArray(r.candidates) ? r.candidates : [];
+
+        trainerSystemBlock = [
+          "Company Knowledge (Highest Priority):",
+          "The following answer is authoritative and must be used as-is.",
+          "Do NOT ask follow-up questions.",
+          "Do NOT provide general explanations or alternatives.",
+          "",
+          `Answer: ${r.hit.a}`
+        ].join("\n");
+      } else if (r && r.mode === "candidates" && Array.isArray(r.candidates) && r.candidates.length) {
+        trainerMode = "candidates";
+        trainerCandidates = r.candidates.slice(0, 3);
+      }
     } catch {}
 
-    let trainerSystemBlock = "";
-    if (trainerHit) {
-      trainerSystemBlock = [
-        "Company Knowledge (Highest Priority):",
-        "The following answer is authoritative and must be used as-is.",
-        "Do NOT ask follow-up questions.",
-        "Do NOT provide general explanations or alternatives.",
-        "",
-        `Question: ${trainerHit.q}`,
-        `Answer: ${trainerHit.a}`
-      ].join("\n");
-    }
-
+    // ===== Intent Discovery (single source of truth) =====
+    // 添付だけ（prompt空）の時は必ず「観察 + 選択式ヒアリング」を返す
     const intentDiscoverySystem = isImplicitAttachmentOnly
       ? [
           "Intent Discovery (Highest Priority when attachments exist and user text is empty):",
@@ -1839,8 +1864,21 @@ app.post("/api/chat", async (req, res) => {
         ].join("\n")
       : "";
 
+    // Trainer候補提示モード（当たらない時の振る舞い確定）
+    const trainerCandidateSystem = (trainerMode === "candidates")
+      ? [
+          "Trainer Candidate Check (Highest Priority):",
+          "You must ask the user to choose ONE of the candidates below.",
+          "Do not answer with general knowledge.",
+          "",
+          "Candidates:",
+          ...trainerCandidates.map((c, i) => `${String(i + 1)}. ${String(c.q || "").trim()}`)
+        ].join("\n")
+      : "";
+
     const gptSystem = [
       intentDiscoverySystem,
+      trainerCandidateSystem,
       trainerSystemBlock,
       buildSystemPrompt("GPT"),
       "",
