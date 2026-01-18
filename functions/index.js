@@ -1247,19 +1247,30 @@ const normalizeTrainerText = (s) => {
     .trim();
 };
 
-const loadTrainerCases = async (companyId) => {
+const loadTrainerCases = async (companyId, inlineCases) => {
   void companyId;
 
-  // MVP: trainer_cases に { q, a } が入っている前提
+  // client から渡された trainerCases を最優先（AUREA Data Trainer の反映用）
+  if (Array.isArray(inlineCases) && inlineCases.length) {
+    return inlineCases
+      .map(x => ({
+        q: String(x?.q || "").trim(),
+        a: String(x?.a || "").trim()
+      }))
+      .filter(x => x.q && x.a)
+      .slice(0, 200);
+  }
+
+  // fallback: Firestore（従来）
   const snap = await db.collection("trainer_cases").get();
   return snap.docs.map(d => d.data()).filter(x => x && x.q && x.a);
 };
 
-const findTrainerHitByEmbedding = async ({ userText, companyId }) => {
+const findTrainerHitByEmbedding = async ({ userText, companyId, inlineCases }) => {
   const u0 = normalizeTrainerText(userText);
   if (!u0) return null;
 
-  const cases = await loadTrainerCases(companyId);
+  const cases = await loadTrainerCases(companyId, inlineCases);
   if (!cases.length) return null;
 
   // 1) user embedding
@@ -1818,12 +1829,13 @@ app.post("/api/chat", async (req, res) => {
 
     try {
       const companyId = context?.companyId || null;
+      const inlineCases = Array.isArray(context?.trainerCases) ? context.trainerCases : [];
 
       // prompt が空でも promptForModel を使う（添付のみ送信でも判定できる）
       const tPrompt = String(promptForModel || prompt || "").trim();
 
       const r = tPrompt
-        ? await findTrainerHitByEmbedding({ userText: tPrompt, companyId })
+        ? await findTrainerHitByEmbedding({ userText: tPrompt, companyId, inlineCases })
         : null;
 
       if (r && r.mode === "hit" && r.hit) {
@@ -1876,10 +1888,27 @@ app.post("/api/chat", async (req, res) => {
         ].join("\n")
       : "";
 
+    const visionSystem = userParts.some(p => p && p.type === "input_image")
+      ? [
+          "Vision analysis (Highest Priority when an image/screenshot is attached):",
+          "- You MUST use the attached image(s) as the primary evidence.",
+          "- Perform OCR mentally: read all visible text (UI labels, buttons, numbers, warnings).",
+          "- If it is a UI screenshot:",
+          "  - Identify what app/page it is and what state it is in.",
+          "  - Point out the key UI elements (sidebar, panels, modals, buttons, inputs).",
+          "  - Answer using concrete references to what is visible (exact labels/sections).",
+          "- If it is an illustration/photo:",
+          "  - Describe the subject, style, and any notable issues (composition, readability, artifacts).",
+          "  - If the user asks to 'evaluate', provide a short, structured evaluation (strengths / issues / next fix).",
+          "- Never say you cannot see the image. Never ask the user to re-upload unless the payload is empty."
+        ].join("\n")
+      : "";
+
     const gptSystem = [
       intentDiscoverySystem,
       trainerCandidateSystem,
       trainerSystemBlock,
+      visionSystem,
       buildSystemPrompt("GPT"),
       "",
       "Integration rule:",

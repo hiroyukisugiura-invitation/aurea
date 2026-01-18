@@ -1483,23 +1483,47 @@ const closeSettings = () => {
     const st = document.createElement("style");
     st.setAttribute("data-aurea-attach-fx", "1");
     st.textContent = `
-      @keyframes aureaDashSpin {
-        from { transform: rotate(0deg); }
-        to   { transform: rotate(360deg); }
+      @keyframes aureaBorderRun {
+        to { stroke-dashoffset: -160; }
       }
+
       .aurea-attach-chip[data-state="analyzing"]{
         position:relative;
         pointer-events:none;
-        opacity:.92;
+        opacity:.95;
       }
+
       .aurea-attach-chip[data-state="analyzing"]::after{
         content:"";
         position:absolute;
-        inset:6px;
-        border-radius:14px;
-        border:2px dashed rgba(255,255,255,.72);
+        inset:4px;
+        border-radius:16px;
         pointer-events:none;
-        animation:aureaDashSpin 2.6s linear infinite;
+        background:
+          url("data:image/svg+xml;utf8,
+          <svg xmlns='http://www.w3.org/2000/svg' width='100%' height='100%' viewBox='0 0 100 100' preserveAspectRatio='none'>
+            <rect
+              x='2' y='2' width='96' height='96' rx='14' ry='14'
+              fill='none'
+              stroke='rgba(255,255,255,0.85)'
+              stroke-width='2'
+              stroke-linecap='round'
+              stroke-dasharray='6 10'
+            />
+          </svg>") no-repeat center / 100% 100%;
+        -webkit-mask:
+          url("data:image/svg+xml;utf8,
+          <svg xmlns='http://www.w3.org/2000/svg' width='100%' height='100%' viewBox='0 0 100 100' preserveAspectRatio='none'>
+            <rect
+              x='2' y='2' width='96' height='96' rx='14' ry='14'
+              fill='none'
+              stroke='white'
+              stroke-width='2'
+              stroke-linecap='round'
+              stroke-dasharray='6 10'
+            />
+          </svg>") no-repeat center / 100% 100%;
+        animation:aureaBorderRun 1.8s linear infinite;
       }
     `.trim();
 
@@ -2681,6 +2705,84 @@ const closeSettings = () => {
         // AUREA_IMAGE
         // <url>
         // <prompt>
+        //
+        // Pending format (effect):
+        // AUREA_IMAGE_PENDING
+        // <prompt>
+        const ensureSoraPendingFx = () => {
+          if (document.getElementById("aureaSoraPendingFx")) return;
+
+          const st = document.createElement("style");
+          st.id = "aureaSoraPendingFx";
+          st.textContent = `
+            @keyframes aureaSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+            .ai-image-card .aurea-sora-pending{
+              width:100%;
+              aspect-ratio:1/1;
+              border-radius:18px;
+              border:1px solid rgba(255,255,255,.10);
+              background:rgba(255,255,255,.04);
+              display:grid;
+              place-items:center;
+              position:relative;
+              overflow:hidden;
+            }
+            .ai-image-card .aurea-sora-pending::before{
+              content:"";
+              position:absolute;
+              inset:-40%;
+              background:linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.08) 50%, rgba(255,255,255,0) 100%);
+              transform:translateX(-40%);
+              animation:aureaSoraShimmer 1.2s ease-in-out infinite;
+            }
+            @keyframes aureaSoraShimmer {
+              from { transform:translateX(-40%); }
+              to   { transform:translateX(40%); }
+            }
+            .ai-image-card .aurea-sora-spinner{
+              width:34px;height:34px;
+              border-radius:999px;
+              border:3px solid rgba(255,255,255,.22);
+              border-top-color: rgba(255,255,255,.82);
+              animation:aureaSpin .9s linear infinite;
+              position:relative;
+              z-index:1;
+            }
+            .ai-image-card .aurea-sora-pending-label{
+              position:absolute;
+              bottom:12px;
+              left:12px;
+              right:12px;
+              font-size:12px;
+              line-height:1.45;
+              opacity:.72;
+              white-space:nowrap;
+              overflow:hidden;
+              text-overflow:ellipsis;
+              z-index:1;
+            }
+          `.trim();
+
+          document.head.appendChild(st);
+        };
+
+        // Pending (Sora running)
+        if (msg?.role === "assistant" && raw0.startsWith("AUREA_IMAGE_PENDING\n")) {
+          ensureSoraPendingFx();
+
+          const lines = raw0.split("\n");
+          const prompt = String(lines.slice(1).join("\n") || "").trim();
+
+          return `
+            <div class="ai-image-card" style="position:relative;">
+              <div class="aurea-sora-pending" aria-label="Generating image">
+                <div class="aurea-sora-spinner" aria-hidden="true"></div>
+                <div class="aurea-sora-pending-label">${escHtml(prompt || "Generating…")}</div>
+              </div>
+            </div>
+          `.trim();
+        }
+
         if (msg?.role === "assistant" && raw0.startsWith("AUREA_IMAGE\n")) {
           const lines = raw0.split("\n");
           const url = String(lines[1] || "").trim();
@@ -3667,6 +3769,17 @@ const closeSettings = () => {
     // ===== Sora image generation (front complete) =====
     // NOTE: generation is allowed only when NO image attachments (GPT-like: attached images mean "analyze")
     if (!hasImageAttachment && isImageGenerationRequest(userText)) {
+      // 送信直後に「生成中」を可視化（待ち時間の不安解消）
+      try {
+        updateMessage(m.id, `AUREA_IMAGE_PENDING\n${String(userText || "").trim()}`);
+        renderChat();
+      } catch {}
+
+      try {
+        const st = { Sora: "running", GPT: "queued" };
+        try { setAiRunIndicator({ phase: "run", statuses: st }); } catch {}
+      } catch {}
+
       try { showAiActivity("Sora"); } catch {}
 
       try {
@@ -3678,7 +3791,22 @@ const closeSettings = () => {
             scope: state.context,
             projectId: state.context?.type === "project" ? state.context.projectId : null,
             threadId: getActiveThreadId(),
-            language: state.settings?.language || "ja"
+            language: state.settings?.language || "ja",
+            trainerCases: (() => {
+              try {
+                const raw = localStorage.getItem("aurea_trainer_cases_v1");
+                if (!raw) return [];
+                const arr = JSON.parse(raw);
+                if (!Array.isArray(arr)) return [];
+                return arr
+                  .map(x => ({
+                    q: String(x?.q || "").trim(),
+                    a: String(x?.a || "").trim()
+                  }))
+                  .filter(x => x.q && x.a)
+                  .slice(0, 200);
+              } catch { return []; }
+            })()
           }
         };
 
@@ -3709,6 +3837,11 @@ const closeSettings = () => {
           // render image message
           const imgMsg = `AUREA_IMAGE\n${url}\n${p}`;
           updateMessage(m.id, imgMsg);
+
+          try { setAiRunIndicator({ phase: "run", statuses: { Sora: "done", GPT: "queued" } }); } catch {}
+          try { clearAiRunIndicator(); } catch {}
+          try { window.__AUREA_STREAMING_MID__ = ""; } catch {}
+
           renderChat();
 
           setStreaming(false);
@@ -3734,6 +3867,11 @@ const closeSettings = () => {
 
         const imgMsg = `AUREA_IMAGE\n${url}\n${p}`;
         updateMessage(m.id, imgMsg);
+
+        try { setAiRunIndicator({ phase: "run", statuses: { Sora: "done", GPT: "queued" } }); } catch {}
+        try { clearAiRunIndicator(); } catch {}
+        try { window.__AUREA_STREAMING_MID__ = ""; } catch {}
+
         renderChat();
         setStreaming(false);
         unlockAndClearAttachments();
@@ -3756,6 +3894,11 @@ const closeSettings = () => {
 
         const imgMsg = `AUREA_IMAGE\n${url}\n${p}`;
         updateMessage(m.id, imgMsg);
+
+        try { setAiRunIndicator({ phase: "run", statuses: { Sora: "done", GPT: "queued" } }); } catch {}
+        try { clearAiRunIndicator(); } catch {}
+        try { window.__AUREA_STREAMING_MID__ = ""; } catch {}
+
         renderChat();
         setStreaming(false);
         unlockAndClearAttachments();
@@ -3765,6 +3908,11 @@ const closeSettings = () => {
 
       // 最終フォールバック（UIを壊さない）
       updateMessage(m.id, `AUREA_IMAGE\n${makePlaceholderImageDataUrl(String(userText || "").trim())}\n${String(userText || "").trim()}`);
+
+      try { setAiRunIndicator({ phase: "run", statuses: { Sora: "done", GPT: "queued" } }); } catch {}
+      try { clearAiRunIndicator(); } catch {}
+      try { window.__AUREA_STREAMING_MID__ = ""; } catch {}
+
       renderChat();
       setStreaming(false);
       unlockAndClearAttachments();
@@ -3806,7 +3954,22 @@ const closeSettings = () => {
           scope: state.context,
           projectId: state.context?.type === "project" ? state.context.projectId : null,
           threadId: getActiveThreadId(),
-          language: state.settings?.language || "ja"
+          language: state.settings?.language || "ja",
+          trainerCases: (() => {
+            try {
+              const raw = localStorage.getItem("aurea_trainer_cases_v1");
+              if (!raw) return [];
+              const arr = JSON.parse(raw);
+              if (!Array.isArray(arr)) return [];
+              return arr
+                .map(x => ({
+                  q: String(x?.q || "").trim(),
+                  a: String(x?.a || "").trim()
+                }))
+                .filter(x => x.q && x.a)
+                .slice(0, 200);
+            } catch { return []; }
+          })()
         }
       };
 
