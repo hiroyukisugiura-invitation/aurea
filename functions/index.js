@@ -1168,6 +1168,131 @@ const callOpenAIText = async ({ system, user, userParts, model }) => {
   }
 };
 
+const callOpenAIEmbedding = async ({ input, model }) => {
+  const key = getOpenAIKey();
+  if (!key) return null;
+
+  const text = String(input || "").trim();
+  if (!text) return null;
+
+  const m = String(model || "text-embedding-3-small").trim() || "text-embedding-3-small";
+
+  const controller = new AbortController();
+  const t = setTimeout(() => {
+    try { controller.abort(); } catch {}
+  }, 25000);
+
+  try {
+    const r = await fetch("https://api.openai.com/v1/embeddings", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${key}`
+      },
+      body: JSON.stringify({
+        model: m,
+        input: text
+      }),
+      signal: controller.signal
+    });
+
+    const j = await r.json().catch(() => null);
+    if (!r.ok || !j) {
+      const errMsg =
+        (j && j.error && (j.error.message || j.error.code))
+          ? String(j.error.message || j.error.code)
+          : `http_${r.status}`;
+      dbg("OpenAI Embeddings API failed:", errMsg, j);
+      return null;
+    }
+
+    const emb =
+      (j && Array.isArray(j.data) && j.data[0] && Array.isArray(j.data[0].embedding))
+        ? j.data[0].embedding
+        : null;
+
+    return emb || null;
+
+  } catch (e) {
+    dbg("callOpenAIEmbedding failed", e);
+    return null;
+  } finally {
+    clearTimeout(t);
+  }
+};
+
+const cosineSim = (a, b) => {
+  if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length || !a.length) return 0;
+  let dot = 0;
+  let na = 0;
+  let nb = 0;
+  for (let i = 0; i < a.length; i++) {
+    const x = Number(a[i] || 0);
+    const y = Number(b[i] || 0);
+    dot += x * y;
+    na += x * x;
+    nb += y * y;
+  }
+  const den = Math.sqrt(na) * Math.sqrt(nb);
+  if (!den) return 0;
+  return dot / den;
+};
+
+const normalizeTrainerText = (s) => {
+  return String(s || "")
+    .toLowerCase()
+    .normalize("NFKC")
+    .replace(/\s+/g, " ")
+    .trim();
+};
+
+const loadTrainerCases = async (companyId) => {
+  void companyId;
+
+  // MVP: trainer_cases に { q, a } が入っている前提
+  const snap = await db.collection("trainer_cases").get();
+  return snap.docs.map(d => d.data()).filter(x => x && x.q && x.a);
+};
+
+const findTrainerHitByEmbedding = async ({ userText, companyId }) => {
+  const u0 = normalizeTrainerText(userText);
+  if (!u0) return null;
+
+  const cases = await loadTrainerCases(companyId);
+  if (!cases.length) return null;
+
+  // 1) user embedding
+  const uEmb = await callOpenAIEmbedding({ input: u0, model: "text-embedding-3-small" });
+  if (!uEmb) return null;
+
+  // 2) score all cases (runtime embedding; cacheは次工程)
+  let best = null;
+  let bestScore = -1;
+
+  // 上限（暴走防止）：まずは最大200件まで
+  const MAX_CASES = 200;
+  const pool = cases.slice(0, MAX_CASES);
+
+  for (const c of pool) {
+    const q = normalizeTrainerText(c.q);
+    const a = String(c.a || "").trim();
+    if (!q || !a) continue;
+
+    const qEmb = await callOpenAIEmbedding({ input: q, model: "text-embedding-3-small" });
+    if (!qEmb) continue;
+
+    const s = cosineSim(uEmb, qEmb);
+    if (s > bestScore) {
+      bestScore = s;
+      best = { q: String(c.q || "").trim(), a, score: s };
+    }
+  }
+
+  // 閾値（保守的）：0.78 以上をヒット扱い（必要なら調整）
+  if (best && best.score >= 0.78) return best;
+  return null;
+};
+
 const buildSystemPrompt = (aiName) => {
   const n = String(aiName || "").trim();
 
@@ -1292,64 +1417,12 @@ const makePlaceholderImageDataUrl = (prompt) => {
 };
 
 app.post("/api/chat", async (req, res) => {
-      /* ================= AUREA Data Trainer (MVP) ================= */
+      /* ================= AUREA Data Trainer (Embedding Match) ================= */
 
-    const normalizeText = (s) => {
-      return String(s || "")
-        .toLowerCase()
-        .normalize("NFKC")
-        .replace(/[^\p{L}\p{N}\s]/gu, " ")
-        .replace(/\s+/g, " ")
-        .trim();
-    };
-
-    const scoreSimilarity = (q, u) => {
-      if (!q || !u) return 0;
-
-      // 完全包含は最優先
-      if (u.includes(q) || q.includes(u)) return 100;
-
-      const qWords = q.split(" ").filter(Boolean);
-      const uWords = u.split(" ").filter(Boolean);
-      if (!qWords.length || !uWords.length) return 0;
-
-      let hit = 0;
-      for (const w of qWords) {
-        if (uWords.includes(w)) hit++;
-      }
-
-      return Math.round((hit / qWords.length) * 100);
-    };
-
-    const loadTrainerCases = async (companyId) => {
-      // MVP: companyId 無しの場合は全件（後で company scope に分離）
-      const snap = await db.collection("trainer_cases").get();
-      return snap.docs.map(d => d.data()).filter(x => x && x.q && x.a);
-    };
-
+    // 重要：特定ワードの同義語表ではなく、全ケースを「意味」で当てる
+    // findTrainerHitByEmbedding / loadTrainerCases / callOpenAIEmbedding はファイル上部で定義済み
     const findTrainerHit = async (userText, companyId) => {
-      const u = normalizeText(userText);
-      if (!u) return null;
-
-      const cases = await loadTrainerCases(companyId);
-      let best = null;
-      let bestScore = 0;
-
-      for (const c of cases) {
-        const q = normalizeText(c.q);
-        const s = scoreSimilarity(q, u);
-        if (s > bestScore) {
-          bestScore = s;
-          best = c;
-        }
-      }
-
-      // 閾値：60%以上でヒット
-      if (best && bestScore >= 60) {
-        return { q: best.q, a: best.a, score: bestScore };
-      }
-
-      return null;
+      return await findTrainerHitByEmbedding({ userText, companyId });
     };
 
   try {
@@ -1732,7 +1805,7 @@ app.post("/api/chat", async (req, res) => {
       // 重要：prompt が空の場合に備えて promptForModel を使う
       const tPrompt = (promptForModel || prompt || "").trim();
 
-      trainerHit = tPrompt ? await findTrainerHit(tPrompt, companyId) : null;
+      trainerHit = tPrompt ? await findTrainerHitByEmbedding({ userText: tPrompt, companyId }) : null;
     } catch {}
 
     let trainerSystemBlock = "";
