@@ -1292,11 +1292,35 @@ const findTrainerHitByEmbedding = async ({ userText, companyId, inlineCases }) =
     if (uKey === qNorm) s = 1.0;
     else if (uKey.includes(qNorm) || qNorm.includes(uKey)) s = 0.86;
     else {
-      // 部分一致（短文向け）
+      // 部分一致（日本語はスペースが無いことが多いので n-gram を併用）
       const w = qNorm.split(" ").filter(Boolean);
-      if (w.length) {
+
+      const ngrams = (str, n) => {
+        const s0 = String(str || "");
+        const out = [];
+        if (!s0) return out;
+        if (s0.length <= n) return [s0];
+        for (let i = 0; i <= s0.length - n; i++) out.push(s0.slice(i, i + n));
+        return out;
+      };
+
+      // 1) スペース区切りが効く場合（英語など）
+      if (w.length >= 2) {
         const hit = w.filter(t => uKey.includes(t)).length;
         s = hit ? Math.min(0.84, hit / Math.max(3, w.length)) : 0;
+      } else {
+        // 2) 日本語/短文：2-gram overlap
+        const a2 = new Set(ngrams(uKey, 2));
+        const b2 = new Set(ngrams(qNorm, 2));
+        if (a2.size && b2.size) {
+          let inter = 0;
+          for (const t of b2) if (a2.has(t)) inter += 1;
+          const denom = Math.max(a2.size, b2.size);
+          const ratio = denom ? (inter / denom) : 0;
+
+          // ratio を 0〜0.84 に寄せる（曖昧検索でも拾いやすく）
+          s = ratio ? Math.min(0.84, ratio * 1.25) : 0;
+        }
       }
     }
 

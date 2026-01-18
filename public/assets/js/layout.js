@@ -86,70 +86,72 @@ const ensureAiMeteorFx = () => {
   st.setAttribute("data-aurea-meteor-fx", "1");
   st.textContent = `
     @keyframes aureaMeteorSweep {
-      0%   { transform: translateX(-28px); opacity: 0; }
-      10%  { opacity: 1; }
-      100% { transform: translateX(128px); opacity: 0; }
+      0%   { transform: translateX(-24px); opacity: 0; }
+      12%  { opacity: 1; }
+      100% { transform: translateX(110px); opacity: 0; }
+    }
+
+    /* 既存の丸（assistantマーク）がある場合は非表示（UI乱立防止） */
+    .msg.assistant::before{
+      display:none !important;
+      content:none !important;
+    }
+    .msg.assistant .avatar,
+    .msg.assistant .av,
+    .msg.assistant .mark,
+    .msg.assistant .dot{
+      display:none !important;
     }
 
     .msg.assistant{
       position:relative;
     }
 
+    /* 文字だけを出す */
     .msg.assistant .aurea-streammark{
       position:absolute;
-      left:-34px;
+      left:-6px;
       top:18px;
-      display:flex;
-      align-items:center;
-      gap:10px;
+      display:block;
       pointer-events:none;
       user-select:none;
       z-index:2;
     }
 
-    .msg.assistant .aurea-streammark__dot{
-      width:22px;
-      height:22px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.22);
-      background:rgba(255,255,255,.02);
-      box-shadow:0 6px 18px rgba(0,0,0,.25);
-      flex:0 0 auto;
-    }
-
+    /* 枠なし・背景なし・文字だけ */
     .msg.assistant .aurea-streammark__txt{
       position:relative;
       font-size:12px;
       line-height:1;
-      color:rgba(255,255,255,.82);
+      color:rgba(255,255,255,.72);
       white-space:nowrap;
       letter-spacing:-.1px;
-      padding:6px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(255,255,255,.04);
+      padding:0;
+      border:0;
+      border-radius:0;
+      background:transparent;
       overflow:hidden;
     }
 
+    /* 文字の上を流星が走る */
     .msg.assistant .aurea-streammark__txt::after{
       content:"";
       position:absolute;
       top:50%;
-      left:-28px;
-      width:22px;
+      left:-24px;
+      width:20px;
       height:2px;
       transform:translateY(-50%);
-      background:linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(159,180,255,.95) 40%, rgba(255,255,255,0) 100%);
-      filter: blur(.2px);
+      background:linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(159,180,255,.92) 40%, rgba(255,255,255,0) 100%);
+      filter: blur(.25px);
       animation:aureaMeteorSweep 1.05s linear infinite;
-      opacity:.9;
+      opacity:.95;
     }
 
     .msg.assistant .aurea-streammark[hidden]{
       display:none !important;
     }
   `.trim();
-
   document.head.appendChild(st);
 };
 
@@ -3065,28 +3067,26 @@ const closeSettings = () => {
 
         const isStreamingMsg = (typeof window.__AUREA_STREAMING_MID__ === "string" && window.__AUREA_STREAMING_MID__ === m.id);
 
-        // 左の薄い丸マーク位置に「解析中/回答文作成中」を流星で表示（GPT同等）
-        let mark = wrap.querySelector(".aurea-streammark");
-        if (!mark) {
-          mark = document.createElement("div");
-          mark.className = "aurea-streammark";
-          mark.innerHTML = `
-            <span class="aurea-streammark__dot" aria-hidden="true"></span>
-            <span class="aurea-streammark__txt"></span>
-          `.trim();
-          wrap.insertBefore(mark, wrap.firstChild);
-        }
-
-        const txt = mark.querySelector(".aurea-streammark__txt");
-        if (txt) txt.textContent = getStreamingLabel();
-
+        // ストリーミング中だけ流星ラベルを生成（乱立防止）
+        const existed = wrap.querySelector(".aurea-streammark");
         if (!isStreamingMsg) {
-          mark.setAttribute("hidden", "");
+          if (existed) {
+            try { existed.remove(); } catch {}
+          }
         } else {
-          mark.removeAttribute("hidden");
-        }
+          let mark = existed;
+          if (!mark) {
+            mark = document.createElement("div");
+            mark.className = "aurea-streammark";
+            mark.innerHTML = `
+              <span class="aurea-streammark__txt"></span>
+            `.trim();
+            wrap.insertBefore(mark, wrap.firstChild);
+          }
 
-        if (isStreamingMsg) {
+          const txt = mark.querySelector(".aurea-streammark__txt");
+          if (txt) txt.textContent = getStreamingLabel();
+
           chatRoot.appendChild(wrap);
           continue;
         }
