@@ -2636,13 +2636,39 @@ const closeSettings = () => {
         if (msg?.role === "assistant" && raw0.startsWith("AUREA_IMAGE\n")) {
           const lines = raw0.split("\n");
           const url = String(lines[1] || "").trim();
-          const prompt = String(lines.slice(2).join("\n") || "").trim();
 
           if (url) {
+            const safeUrl = escHtml(url);
+            const fname = `aurea-image-${String(msg?.id || "").slice(0, 8) || "download"}.png`;
+
             return `
-              <div class="ai-image-card">
-                <img src="${escHtml(url)}" alt="generated image" />
-                ${prompt ? `<div class="ai-image-caption">${escHtml(prompt).replace(/\n/g, "<br>")}</div>` : ""}
+              <div class="ai-image-card" style="position:relative;">
+                <a href="${safeUrl}" target="_blank" rel="noopener noreferrer" style="display:block;">
+                  <img src="${safeUrl}" alt="generated image" />
+                </a>
+
+                <a href="${safeUrl}" download="${escHtml(fname)}" aria-label="Download" style="
+                  position:absolute;
+                  top:10px;
+                  right:10px;
+                  width:32px;
+                  height:32px;
+                  border-radius:10px;
+                  border:1px solid rgba(255,255,255,.14);
+                  background:rgba(0,0,0,.28);
+                  color:rgba(255,255,255,.92);
+                  display:grid;
+                  place-items:center;
+                  text-decoration:none;
+                  backdrop-filter: blur(10px);
+                  -webkit-backdrop-filter: blur(10px);
+                ">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:18px;height:18px;opacity:.95;">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <path d="M7 10l5 5 5-5"></path>
+                    <path d="M12 15V3"></path>
+                  </svg>
+                </a>
               </div>
             `.trim();
           }
@@ -2675,9 +2701,89 @@ const closeSettings = () => {
         return escHtml(raw0).replace(/\n/g, "<br>");
       };
 
-      bubble.innerHTML = renderMessageHtml(m);
+      const editingMid = String(window.__AUREA_EDITING_USER_MID__ || "");
+      const isEditingThis = (m.role === "user" && editingMid && editingMid === m.id);
+
+      if (isEditingThis) {
+        const v0 = String(m.content || "");
+        const isEn = ((state.settings?.language || "ja") === "en");
+
+        bubble.innerHTML = `
+          <div style="display:flex;flex-direction:column;gap:10px;min-width:0;">
+            <textarea data-role="user-edit" style="
+              width:100%;
+              min-height:96px;
+              max-height:260px;
+              resize:vertical;
+              border-radius:14px;
+              border:1px solid rgba(255,255,255,.12);
+              background:rgba(255,255,255,.04);
+              color:rgba(255,255,255,.92);
+              outline:none;
+              padding:12px 12px;
+              font-size:14px;
+              line-height:1.55;
+              font-family:var(--font);
+              white-space:pre-wrap;
+            ">${escHtml(v0)}</textarea>
+
+            <div style="display:flex;justify-content:flex-end;gap:10px;">
+              <button type="button" data-action="cancel-user-edit" data-mid="${escHtml(m.id)}" style="
+                height:34px;
+                padding:0 12px;
+                border-radius:12px;
+                border:1px solid rgba(255,255,255,.12);
+                background:transparent;
+                color:rgba(255,255,255,.86);
+                cursor:pointer;
+                font-size:13px;
+              ">${escHtml(isEn ? "Cancel" : "キャンセル")}</button>
+
+              <button type="button" data-action="save-user-edit" data-mid="${escHtml(m.id)}" style="
+                height:34px;
+                padding:0 12px;
+                border-radius:12px;
+                border:1px solid rgba(255,255,255,.12);
+                background:rgba(255,255,255,.10);
+                color:rgba(255,255,255,.92);
+                cursor:pointer;
+                font-size:13px;
+                font-weight:700;
+              ">${escHtml(isEn ? "Save" : "保存")}</button>
+            </div>
+          </div>
+        `;
+      } else {
+        bubble.innerHTML = renderMessageHtml(m);
+      }
 
       wrap.appendChild(bubble);
+
+      // user: edit icon (GPT-like)
+      if (m.role === "user" && !isEditingThis) {
+        const ua = document.createElement("div");
+        ua.className = "actions";
+        ua.style.display = "flex";
+        ua.style.flexDirection = "column";
+        ua.style.gap = "8px";
+        ua.style.alignItems = "center";
+        ua.style.opacity = ".92";
+
+        const edit = document.createElement("div");
+        edit.className = "act";
+        edit.setAttribute("role", "button");
+        edit.setAttribute("tabindex", "0");
+        edit.dataset.action = "edit-user-message";
+        edit.dataset.mid = m.id;
+        edit.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20h9"></path>
+            <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4 11.5-11.5z"></path>
+          </svg>
+        `;
+        ua.appendChild(edit);
+        wrap.appendChild(ua);
+      }
 
       if (m.role === "assistant") {
         const isStreamingMsg = (typeof window.__AUREA_STREAMING_MID__ === "string" && window.__AUREA_STREAMING_MID__ === m.id);
@@ -4455,6 +4561,77 @@ btnNewChat?.addEventListener("click", (e) => {
         projectId: sCard.dataset.projectId || null,
         threadId: sCard.dataset.threadId
       });
+      return;
+    }
+
+    // user message edit (GPT-like)
+    const editUserBtn = t.closest(".act[data-action='edit-user-message']");
+    if (editUserBtn) {
+      e.preventDefault();
+      if (typeof window.__AUREA_STREAMING_MID__ === "string" && window.__AUREA_STREAMING_MID__) return;
+
+      const mid = String(editUserBtn.dataset.mid || "");
+      if (!mid) return;
+
+      window.__AUREA_EDITING_USER_MID__ = mid;
+      renderChat();
+
+      // focus textarea
+      setTimeout(() => {
+        try {
+          const ta = document.querySelector(".msg.user .bubble textarea[data-role='user-edit']");
+          ta?.focus();
+          ta?.setSelectionRange(ta.value.length, ta.value.length);
+        } catch {}
+      }, 0);
+
+      return;
+    }
+
+    const cancelEditBtn = t.closest("[data-action='cancel-user-edit']");
+    if (cancelEditBtn) {
+      e.preventDefault();
+      window.__AUREA_EDITING_USER_MID__ = "";
+      renderChat();
+      return;
+    }
+
+    const saveEditBtn = t.closest("[data-action='save-user-edit']");
+    if (saveEditBtn) {
+      e.preventDefault();
+      if (typeof window.__AUREA_STREAMING_MID__ === "string" && window.__AUREA_STREAMING_MID__) return;
+
+      const mid = String(saveEditBtn.getAttribute("data-mid") || "");
+      if (!mid) return;
+
+      const th = getThreadByIdInScope(getActiveThreadId());
+      if (!th || !Array.isArray(th.messages)) return;
+
+      const ta = document.querySelector(".msg.user .bubble textarea[data-role='user-edit']");
+      const nextText = String(ta ? ta.value : "").trim();
+      if (!nextText) return;
+
+      // 1) update edited user message
+      try { updateMessage(mid, nextText); } catch {}
+
+      // 2) truncate messages after this user message (GPT-like: regenerate from here)
+      try {
+        const idx = th.messages.findIndex(x => x && x.id === mid);
+        if (idx >= 0) {
+          th.messages = th.messages.slice(0, idx + 1);
+          th.updatedAt = nowISO();
+          save(state);
+        }
+      } catch {}
+
+      // 3) exit edit mode and rerender
+      window.__AUREA_EDITING_USER_MID__ = "";
+      renderSidebar();
+      renderView();
+
+      // 4) regenerate assistant response from edited user message (no attachments)
+      await multiAiReply(nextText, []);
+
       return;
     }
 

@@ -1728,7 +1728,11 @@ app.post("/api/chat", async (req, res) => {
     let trainerHit = null;
     try {
       const companyId = context?.companyId || null;
-      trainerHit = await findTrainerHit(prompt, companyId);
+
+      // 重要：prompt が空の場合に備えて promptForModel を使う
+      const tPrompt = (promptForModel || prompt || "").trim();
+
+      trainerHit = tPrompt ? await findTrainerHit(tPrompt, companyId) : null;
     } catch {}
 
     let trainerSystemBlock = "";
