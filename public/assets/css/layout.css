@@ -1444,6 +1444,59 @@ body.theme-light .images-empty{
    SETTINGS MODAL (embedded)
    - scoped to .settings-modal only
 =============================== */
+/* ===== Data storage (Pro gated visual hint) ===== */
+
+.settings-modal .panel-data .data-storage-wrap{
+  position:relative;
+  display:inline-block;
+  max-width:100%;
+}
+
+/* ロック状態：クラウド保存（Free時） */
+.settings-modal .panel-data .data-storage-wrap[data-locked="1"] .select{
+  opacity:.55;
+  cursor:pointer; /* クリックは可能（JSでガード） */
+  background:
+    linear-gradient(
+      to right,
+      rgba(255,255,255,.06),
+      rgba(255,255,255,.02)
+    ),
+    var(--card);
+}
+
+/* 🔒 Pro バッジ */
+.settings-modal .panel-data .data-storage-badge{
+  position:absolute;
+  right:10px;
+  top:50%;
+  transform:translateY(-50%);
+  height:20px;
+  padding:0 8px;
+  border-radius:999px;
+  border:1px solid var(--line);
+  background:rgba(255,255,255,.06);
+  color:var(--muted);
+  font-size:11px;
+  line-height:18px;
+  display:none; /* JSで Free の時だけ表示 */
+  pointer-events:none;
+  white-space:nowrap;
+}
+
+/* light theme */
+body.theme-light .settings-modal .panel-data .data-storage-wrap[data-locked="1"] .select{
+  background:
+    linear-gradient(
+      to right,
+      rgba(0,0,0,.04),
+      rgba(0,0,0,.02)
+    ),
+    var(--card);
+}
+body.theme-light .settings-modal .panel-data .data-storage-badge{
+  background:rgba(0,0,0,.03);
+}
 
 .settings-modal{
   position:fixed;

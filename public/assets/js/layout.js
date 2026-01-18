@@ -301,6 +301,9 @@ const clearAiRunIndicator = () => {
   const STORAGE_KEY_CLOUD = "aurea_main_v1_cloud";
   const STORAGE_PREF_KEY = "aurea_data_storage"; // "cloud" | "local"
 
+  // pending storage switch after Google connect
+  const PENDING_STORAGE_MODE_KEY = "aurea_pending_storage_mode_v1"; // "cloud"
+
   const getStorageMode = () => {
     try {
       const v = localStorage.getItem(STORAGE_PREF_KEY);
@@ -364,7 +367,7 @@ const clearAiRunIndicator = () => {
       sendMode: "cmdEnter",
       dataStorage: "cloud",
       language: "ja",
-      showAiReports: true
+      showAiReports: false
     },
 
     // apps/connectors
@@ -618,6 +621,17 @@ const clearAiRunIndicator = () => {
       const host = cloudBtn?.parentElement || localBtn?.parentElement;
       if (!host) return null;
 
+      // wrap（badge表示用）
+      const wrap = document.createElement("div");
+      wrap.className = "data-storage-wrap";
+      wrap.id = "dataStorageWrap";
+
+      const badge = document.createElement("span");
+      badge.className = "data-storage-badge";
+      badge.id = "dataStorageBadge";
+      badge.textContent = "🔒 Pro";
+      wrap.appendChild(badge);
+
       sel = document.createElement("select");
       sel.id = "dataStorageSelect";
       sel.className = "select";
@@ -631,13 +645,32 @@ const clearAiRunIndicator = () => {
       if (cloudBtn) cloudBtn.style.display = "none";
       if (localBtn) localBtn.style.display = "none";
 
-      host.appendChild(sel);
+      wrap.appendChild(sel);
+      host.appendChild(wrap);
+
       return sel;
     };
 
     const storageSelect = ensureStorageSelect();
     if (storageSelect) {
       storageSelect.value = onLocal ? "local" : "cloud";
+
+      // Pro gated hint (visual only)
+      const planNow = String(state.plan || "Free").trim();
+      const isFree = (planNow === "Free");
+
+      const wrap = document.getElementById("dataStorageWrap");
+      const badge = document.getElementById("dataStorageBadge");
+
+      if (wrap) {
+        if (isFree) wrap.setAttribute("data-locked", "1");
+        else wrap.removeAttribute("data-locked");
+      }
+
+      if (badge) {
+        badge.style.display = isFree ? "inline-flex" : "none";
+      }
+
       autoSizeSelect(storageSelect);
     }
 
@@ -835,6 +868,22 @@ const openSettings = async () => {
 
   try {
     await refreshPlanFromServer();
+  } catch {}
+
+  // If user upgraded (Free -> Pro/Team/Enterprise) and cloud switch is pending,
+  // route to Google connect when not connected. After connect, OAuth return handler
+  // applies cloud mode automatically.
+  try {
+    const pending = localStorage.getItem("aurea_pending_storage_mode_v1");
+    const planNow = String(state.plan || "Free").trim();
+    const isFree = (planNow === "Free");
+    const googleOn = !!state.apps?.Google;
+
+    if (!isFree && pending === "cloud" && !googleOn) {
+      const rt = encodeURIComponent(`${window.location.origin}/`);
+      window.location.href = `/api/google/connect?returnTo=${rt}`;
+      return;
+    }
   } catch {}
 
   syncAccountUi();
@@ -2606,16 +2655,118 @@ const closeSettings = () => {
       const renderReportsAsDetails = (raw) => {
         const s0 = String(raw || "");
 
-        const lines0 = s0.split("\n");
+        const normalizeAureaAnswer = (src) => {
+          const s = String(src || "").replace(/\r/g, "");
+
+          // 1) remove headings
+          const rawLines = s.split("\n");
+          const a = [];
+          for (const ln of rawLines) {
+            const t = String(ln || "");
+            const tt = t.trim();
+
+            // hide "AI Repo" labels inside the answer text
+            if (/^\[?\s*AI\s*(Repo|Rep|Reports)\s*\]?$/.test(tt)) continue;
+            if (/^AI\s*(Repo|Rep|Reports)\s*[:：]\s*/.test(tt)) continue;
+
+            // remove markdown headings
+            if (/^#{1,6}\s+/.test(tt)) continue;
+
+            // remove "next step" type lines (ja/en)
+            if (/^(次の一手|次は|次に|Next(\s+step)?|What\s+to\s+do\s+next)\b/i.test(tt)) continue;
+
+            a.push(t);
+          }
+
+          // 2) limit questions to at most 1 line (keep first question line)
+          let keptQuestion = false;
+          const b = [];
+          for (const ln of a) {
+            const tt = String(ln || "").trim();
+            const isQ = /[？?]\s*$/.test(tt);
+            if (isQ) {
+              if (keptQuestion) continue;
+              keptQuestion = true;
+              b.push(ln);
+              continue;
+            }
+            b.push(ln);
+          }
+
+          // 3) build: conclusion (1-3 lines) + bullets (max 5). Drop the rest.
+          const nonEmpty = b.map(x => String(x || "")).filter(x => x.trim() !== "");
+          if (!nonEmpty.length) return "";
+
+          // conclusion: take first block up to first bullet/numbered line
+          const isBulletLike = (t) => /^[-•*]\s+/.test(t) || /^・\s*/.test(t) || /^\d+\.\s+/.test(t);
+          const conclusion = [];
+          const rest = [];
+
+          for (const ln of b) {
+            const tt = String(ln || "").trim();
+            if (!tt) {
+              if (conclusion.length) break;
+              continue;
+            }
+            if (isBulletLike(tt)) break;
+            conclusion.push(tt);
+            if (conclusion.length >= 3) break;
+          }
+
+          // collect bullets from entire text (after first 1-3 conclusion lines)
+          for (const ln of b) {
+            const tt = String(ln || "").trim();
+            if (!tt) continue;
+            if (isBulletLike(tt)) rest.push(tt);
+          }
+
+          const bullets = rest
+            .map((t) => {
+              const m1 = /^[-•*]\s+(.+)$/.exec(t);
+              if (m1) return `- ${m1[1].trim()}`;
+              const m2 = /^・\s*(.+)$/.exec(t);
+              if (m2) return `- ${m2[1].trim()}`;
+              const m3 = /^\d+\.\s+(.+)$/.exec(t);
+              if (m3) return `- ${m3[1].trim()}`;
+              return "";
+            })
+            .filter(Boolean)
+            .slice(0, 5);
+
+          // fallback bullets: if none exist, derive from remaining sentences (very conservative)
+          if (!bullets.length) {
+            const tail = b.join("\n").trim();
+            const tail2 = tail.replace(/\s+/g, " ").trim();
+
+            // split by "。" / "." / ";" roughly
+            const parts = tail2.split(/(?<=[。．\.])\s+/).map(x => x.trim()).filter(Boolean);
+            const use = parts.slice(1, 6).map(x => `- ${x.replace(/[。．\.]\s*$/, "")}`);
+            for (const u of use) bullets.push(u);
+            while (bullets.length > 5) bullets.pop();
+          }
+
+          // 4) short/empty guard: keep very short answers as-is
+          const compact = b.join("\n").trim();
+          if (compact.length <= 80) {
+            return compact;
+          }
+
+          // 5) enforce block length: keep it short by design (conclusion + <=5 bullets only)
+          const out = [];
+          if (conclusion.length) out.push(conclusion.join("\n"));
+          if (bullets.length) out.push(bullets.join("\n"));
+
+          const result = out.filter(Boolean).join("\n\n").trim();
+          return result || compact;
+        };
+
+        const normalized = normalizeAureaAnswer(s0);
+
+        const lines0 = String(normalized || s0).split("\n");
         const lines = [];
         for (const ln of lines0) {
           const t0 = String(ln || "").trim();
           if (!t0) { lines.push(""); continue; }
-
-          // hide "AI Repo" labels inside the answer text
-          if (/^\[?\s*AI\s*(Repo|Rep|Reports)\s*\]?$/.test(t0)) continue;
-          if (/^AI\s*(Repo|Rep|Reports)\s*[:：]\s*/.test(t0)) continue;
-
           lines.push(String(ln || ""));
         }
 
@@ -3088,21 +3239,27 @@ const closeSettings = () => {
         `;
         actions.appendChild(act);
 
-        const rep = document.createElement("div");
-        rep.className = "act";
-        rep.setAttribute("role", "button");
-        rep.setAttribute("tabindex", "0");
-        rep.dataset.action = "open-reports";
-        rep.dataset.mid = m.id;
-        rep.innerHTML = `
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M7 3h8l3 3v15a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3z"></path>
-            <path d="M15 3v5a3 3 0 0 0 3 3h3"></path>
-            <path d="M8 13h8"></path>
-            <path d="M8 17h8"></path>
-          </svg>
-        `;
-        actions.appendChild(rep);
+        const showReportsIcon =
+          (state.settings?.showAiReports !== false)
+          && !!(m?.meta && typeof m.meta === "object" && String(m.meta.reportsRaw || "").trim());
+
+        if (showReportsIcon) {
+          const rep = document.createElement("div");
+          rep.className = "act";
+          rep.setAttribute("role", "button");
+          rep.setAttribute("tabindex", "0");
+          rep.dataset.action = "open-reports";
+          rep.dataset.mid = m.id;
+          rep.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M7 3h8l3 3v15a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3z"></path>
+              <path d="M15 3v5a3 3 0 0 0 3 3h3"></path>
+              <path d="M8 13h8"></path>
+              <path d="M8 17h8"></path>
+            </svg>
+          `;
+          actions.appendChild(rep);
+        }
 
         wrap.appendChild(actions);
       }
@@ -4128,6 +4285,26 @@ const closeSettings = () => {
         body: JSON.stringify(payload),
         signal: apiChatAbortCtrl.signal
       });
+
+      // non-ok: do not surface internal error text; show user-safe message
+      if (!r.ok) {
+        try { statuses.GPT = "running"; } catch {}
+        try { setAiRunIndicator({ phase: "run", statuses }); } catch {}
+
+        const safe = ((state.settings?.language || "ja") === "en")
+          ? "I can’t continue this action yet.\n\n- A required connection or configuration is not ready.\n- Please try again later.\n- If this keeps happening, open Settings and check connections."
+          : "この操作はまだ続行できない。\n\n- 必要な接続/設定が未完了\n- しばらくして再試行\n- 続く場合は設定で接続状況を確認";
+
+        updateMessage(m.id, safe);
+        try { statuses.GPT = "done"; } catch {}
+        try { clearAiRunIndicator(); } catch {}
+        try { window.__AUREA_STREAMING_MID__ = ""; } catch {}
+        renderChat();
+        setStreaming(false);
+        unlockAndClearAttachments();
+        renderSidebar();
+        return;
+      }
 
       const j = await r.json().catch(() => null);
 
@@ -5390,9 +5567,13 @@ const hideAuthGate = () => {
       theme: "dark",        // "system" | "light" | "dark"
       sendMode: "cmdEnter", // "cmdEnter" | "enter"
       dataStorage: "cloud", // "cloud" | "local"
-      language: "ja"        // "ja" | "en"
+      language: "ja",       // "ja" | "en"
+      showAiReports: false
     };
   }
+
+  // v1: AI Reports はデフォルト非表示（既存ユーザーも含めて強制OFF）
+  state.settings.showAiReports = false;
 
   // 保存先（クラウド/端末内）を常に優先（起動時に反映）
   state.settings.dataStorage = getStorageMode();
@@ -5813,6 +5994,31 @@ const hideAuthGate = () => {
     }
 
     // Data storage dropdown (cloud/local)
+    const isGoogleConnected = () => {
+      try { return !!state.apps?.Google; } catch { return false; }
+    };
+
+    const isFreePlan = () => {
+      const p = String(state.plan || "Free").trim();
+      return (p === "Free");
+    };
+
+    const openPlanModalForCloudStorage = () => {
+      // bindSettings() 実行後は btnBilling に click handler が付与されるので、ここはクリックで開く
+      const btn = document.getElementById("btnBilling");
+      if (btn) {
+        try { btn.click(); } catch {}
+        return;
+      }
+
+      // fallback: 既に存在する場合は直接開く
+      const m = document.getElementById("aureaPlanModal");
+      if (m) {
+        m.style.display = "flex";
+        m.setAttribute("aria-hidden", "false");
+      }
+    };
+
     const setStorageMode = (nextMode) => {
       const mode = (nextMode === "local") ? "local" : "cloud";
       const prevKey = getStorageKey();
@@ -5828,6 +6034,13 @@ const hideAuthGate = () => {
       void prevKey;
     };
 
+    const startGoogleConnectForCloudStorage = () => {
+      try { localStorage.setItem(PENDING_STORAGE_MODE_KEY, "cloud"); } catch {}
+
+      const rt = encodeURIComponent(`${window.location.origin}/`);
+      window.location.href = `/api/google/connect?returnTo=${rt}`;
+    };
+
     // select は openSettings() 後に動的生成されるので委譲で拾う
     document.addEventListener("change", (e) => {
       const t = e.target;
@@ -5835,7 +6048,40 @@ const hideAuthGate = () => {
       if (t.id !== "dataStorageSelect") return;
 
       const v = String(t.value || "cloud").trim();
-      setStorageMode(v === "local" ? "local" : "cloud");
+      const next = (v === "local") ? "local" : "cloud";
+
+      // cloud is Pro gated
+      if (next === "cloud" && isFreePlan()) {
+        // 変更は保留（UIは元に戻す）
+        try { t.value = "local"; } catch {}
+        state.settings.dataStorage = "local";
+        try { localStorage.setItem(STORAGE_PREF_KEY, "local"); } catch {}
+        saveSettings();
+        syncSettingsUi();
+
+        // after upgrade, user can retry switching to cloud
+        try { localStorage.setItem(PENDING_STORAGE_MODE_KEY, "cloud"); } catch {}
+
+        // Billing（プラン選択）を先に開く
+        openPlanModalForCloudStorage();
+        return;
+      }
+
+      // cloud requires Google connect
+      if (next === "cloud" && !isGoogleConnected()) {
+        // 変更は保留（UIは元に戻す）
+        try { t.value = "local"; } catch {}
+        state.settings.dataStorage = "local";
+        try { localStorage.setItem(STORAGE_PREF_KEY, "local"); } catch {}
+        saveSettings();
+        syncSettingsUi();
+
+        // Googleアカウントへ接続へ遷移
+        startGoogleConnectForCloudStorage();
+        return;
+      }
+
+      setStorageMode(next);
       syncSettingsUi();
     }, true);
 
@@ -6368,6 +6614,16 @@ const hideAuthGate = () => {
       if (svc === "google") state.apps.Google = true;
       if (svc === "gmail") state.apps.Gmail = true;
       if (svc === "drive") state.apps["Google Drive"] = true;
+
+      // apply pending "cloud" switch after successful Google connect
+      try {
+        const pending = localStorage.getItem(PENDING_STORAGE_MODE_KEY);
+        if (pending === "cloud" && state.apps?.Google) {
+          localStorage.removeItem(PENDING_STORAGE_MODE_KEY);
+          localStorage.setItem(STORAGE_PREF_KEY, "cloud");
+          state.settings.dataStorage = "cloud";
+        }
+      } catch {}
 
       persistEverywhere();
 
