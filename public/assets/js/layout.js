@@ -1541,11 +1541,27 @@ const closeSettings = () => {
           ? `<span aria-hidden="true" style="width:${isSingle ? 72 : 44}px;height:${isSingle ? 44 : 44}px;border-radius:${imgR}px;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.12);background:rgba(255,60,60,.16);color:rgba(255,255,255,.92);font-size:10px;font-weight:700;letter-spacing:.04em;">PDF</span>`
           : `<span aria-hidden="true" style="width:${imgW}px;height:${imgH}px;border-radius:${imgR}px;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.03);opacity:.85;">📄</span>`;
 
+      // GPT-like: preview only (no filename / no meta)
       chip.innerHTML = `
-        ${thumb}
-        <span style="opacity:.92;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(name)}</span>
-        <span style="opacity:.62;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(meta)}</span>
-        <span data-action="remove" aria-label="remove" style="opacity:.72;margin-left:auto;display:inline-flex;width:22px;height:22px;align-items:center;justify-content:center;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);">×</span>
+        <span style="position:relative;display:inline-block;">
+          ${thumb}
+          <span data-action="remove" aria-label="remove" style="
+            position:absolute;
+            top:${isSingle ? "6px" : "4px"};
+            right:${isSingle ? "6px" : "4px"};
+            width:${isSingle ? "26px" : "22px"};
+            height:${isSingle ? "26px" : "22px"};
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            border-radius:999px;
+            border:1px solid rgba(255,255,255,.14);
+            background:rgba(0,0,0,.28);
+            color:rgba(255,255,255,.92);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+          ">×</span>
+        </span>
       `;
 
       const rm = chip.querySelector("[data-action='remove']");
@@ -1582,28 +1598,45 @@ const closeSettings = () => {
 
     wrap.innerHTML = `
       <div style="
-        width:min(420px, calc(100% - 24px));
-        background:rgba(20,21,22,96);
-        border:1px solid rgba(255,255,255,10);
+        width:min(860px, calc(100% - 24px));
+        max-height:calc(100vh - 64px);
+        background:rgba(20,21,22,.96);
+        border:1px solid rgba(255,255,255,.10);
         border-radius:18px;
-        box-shadow:0 10px 30px rgba(0,0,0,45);
+        box-shadow:0 10px 30px rgba(0,0,0,.45);
         overflow:hidden;
         backdrop-filter: blur(14px);
         -webkit-backdrop-filter: blur(14px);
-        color:rgba(255,255,255,92);
-        font-family: -apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Hiragino Sans','Noto Sans JP',sans-serif;
+        color:rgba(255,255,255,.92);
+        font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Hiragino Sans','Noto Sans JP',sans-serif;
+        display:flex;
+        flex-direction:column;
+        min-width:0;
       ">
-        <div style="padding:14px 16px;font-size:14px;font-weight:600;">${L_CONFIRM}</div>
-        <div id="aureaConfirmText" style="padding:14px 16px;font-size:13px;line-height:1.6;color:rgba(255,255,255,82);"></div>
-        <div style="padding:14px 16px;display:flex;justify-content:flex-end;gap:10px;">
-          <button id="aureaConfirmCancel" type="button" style="
-            height:34px;padding:0 12px;border-radius:10px;border:1px solid rgba(255,255,255,12);
-            background:transparent;color:rgba(255,255,255,80);cursor:pointer;font-size:13px;
-          ">${L_CANCEL}</button>
-          <button id="aureaConfirmOk" type="button" style="
-            height:34px;padding:0 12px;border-radius:10px;border:1px solid rgba(255,255,255,12);
-            background:rgba(255,255,255,08);color:rgba(255,255,255,92);cursor:pointer;font-size:13px;
-          ">${L_OK}</button>
+        <div style="
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          gap:10px;
+          padding:14px 16px;
+          border-bottom:1px solid rgba(255,255,255,.08);
+        ">
+          <div id="aureaAttachModalTitle" style="min-width:0;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+          <button type="button" data-action="close" style="
+            width:36px;height:36px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
+            background:rgba(255,255,255,.06);color:rgba(255,255,255,.92);
+            cursor:pointer;font-size:18px;line-height:34px;flex:0 0 auto;
+          ">×</button>
+        </div>
+
+        <div id="aureaAttachModalBody" style="padding:14px 16px;overflow:auto;min-height:0;flex:1 1 auto;"></div>
+
+        <div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,.08);display:flex;justify-content:flex-end;">
+          <button type="button" data-action="remove" style="
+            height:34px;padding:0 12px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
+            background:rgba(255,80,80,.12);color:rgba(255,255,255,.92);
+            cursor:pointer;font-size:13px;
+          ">Remove</button>
         </div>
       </div>
     `;
@@ -1621,13 +1654,13 @@ const closeSettings = () => {
       wrap.addEventListener("click", (e) => {
         const t = e.target;
 
-        if (t.closest("[data-action='close']")) {
+        if (t && t.closest && t.closest("[data-action='close']")) {
           e.preventDefault();
           closeAttachModal();
           return;
         }
 
-        if (t.closest("[data-action='remove']")) {
+        if (t && t.closest && t.closest("[data-action='remove']")) {
           e.preventDefault();
           const aid = wrap.dataset.aid || "";
           if (aid) removeAttachmentById(aid);
@@ -1720,9 +1753,28 @@ const closeSettings = () => {
     const list = Array.from(files || []).filter(f => f && typeof f.size === "number");
     if (!list.length) return;
 
+    const inferMimeFromName = (name) => {
+      const n = String(name || "").toLowerCase();
+      if (n.endsWith(".png")) return "image/png";
+      if (n.endsWith(".jpg") || n.endsWith(".jpeg")) return "image/jpeg";
+      if (n.endsWith(".webp")) return "image/webp";
+      if (n.endsWith(".gif")) return "image/gif";
+      if (n.endsWith(".bmp")) return "image/bmp";
+      if (n.endsWith(".svg")) return "image/svg+xml";
+      if (n.endsWith(".pdf")) return "application/pdf";
+      if (n.endsWith(".csv")) return "text/csv";
+      if (n.endsWith(".md")) return "text/markdown";
+      if (n.endsWith(".txt")) return "text/plain";
+      return "";
+    };
+
     for (const f of list) {
-      const mime = String(f.type || "").trim();
       const name = String(f.name || "file").trim();
+
+      // drag&drop で type が空になるケースがあるため補完
+      const mime0 = String(f.type || "").trim();
+      const mime = mime0 || inferMimeFromName(name);
+
       const kind = sniffKind(mime, name);
 
       // v1: image + small text files (txt/md/csv) keep dataUrl for payload/preview
@@ -1815,8 +1867,24 @@ const closeSettings = () => {
     };
 
     for (const a of src) {
+      const inferMimeFromName = (name) => {
+        const n = String(name || "").toLowerCase();
+        if (n.endsWith(".png")) return "image/png";
+        if (n.endsWith(".jpg") || n.endsWith(".jpeg")) return "image/jpeg";
+        if (n.endsWith(".webp")) return "image/webp";
+        if (n.endsWith(".gif")) return "image/gif";
+        if (n.endsWith(".bmp")) return "image/bmp";
+        if (n.endsWith(".svg")) return "image/svg+xml";
+        if (n.endsWith(".pdf")) return "application/pdf";
+        if (n.endsWith(".csv")) return "text/csv";
+        if (n.endsWith(".md")) return "text/markdown";
+        if (n.endsWith(".txt")) return "text/plain";
+        return "";
+      };
+
       const name = String(a?.name || "file");
-      const mime = String(a?.mime || "");
+      const mime0 = String(a?.mime || "");
+      const mime = mime0 || inferMimeFromName(name);
       const size = Number(a?.size || 0) || 0;
       const kind = String(a?.kind || "file");
 
