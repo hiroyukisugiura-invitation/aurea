@@ -4537,6 +4537,36 @@ const closeSettings = () => {
 
     const rawAttachments = takePendingAttachments();
 
+    // ===== AI run indicator: attachments send should ALWAYS kick off (GPT-like) =====
+    try {
+      const hasImageAttachment = Array.isArray(rawAttachments) && rawAttachments.some((a) => {
+        if (!a) return false;
+        if (String(a.kind || "") === "image") return true;
+        if (String(a.route || "") === "image") return true;
+        const f = a.file;
+        const mt = String(f && f.type ? f.type : "");
+        if (mt && mt.startsWith("image/")) return true;
+        const nm = String(a.name || "");
+        return /\.(png|jpg|jpeg|webp|gif|bmp|svg)$/i.test(nm);
+      });
+
+      // label: analyzing
+      setStreamingLabelMode("analyzing");
+
+      // show GPT running immediately, others queued
+      const st = {
+        GPT: "running",
+        Gemini: "queued",
+        Claude: "queued",
+        Perplexity: "queued",
+        Mistral: "queued",
+        Sora: hasImageAttachment ? "skipped" : "queued"
+      };
+
+      noteAiBecameRunning("GPT");
+      setAiRunIndicator({ phase: "run", statuses: st });
+    } catch {}
+
     // 添付を履歴に保存（Fileオブジェクトは保存しない）
     if (userMsg && Array.isArray(rawAttachments) && rawAttachments.length) {
       try {
