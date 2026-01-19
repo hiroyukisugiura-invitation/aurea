@@ -5698,8 +5698,11 @@ if (authResult === "ok") {
     };
   }
 
-  // v1: AI Reports はデフォルト非表示（既存ユーザーも含めて強制OFF）
-  state.settings.showAiReports = false;
+  // v1: AI Reports はデフォルト非表示（初回のみ false）
+  // 既存ユーザーの設定は localStorage / state を尊重する
+  if (typeof state.settings.showAiReports !== "boolean") {
+    state.settings.showAiReports = false;
+  }
 
   // 保存先（クラウド/端末内）を常に優先（起動時に反映）
   state.settings.dataStorage = getStorageMode();
@@ -6042,7 +6045,7 @@ if (authResult === "ok") {
     if (chkAi) {
       chkAi.addEventListener("change", () => {
         state.settings.showAiReports = !!chkAi.checked;
-        save(state);
+        try { persistEverywhereMain(); } catch { save(state); }
         renderView();
       });
     }
