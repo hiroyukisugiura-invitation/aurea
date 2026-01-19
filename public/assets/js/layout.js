@@ -390,11 +390,11 @@ const clearAiRunIndicator = () => {
 
     // account
     user: {
-      displayName: "User name",
-      userName: "@Username",
-      email: "user@dmain.com",
-      trustedDevice: "MacBook Pro ・ Japan ・ Chrome",
-      deviceTrusted: true
+      displayName: "",
+      userName: "",
+      email: "",
+      trustedDevice: "",
+      deviceTrusted: false
     }
   });
 
@@ -5459,26 +5459,71 @@ const hideAuthGate = () => {
     setInvite({ token: String(inviteToken), receivedAt: nowISO() });
   }
 
-  // login.html からの戻り（OKなら入場、ERRORならGateに留める）
-  if (authResult === "ok") {
-    // company invite は一度成功したら破棄（再利用防止）
-    clearInvite();
+// login.html からの戻り（OKなら入場、ERRORならGateに留める）
+if (authResult === "ok") {
+  // company invite は一度成功したら破棄（再利用防止）
+  clearInvite();
 
-    setAuthState({
-      loggedIn: true,
-      mode: getAuthMode() || (inviteToken ? "company" : "personal"),
-      email: authEmail || "",
-      uid: authUid || "",
-      authedAt: nowISO()
-    });
+  const email = String(authEmail || "").trim();
+  const uid = String(authUid || "").trim();
 
-    // Gate解除
-    setGateMessage("");
-    hideAuthGate();
+  setAuthState({
+    loggedIn: true,
+    mode: getAuthMode() || (inviteToken ? "company" : "personal"),
+    email,
+    uid,
+    authedAt: nowISO()
+  });
 
-    // クエリ掃除（履歴汚染防止）
-    history.replaceState({}, document.title, "/");
-  } else if (authResult === "error") {
+  // ===== UI用 user 情報を state に反映（初回ユーザー体験のため必須）=====
+  try {
+    if (!state.user || typeof state.user !== "object") state.user = {};
+
+    // email
+    state.user.email = email;
+
+    // displayName（Google表示名はこの戻りでは取れないので、初回はメールのローカル部を使う）
+    if (!String(state.user.displayName || "").trim()) {
+      const local = email ? email.split("@")[0] : "";
+      state.user.displayName = local || "";
+    }
+
+    // userName は空のまま（ユーザーが設定で入力）
+    if (state.user.userName == null) state.user.userName = "";
+
+    // trusted device は初回は「この端末」として扱う（固定値は禁止）
+    const ua = String(navigator.userAgent || "");
+    const isChrome = /Chrome\//.test(ua) && !/Edg\//.test(ua) && !/OPR\//.test(ua);
+    const isSafari = /Safari\//.test(ua) && !/Chrome\//.test(ua);
+    const isEdge = /Edg\//.test(ua);
+    const isFirefox = /Firefox\//.test(ua);
+
+    const browser =
+      isEdge ? "Edge" :
+      isChrome ? "Chrome" :
+      isFirefox ? "Firefox" :
+      isSafari ? "Safari" : "Browser";
+
+    const platform = String(navigator.platform || "").trim() || "Device";
+
+    state.user.trustedDevice = `${platform} ・ ${browser}`;
+    state.user.deviceTrusted = true;
+
+    save(state);
+  } catch {}
+
+  // Gate解除
+  setGateMessage("");
+  hideAuthGate();
+
+  // 反映
+  try { syncAccountUi(); } catch {}
+  try { syncSettingsUi(); } catch {}
+
+  // クエリ掃除（履歴汚染防止）
+  history.replaceState({}, document.title, "/");
+} else if (authResult === "error") {
+
     // エラー文言（再招待ボタン等は一切出さない）
     let msg = "ログインに失敗しました。管理者に確認してください。";
 
@@ -5571,11 +5616,11 @@ const hideAuthGate = () => {
 
   if (!state.user) {
     state.user = {
-      displayName: "User name",
-      userName: "@user name",
-      email: "user@domain.com",
-      trustedDevice: "MacBook Pro ・ Japan ・ Chrome",
-      deviceTrusted: true
+      displayName: "",
+      userName: "",
+      email: "",
+      trustedDevice: "",
+      deviceTrusted: false
     };
   }
 
