@@ -563,6 +563,30 @@ app.get("/api/user/plan", async (req, res) => {
   }
 });
 
+/* ================= User profile (UI) ================= */
+app.get("/api/user/profile", async (req, res) => {
+  try {
+    const uid = String(req.query?.uid || "").trim();
+    if (!uid) {
+      res.status(400).json({ ok: false, reason: "missing_uid" });
+      return;
+    }
+
+    const snap = await db.collection("users").doc(uid).get();
+    const d = snap.exists ? (snap.data() || {}) : {};
+
+    const profile = {
+      displayName: String(d.displayName || "").trim(),
+      userName: String(d.userName || "").trim(),
+      email: String(d.email || "").trim()
+    };
+
+    res.json({ ok: true, profile });
+  } catch {
+    res.status(400).json({ ok: false, reason: "failed" });
+  }
+});
+
 app.get("/google/connect", connectGoogle("google"));
 app.get("/gmail/connect", connectGoogle("gmail"));
 app.get("/drive/connect", connectGoogle("drive"));

@@ -696,43 +696,94 @@ const clearAiRunIndicator = () => {
     applyTheme();
   };
 
-  const syncAccountUi = () => {
-    const u = state.user || {};
+const syncAccountUi = () => {
+  const u = state.user || {};
 
-    // sidebar user card
-    const sbName = document.querySelector(".user-card .user-meta .name");
-    const sbPlan = document.querySelector(".user-card .user-meta .plan");
-    if (sbName && u.displayName) sbName.textContent = u.displayName;
-    if (sbPlan && state.plan) sbPlan.textContent = state.plan;
+  const safeText = (v) => String(v ?? "").trim();
 
-    // user pop head
-    const popName = document.querySelector(".user-pop .uhead .n");
-    const popMail = document.querySelector(".user-pop .uhead .m");
-    if (popName && u.displayName) popName.textContent = u.displayName;
-    if (popMail && u.email) popMail.textContent = u.email;
+  // ===== avatar (initials) =====
+  const makeInitials = () => {
+    const dn = safeText(u.displayName);
+    const em = safeText(u.email);
 
-    // settings account inputs / fields
-    const dn = document.getElementById("displayName");
-    const un = document.getElementById("userName");
-    if (dn && u.displayName != null) dn.value = u.displayName;
-    if (un && u.userName != null) un.value = u.userName;
+    const src = dn || (em ? em.split("@")[0] : "");
+    const s = src.replace(/[^A-Za-z0-9\u3040-\u30ff\u4e00-\u9faf]/g, "").trim();
 
-    const planV = document.querySelector(".panel-account .section[aria-label='プラン'] .row .l .v");
-    if (planV && state.plan) planV.textContent = state.plan;
+    if (!s) return "--";
 
-    const emailV = document.querySelector(".panel-account .section[aria-label='サインイン'] .row .l .v");
-    if (emailV && u.email) emailV.textContent = u.email;
-
-    const devV = document.querySelector(".panel-account .section[aria-label='信頼できるデバイス'] .row .l .v");
-    if (devV) devV.textContent = u.deviceTrusted ? (u.trustedDevice || "") : "なし";
-
-    const devBtn = document.getElementById("btnRevokeDevice");
-    if (devBtn) {
-      devBtn.disabled = !u.deviceTrusted;
-      devBtn.style.opacity = u.deviceTrusted ? "" : ".45";
-      devBtn.style.cursor = u.deviceTrusted ? "" : "not-allowed";
+    // Latin: take first 2 chars uppercased
+    const latin = s.match(/[A-Za-z0-9]/g);
+    if (latin && latin.length) {
+      const a = latin[0] || "";
+      const b = latin[1] || "";
+      return (a + b).toUpperCase();
     }
+
+    // JP: take first 2 chars
+    return s.slice(0, 2);
   };
+
+  const avatarEl =
+    document.querySelector("[data-user-avatar]")
+    || document.querySelector(".user-card .avatar");
+
+  if (avatarEl) avatarEl.textContent = makeInitials();
+
+  // ===== sidebar user card =====
+  const sbName =
+    document.querySelector("[data-user-name]")
+    || document.querySelector(".user-card .user-meta .name");
+
+  const sbPlan =
+    document.querySelector("[data-user-plan]")
+    || document.querySelector(".user-card .user-meta .plan");
+
+  const dnText = safeText(u.displayName) || "—";
+  const planText = safeText(state.plan) || "Free";
+
+  if (sbName) sbName.textContent = dnText;
+  if (sbPlan) sbPlan.textContent = planText;
+
+  // ===== user pop head =====
+  const popName =
+    document.querySelector(".user-pop .uhead .n")
+    || document.querySelector(".user-pop [data-user-name]");
+
+  const popMail =
+    document.querySelector(".user-pop .uhead .m")
+    || document.querySelector(".user-pop [data-user-email]");
+
+  if (popName) popName.textContent = dnText;
+  if (popMail) popMail.textContent = safeText(u.email) || "—";
+
+  // ===== settings account inputs / fields =====
+  const dn = document.getElementById("displayName");
+  const un = document.getElementById("userName");
+  if (dn && u.displayName != null) dn.value = safeText(u.displayName);
+  if (un && u.userName != null) un.value = safeText(u.userName);
+
+  const planV = document.querySelector(".panel-account .section[aria-label='プラン'] .row .l .v");
+  if (planV) planV.textContent = planText;
+
+  const emailV =
+    document.querySelector(".panel-account .section[aria-label='サインイン'] .row .l .v")
+    || document.querySelector(".panel-account [data-user-email]");
+
+  if (emailV) emailV.textContent = safeText(u.email) || "—";
+
+  const devV =
+    document.querySelector(".panel-account .section[aria-label='信頼できるデバイス'] .row .l .v")
+    || document.querySelector(".panel-account [data-trusted-device]");
+
+  if (devV) devV.textContent = u.deviceTrusted ? (safeText(u.trustedDevice) || "—") : "—";
+
+  const devBtn = document.getElementById("btnRevokeDevice");
+  if (devBtn) {
+    devBtn.disabled = !u.deviceTrusted;
+    devBtn.style.opacity = u.deviceTrusted ? "" : ".45";
+    devBtn.style.cursor = u.deviceTrusted ? "" : "not-allowed";
+  }
+};
 
   const applyI18n = () => {
     const lang = state.settings?.language || "ja";
@@ -6725,6 +6776,17 @@ if (authResult === "ok") {
     }
   })();
 
+  const persistEverywhereMain = () => {
+    try {
+      // save() は選択中の保存先に書く
+      save(state);
+
+      // 念のため両方へも書く（cloud/localズレ対策）
+      localStorage.setItem("aurea_main_v1_cloud", JSON.stringify(state));
+      localStorage.setItem("aurea_main_v1_local", JSON.stringify(state));
+    } catch {}
+  };
+
   const refreshPlanFromServer = async () => {
     try {
       // auth 未読込ページ（billing=success 等）は何もしない
@@ -6738,20 +6800,44 @@ if (authResult === "ok") {
       const j = await r.json().catch(() => null);
       if (j && j.ok && j.plan) {
         state.plan = String(j.plan || "Free").trim() || "Free";
-
-        try {
-          // save() は選択中の保存先に書く
-          save(state);
-
-          // 念のため両方へも書く（cloud/localズレ対策）
-          localStorage.setItem("aurea_main_v1_cloud", JSON.stringify(state));
-          localStorage.setItem("aurea_main_v1_local", JSON.stringify(state));
-        } catch {}
-
+        persistEverywhereMain();
         try { syncAccountUi(); } catch {}
         try { syncSettingsUi(); } catch {}
       }
+    } catch {}
+  };
 
+  // Profile は未実装でも壊さない（404/非OKは無視）
+  const refreshProfileFromServer = async () => {
+    try {
+      if (typeof getAuthState !== "function") return;
+
+      const st = getAuthState() || {};
+      const uid = String(st.uid || "").trim();
+      if (!st.loggedIn || !uid) return;
+
+      const r = await fetch(`/api/user/profile?uid=${encodeURIComponent(uid)}`, { method: "GET" });
+      if (!r || !r.ok) return;
+
+      const j = await r.json().catch(() => null);
+      if (!j || !j.ok) return;
+
+      // 想定: { ok:true, profile:{ displayName,userName,email } }
+      const p = (j.profile && typeof j.profile === "object") ? j.profile : j;
+
+      const dn = String(p.displayName || "").trim();
+      const un = String(p.userName || "").trim();
+      const em = String(p.email || "").trim();
+
+      if (!state.user || typeof state.user !== "object") state.user = {};
+
+      if (em) state.user.email = em;
+      if (dn) state.user.displayName = dn;
+      if (un) state.user.userName = un;
+
+      persistEverywhereMain();
+      try { syncAccountUi(); } catch {}
+      try { syncSettingsUi(); } catch {}
     } catch {}
   };
 
@@ -6773,6 +6859,7 @@ if (authResult === "ok") {
 
       // 初回ロード
       await refreshPlanFromServer();
+      await refreshProfileFromServer();
 
       // billing=success の直後は webhook 反映に遅延があるため追加で再取得
       try {
@@ -6781,18 +6868,14 @@ if (authResult === "ok") {
           for (let i = 0; i < 12; i++) {
             await new Promise((r) => setTimeout(r, 500));
             await refreshPlanFromServer();
+            await refreshProfileFromServer();
             if (String(state.plan || "") === "Pro") break;
           }
         }
       } catch {}
 
       try {
-        // save() は選択中の保存先に書く
-        save(state);
-
-        // 念のため両方へも書く（cloud/localズレ対策）
-        localStorage.setItem("aurea_main_v1_cloud", JSON.stringify(state));
-        localStorage.setItem("aurea_main_v1_local", JSON.stringify(state));
+        persistEverywhereMain();
       } catch {}
 
       syncAccountUi();
