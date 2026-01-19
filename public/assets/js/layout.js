@@ -1123,12 +1123,15 @@ const closeSettings = () => {
   };
 
   const parseReportsBlocks = (raw) => {
-    const s = String(raw || "");
-    const idx = s.indexOf("\nReports:\n");
-    if (idx < 0) return { head: s, blocks: [] };
+    const s = String(raw || "").replace(/\r/g, "");
 
+    // "Reports:\n" が先頭でも途中でも拾う（前に改行が無いケース対策）
+    const m = /(?:^|\n)Reports:\n/.exec(s);
+    if (!m) return { head: s, blocks: [] };
+
+    const idx = m.index + (m[0].startsWith("\n") ? 1 : 0); // "\n" を除いた位置
     const head = s.slice(0, idx);
-    const tail = s.slice(idx + "\nReports:\n".length);
+    const tail = s.slice(idx + "Reports:\n".length);
 
     const lines = tail.split("\n");
     const blocks = [];
@@ -3244,6 +3247,10 @@ const closeSettings = () => {
         ensureAiMeteorFx();
 
         const isStreamingMsg = (typeof window.__AUREA_STREAMING_MID__ === "string" && window.__AUREA_STREAMING_MID__ === m.id);
+
+        // ストリーミング中は assistant の丸アイコン(::before)を消すため class を付与
+        if (isStreamingMsg) wrap.classList.add("is-streaming");
+        else wrap.classList.remove("is-streaming");
 
         // ストリーミング中だけ流星ラベルを生成（乱立防止）
         const existed = wrap.querySelector(".aurea-streammark");
