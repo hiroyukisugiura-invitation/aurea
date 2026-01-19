@@ -24,6 +24,21 @@ const demoThreads = [
 
 let activeThread = 't1';
 
+function isAiReportsEnabled() {
+  try {
+    const raw =
+      localStorage.getItem("aurea_main_v1_cloud") ||
+      localStorage.getItem("aurea_main_v1_local");
+
+    if (!raw) return false;
+
+    const st = JSON.parse(raw);
+    return !!st?.settings?.showAiReports;
+  } catch {
+    return false;
+  }
+}
+
 function threadName(t) {
   return getLang() === 'ja' ? t.name_ja : t.name_en;
 }
@@ -82,15 +97,18 @@ function addMsg(role, content, { isCode = false } = {}) {
 
   const copyLabel = getLang() === 'ja' ? 'コピー' : 'Copy';
 
-  wrap.innerHTML = `
-    <div class="msg-head">
-      <div class="msg-role">${roleLabel}</div>
-      <div class="msg-actions">
-        <button class="mini-btn" data-copy type="button">${copyLabel}</button>
-      </div>
+const showRepo = isAiReportsEnabled();
+
+wrap.innerHTML = `
+  <div class="msg-head">
+    <div class="msg-role">${roleLabel}</div>
+    <div class="msg-actions">
+      ${showRepo ? `<span class="repo-badge">Repo</span>` : ``}
+      <button class="mini-btn" data-copy type="button">${copyLabel}</button>
     </div>
-    <div class="msg-body">${isCode ? `<pre><code>${escapeHtml(content)}</code></pre>` : formatText(content)}</div>
-  `;
+  </div>
+  <div class="msg-body">${isCode ? `<pre><code>${escapeHtml(content)}</code></pre>` : formatText(content)}</div>
+`;
 
   wrap.querySelector('[data-copy]')?.addEventListener('click', async () => {
     try {
@@ -227,3 +245,6 @@ window.addEventListener('storage', (e) => {
     renderThreads();
   }
 });
+
+renderThreads();
+setActiveThread('t1');
