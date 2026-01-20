@@ -715,6 +715,12 @@ body.theme-light .ai-run-indicator .ai-run__ai--more{
 }
 .msg.user{ justify-content:flex-end; }
 
+/* assistant の左「丸」(疑似要素) を常時消す */
+.msg.assistant::before{
+  display:none !important;
+  content:none !important;
+}
+
 .bubble{
   max-width:100%;
   border-radius:18px;

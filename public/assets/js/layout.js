@@ -5130,6 +5130,13 @@ board?.addEventListener("drop", async (e) => {
       await addFilesAsAttachments(files);
       try { renderAttachTray(); } catch {}
       try { updateSendButtonVisibility(); } catch {}
+
+      // ★ GPT同等：どこにドロップしても即解析開始（テキスト空でも送る）
+      try {
+        setTimeout(() => {
+          send();
+        }, 0);
+      } catch {}
     }
   }, true);
 
