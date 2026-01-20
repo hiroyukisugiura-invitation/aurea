@@ -1490,27 +1490,28 @@ body.theme-light .images-empty{
   display:inline-flex;
   align-items:center;
   justify-content:flex-end;
-  gap:0;
-  border:1px solid var(--line);
-  border-radius:999px;
-  overflow:hidden;
+  gap:6px;                         /* ピル分離 */
+  border:0;                        /* 枠を消す */
+  border-radius:0;
+  overflow:visible;
   background:transparent;
   flex:0 0 auto;
   max-width:100%;
 }
 
 .settings-modal .panel-data .storage-opt{
-  height:32px;
-  padding:0 12px;
-  border:0;
+  height:34px;
+  padding:0 14px;
+  border-radius:999px;             /* 削除ボタンと同じ丸み */
+  border:1px solid var(--line);
   background:transparent;
   color:var(--text);
-  opacity:.85;
+  font-size:13px;
+  opacity:.88;
   cursor:pointer;
   user-select:none;
   white-space:nowrap;
 
-  /* overlap防止：必ずボタンとして横並びで描画 */
   display:inline-flex;
   align-items:center;
   justify-content:center;
@@ -1519,11 +1520,13 @@ body.theme-light .images-empty{
 }
 
 .settings-modal .panel-data .storage-opt:hover{
-  background:var(--soft);
+  background:rgba(0,0,0,.05);      /* .btn.danger:hover と同系 */
 }
 
 .settings-modal .panel-data .storage-opt.is-active{
-  background:rgba(255,255,255,.10);
+  background:var(--dangerBg);      /* 削除ボタン寄せ */
+  border-color:var(--dangerBd);
+  color:var(--text);
   opacity:1;
 }
 
