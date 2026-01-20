@@ -90,8 +90,9 @@ const ensureAiMeteorFx = () => {
       100% { transform: translateX(96px); opacity: 0; }
     }
 
-    /* streaming中だけ既存の丸（assistantマーク）を消す（UI乱立防止） */
-    .msg.assistant.is-streaming::before{
+    /* streaming中（解析/生成ラベル表示中）は既存の丸（assistantマーク）を消す */
+    .msg.assistant.is-streaming::before,
+    .msg.assistant.has-streammark::before{
       display:none !important;
       content:none !important;
     }
@@ -1970,6 +1971,85 @@ const closeSettings = () => {
     return "file";
   };
 
+  /* ================= attach import progress (GPT-like) ================= */
+  let attachImportTick = null;
+  let attachImporting = false;
+
+  const ensureAttachImportPill = () => {
+    let el = document.getElementById("aureaAttachImportPill");
+    if (el) return el;
+
+    el = document.createElement("div");
+    el.id = "aureaAttachImportPill";
+    el.style.cssText = `
+      position:fixed;
+      left:50%;
+      bottom:92px;
+      transform:translateX(-50%);
+      z-index:10040;
+      display:none;
+      align-items:center;
+      gap:10px;
+      padding:10px 12px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(20,21,22,.86);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      color:rgba(255,255,255,.92);
+      font-size:12px;
+      font-family: -apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Hiragino Sans','Noto Sans JP',sans-serif;
+      max-width:min(520px, calc(100% - 24px));
+    `;
+
+    el.innerHTML = `
+      <div style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">ファイルを取り込み中</div>
+      <div style="font-variant-numeric:tabular-nums;opacity:.85;" data-pct>0%</div>
+      <div style="width:160px;height:6px;border-radius:999px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.10);overflow:hidden;">
+        <div data-bar style="width:0%;height:100%;border-radius:999px;background:rgba(255,255,255,.65);"></div>
+      </div>
+    `;
+
+    document.body.appendChild(el);
+    return el;
+  };
+
+  const startAttachImportPill = () => {
+    const el = ensureAttachImportPill();
+    const pctEl = el.querySelector("[data-pct]");
+    const barEl = el.querySelector("[data-bar]");
+    if (pctEl) pctEl.textContent = "0%";
+    if (barEl) barEl.style.width = "0%";
+    el.style.display = "flex";
+
+    let p = 0;
+    try { clearInterval(attachImportTick); } catch {}
+    attachImportTick = setInterval(() => {
+      p = Math.min(90, p + (p < 60 ? 6 : 2));
+      if (pctEl) pctEl.textContent = `${p}%`;
+      if (barEl) barEl.style.width = `${p}%`;
+      if (p >= 90) {
+        try { clearInterval(attachImportTick); } catch {}
+        attachImportTick = null;
+      }
+    }, 220);
+  };
+
+  const finishAttachImportPill = () => {
+    const el = ensureAttachImportPill();
+    const pctEl = el.querySelector("[data-pct]");
+    const barEl = el.querySelector("[data-bar]");
+    if (pctEl) pctEl.textContent = "100%";
+    if (barEl) barEl.style.width = "100%";
+
+    setTimeout(() => {
+      el.style.display = "none";
+    }, 450);
+
+    try { clearInterval(attachImportTick); } catch {}
+    attachImportTick = null;
+  };
+
   const fileToDataUrl = (file) => new Promise((resolve) => {
     try {
       const fr = new FileReader();
@@ -2001,60 +2081,70 @@ const closeSettings = () => {
       return "";
     };
 
-    for (const f of list) {
-      const name = String(f.name || "file").trim();
+    attachImporting = true;
+    startAttachImportPill();
+    try { renderAttachTray(); } catch {}
 
-      // drag&drop で type が空になるケースがあるため補完
-      const mime0 = String(f.type || "").trim();
-      const mime = mime0 || inferMimeFromName(name);
+    try {
+      for (const f of list) {
+        const name = String(f.name || "file").trim();
 
-      const kind = sniffKind(mime, name);
+        // drag&drop で type が空になるケースがあるため補完
+        const mime0 = String(f.type || "").trim();
+        const mime = mime0 || inferMimeFromName(name);
 
-      // v1: image + small text files (txt/md/csv) keep dataUrl for payload/preview
-      let dataUrl = "";
+        const kind = sniffKind(mime, name);
 
-      const lower = name.toLowerCase();
-      const isTextLike =
-        mime.startsWith("text/") ||
-        mime === "text/csv" ||
-        mime === "text/html" ||
-        lower.endsWith(".txt") ||
-        lower.endsWith(".md") ||
-        lower.endsWith(".csv") ||
-        lower.endsWith(".html") ||
-        lower.endsWith(".htm");
+        // v1: image + small text files (txt/md/csv) keep dataUrl for payload/preview
+        let dataUrl = "";
 
-      if (kind === "image") {
-        // 8MB上限（UI負荷対策）
-        if ((f.size || 0) <= (8 * 1024 * 1024)) {
-          dataUrl = await fileToDataUrl(f);
+        const lower = name.toLowerCase();
+        const isTextLike =
+          mime.startsWith("text/") ||
+          mime === "text/csv" ||
+          mime === "text/html" ||
+          lower.endsWith(".txt") ||
+          lower.endsWith(".md") ||
+          lower.endsWith(".csv") ||
+          lower.endsWith(".html") ||
+          lower.endsWith(".htm");
+
+        if (kind === "image") {
+          // 8MB上限（UI負荷対策）
+          if ((f.size || 0) <= (8 * 1024 * 1024)) {
+            dataUrl = await fileToDataUrl(f);
+          }
+        } else if (isTextLike) {
+          // 512KB上限（即解析用）
+          if ((f.size || 0) <= (512 * 1024)) {
+            dataUrl = await fileToDataUrl(f);
+          }
         }
-      } else if (isTextLike) {
-        // 512KB上限（即解析用）
-        if ((f.size || 0) <= (512 * 1024)) {
-          dataUrl = await fileToDataUrl(f);
-        }
+
+        const isPdf = (mime === "application/pdf") || lower.endsWith(".pdf");
+        const route = (kind === "image") ? "image" : (isPdf ? "pdf" : (isTextLike ? "text" : "file"));
+
+        let fallback = "";
+        if (route === "text" && !dataUrl && (f.size || 0) > (512 * 1024)) fallback = "text_too_large_for_preview";
+        if (route === "image" && !dataUrl) fallback = "no_preview_data";
+        if (route === "pdf") fallback = ""; // pdfはプレビュー不要
+
+        pendingAttachments.push({
+          id: uid(),
+          file: f,
+          name,
+          size: f.size || 0,
+          mime,
+          kind,
+          route,
+          fallback,
+          dataUrl
+        });
       }
-
-      const isPdf = (mime === "application/pdf") || lower.endsWith(".pdf");
-      const route = (kind === "image") ? "image" : (isPdf ? "pdf" : (isTextLike ? "text" : "file"));
-
-      let fallback = "";
-      if (route === "text" && !dataUrl && (f.size || 0) > (512 * 1024)) fallback = "text_too_large_for_preview";
-      if (route === "image" && !dataUrl) fallback = "no_preview_data";
-      if (route === "pdf") fallback = ""; // pdfはプレビュー不要
-
-      pendingAttachments.push({
-        id: uid(),
-        file: f,
-        name,
-        size: f.size || 0,
-        mime,
-        kind,
-        route,
-        fallback,
-        dataUrl
-      });
+    } finally {
+      attachImporting = false;
+      try { renderAttachTray(); } catch {}
+      finishAttachImportPill();
     }
 
     renderAttachTray();
@@ -3379,8 +3469,13 @@ const closeSettings = () => {
         const isStreamingMsg = (typeof window.__AUREA_STREAMING_MID__ === "string" && window.__AUREA_STREAMING_MID__ === m.id);
 
         // ストリーミング中は assistant の丸アイコン(::before)を消すため class を付与
-        if (isStreamingMsg) wrap.classList.add("is-streaming");
-        else wrap.classList.remove("is-streaming");
+        if (isStreamingMsg) {
+          wrap.classList.add("is-streaming");
+          wrap.classList.add("has-streammark");
+        } else {
+          wrap.classList.remove("is-streaming");
+          wrap.classList.remove("has-streammark");
+        }
 
         // ストリーミング中だけ流星ラベルを生成（乱立防止）
         const existed = wrap.querySelector(".aurea-streammark");
