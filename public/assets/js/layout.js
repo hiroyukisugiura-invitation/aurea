@@ -2189,16 +2189,23 @@ const closeSettings = () => {
   let attachLocked = false;
 
   const takePendingAttachments = () => {
-    // 送信中はチップを残して「解析中」表示にする（GPT準拠の安心感）
-    attachLocked = true;
+    // GPT同様：送信した瞬間に Ask から添付を消す（添付はユーザーメッセージ側に移る）
+    const out = pendingAttachments.slice();
+
+    attachLocked = false;
+    pendingAttachments = [];
+
     try { renderAttachTray(); } catch {}
-    return pendingAttachments.slice();
+    try { updateSendButtonVisibility(); } catch {}
+
+    return out;
   };
 
   const unlockAndClearAttachments = () => {
     attachLocked = false;
     pendingAttachments = [];
     try { renderAttachTray(); } catch {}
+    try { updateSendButtonVisibility(); } catch {}
   };
 
   const buildAttachmentsPayload = async (atts) => {
@@ -3233,103 +3240,127 @@ const closeSettings = () => {
         };
 
         // Pending (Sora running)
-          if (
-            msg?.role === "assistant"
-            && raw0.startsWith("AUREA_IMAGE_PENDING\n")
-            && typeof window.__AUREA_STREAMING_MID__ === "string"
-            && window.__AUREA_STREAMING_MID__ === msg.id
-          ) {
-          ensureSoraPendingFx();
-
-          // ===== pseudo progress (GPT-like) =====
-          // NOTE: real progress is not available; this is for UX only.
-          // - 0 -> 90% smoothly
-          // - on completion, message changes to AUREA_IMAGE and this block disappears
-          try {
-            if (!window.__AUREA_IMG_PROGRESS__) window.__AUREA_IMG_PROGRESS__ = {};
-          } catch {}
-
+        // NOTE: 履歴表示では「生成中UI」を出さない（再読み込みで永久クルクルを防止）
+        if (msg?.role === "assistant" && raw0.startsWith("AUREA_IMAGE_PENDING\n")) {
           const mid = String(msg?.id || "");
-          const store = (() => {
-            try { return window.__AUREA_IMG_PROGRESS__ || {}; } catch { return {}; }
-          })();
 
-          if (mid && !store[mid]) {
-            store[mid] = { startedAt: Date.now() };
-            try { window.__AUREA_IMG_PROGRESS__ = store; } catch {}
+          const isThisStreaming =
+            (typeof window.__AUREA_STREAMING_MID__ === "string")
+            && window.__AUREA_STREAMING_MID__ === mid;
+
+          // 生成中の当事者メッセージだけ、クルクル/進捗を表示
+          if (isThisStreaming) {
+            ensureSoraPendingFx();
+
+            try {
+              if (!window.__AUREA_IMG_PROGRESS__) window.__AUREA_IMG_PROGRESS__ = {};
+            } catch {}
+
+            const store = (() => {
+              try { return window.__AUREA_IMG_PROGRESS__ || {}; } catch { return {}; }
+            })();
+
+            if (mid && !store[mid]) {
+              store[mid] = { startedAt: Date.now() };
+              try { window.__AUREA_IMG_PROGRESS__ = store; } catch {}
+            }
+
+            const calcPct = () => {
+              const now = Date.now();
+              const start = store[mid]?.startedAt ? Number(store[mid].startedAt) : now;
+              const t = Math.max(0, (now - start) / 1000);
+              const p = 5 + 85 * (1 - Math.exp(-t / 3.8));
+              return Math.max(0, Math.min(90, Math.round(p)));
+            };
+
+            const isEn = ((state.settings?.language || "ja") === "en");
+            const pct = calcPct();
+
+            const ensureProgressLoop = () => {
+              try {
+                if (window.__AUREA_IMG_PROGRESS_TICK__) return;
+                window.__AUREA_IMG_PROGRESS_TICK__ = setInterval(() => {
+                  const els = Array.from(document.querySelectorAll(".aurea-sora-progress"));
+                  if (!els.length) {
+                    try { clearInterval(window.__AUREA_IMG_PROGRESS_TICK__); } catch {}
+                    window.__AUREA_IMG_PROGRESS_TICK__ = null;
+                    return;
+                  }
+
+                  const st = (() => {
+                    try { return window.__AUREA_IMG_PROGRESS__ || {}; } catch { return {}; }
+                  })();
+
+                  const now = Date.now();
+
+                  for (const el of els) {
+                    const m = String(el.getAttribute("data-mid") || "");
+                    const start = st[m]?.startedAt ? Number(st[m].startedAt) : now;
+                    const t = Math.max(0, (now - start) / 1000);
+                    const p = 5 + 85 * (1 - Math.exp(-t / 3.8));
+                    const pct2 = Math.max(0, Math.min(90, Math.round(p)));
+
+                    const bar = el.querySelector(".aurea-sora-progress__bar");
+                    const txt = el.querySelector(".aurea-sora-progress__txt");
+
+                    if (bar) bar.style.width = `${pct2}%`;
+                    if (txt) txt.textContent = `${pct2}%`;
+                  }
+                }, 240);
+              } catch {}
+            };
+
+            ensureProgressLoop();
+
+            const lines = raw0.split("\n");
+            const prompt = String(lines.slice(1).join("\n") || "").trim();
+
+            const title = isEn ? "Creating image" : "画像を生成中";
+            const sub = isEn ? "Generating…" : "生成中…";
+
+            return `
+              <div class="ai-image-card" style="position:relative;">
+                <div class="aurea-sora-pending" aria-label="Generating image">
+                  <div class="aurea-sora-spinner" aria-hidden="true"></div>
+
+                  <div class="aurea-sora-progress" data-mid="${escHtml(mid)}">
+                    <div class="aurea-sora-progress__top">
+                      <div class="aurea-sora-progress__title">${escHtml(title)}</div>
+                      <div class="aurea-sora-progress__txt">${pct}%</div>
+                    </div>
+                    <div class="aurea-sora-progress__track">
+                      <div class="aurea-sora-progress__bar" style="width:${pct}%"></div>
+                    </div>
+                  </div>
+
+                  <div class="aurea-sora-pending-label">${escHtml(prompt || sub)}</div>
+                </div>
+              </div>
+            `.trim();
           }
 
-          const calcPct = () => {
-            const now = Date.now();
-            const start = store[mid]?.startedAt ? Number(store[mid].startedAt) : now;
-            const t = Math.max(0, (now - start) / 1000); // seconds
-            // fast -> slow curve, cap at 90
-            const p = 5 + 85 * (1 - Math.exp(-t / 3.8));
-            return Math.max(0, Math.min(90, Math.round(p)));
-          };
-
+          // 履歴表示：クルクルは出さず、静的表示にする
           const isEn = ((state.settings?.language || "ja") === "en");
-          const pct = calcPct();
-
-          // Ensure updater loop (DOM direct update; no rerender needed)
-          const ensureProgressLoop = () => {
-            try {
-              if (window.__AUREA_IMG_PROGRESS_TICK__) return;
-              window.__AUREA_IMG_PROGRESS_TICK__ = setInterval(() => {
-                const els = Array.from(document.querySelectorAll(".aurea-sora-progress"));
-                if (!els.length) {
-                  try { clearInterval(window.__AUREA_IMG_PROGRESS_TICK__); } catch {}
-                  window.__AUREA_IMG_PROGRESS_TICK__ = null;
-                  return;
-                }
-
-                const st = (() => {
-                  try { return window.__AUREA_IMG_PROGRESS__ || {}; } catch { return {}; }
-                })();
-
-                const now = Date.now();
-
-                for (const el of els) {
-                  const m = String(el.getAttribute("data-mid") || "");
-                  const start = st[m]?.startedAt ? Number(st[m].startedAt) : now;
-                  const t = Math.max(0, (now - start) / 1000);
-                  const p = 5 + 85 * (1 - Math.exp(-t / 3.8));
-                  const pct2 = Math.max(0, Math.min(90, Math.round(p)));
-
-                  const bar = el.querySelector(".aurea-sora-progress__bar");
-                  const txt = el.querySelector(".aurea-sora-progress__txt");
-
-                  if (bar) bar.style.width = `${pct2}%`;
-                  if (txt) txt.textContent = `${pct2}%`;
-                }
-              }, 240);
-            } catch {}
-          };
-
-          ensureProgressLoop();
-
           const lines = raw0.split("\n");
           const prompt = String(lines.slice(1).join("\n") || "").trim();
 
-          const title = isEn ? "Creating image" : "画像を生成中";
-          const sub = isEn ? "Generating…" : "生成中…";
-
           return `
             <div class="ai-image-card" style="position:relative;">
-              <div class="aurea-sora-pending" aria-label="Generating image">
-                <div class="aurea-sora-spinner" aria-hidden="true"></div>
-
-                <div class="aurea-sora-progress" data-mid="${escHtml(mid)}">
-                  <div class="aurea-sora-progress__top">
-                    <div class="aurea-sora-progress__title">${escHtml(title)}</div>
-                    <div class="aurea-sora-progress__txt">${pct}%</div>
-                  </div>
-                  <div class="aurea-sora-progress__track">
-                    <div class="aurea-sora-progress__bar" style="width:${pct}%"></div>
-                  </div>
+              <div style="
+                width:100%;
+                aspect-ratio:1/1;
+                border-radius:18px;
+                border:1px solid rgba(255,255,255,.10);
+                background:rgba(255,255,255,.04);
+                display:flex;
+                align-items:flex-end;
+                justify-content:flex-start;
+                padding:12px;
+                box-sizing:border-box;
+              ">
+                <div style="font-size:12px;opacity:.72;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;">
+                  ${escHtml(prompt || (isEn ? "Generation was interrupted." : "生成が中断されました。"))}
                 </div>
-
-                <div class="aurea-sora-pending-label">${escHtml(prompt || sub)}</div>
               </div>
             </div>
           `.trim();
