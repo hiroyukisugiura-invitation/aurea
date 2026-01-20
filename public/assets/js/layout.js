@@ -4443,9 +4443,24 @@ const closeSettings = () => {
       return /\.(png|jpg|jpeg|webp|gif|bmp|svg)$/i.test(nm);
     });
 
+    // ===== prompt guard (attachments must be analyzable even if text is empty) =====
+    const promptText = (() => {
+      const t = String(userText || "").trim();
+      if (t) return t;
+
+      if (Array.isArray(rawAttachments) && rawAttachments.length) {
+        return ((state.settings?.language || "ja") === "en")
+          ? "Analyze the attached file."
+          : "添付ファイルを解析して。";
+      }
+
+      return "";
+    })();
+
     // ===== Sora image generation (front complete) =====
     // NOTE: generation is allowed only when NO image attachments (GPT-like: attached images mean "analyze")
-    if (!hasImageAttachment && shouldUseSora(userText)) {
+    if (!hasImageAttachment && shouldUseSora(promptText)) {
+
       // 送信直後に「生成中」を可視化（待ち時間の不安解消）
       try {
         updateMessage(m.id, `AUREA_IMAGE_PENDING\n${String(userText || "").trim()}`);
@@ -4461,7 +4476,7 @@ const closeSettings = () => {
 
       try {
         const payload = {
-          prompt: userText,
+          prompt: promptText,
           attachments: await buildAttachmentsPayload(rawAttachments),
           context: {
             view: state.view,
@@ -4642,7 +4657,7 @@ const closeSettings = () => {
     let apiMap = null;
     try {
       const payload = {
-        prompt: userText,
+        prompt: promptText,
         attachments: await buildAttachmentsPayload(rawAttachments),
         context: {
           view: state.view,
