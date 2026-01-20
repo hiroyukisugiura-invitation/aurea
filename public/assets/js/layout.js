@@ -92,18 +92,32 @@ const ensureAiMeteorFx = () => {
 
     /* streaming中（解析/生成ラベル表示中）は既存の丸（assistantマーク）を消す */
     .msg.assistant.is-streaming::before,
-    .msg.assistant.has-streammark::before{
+    .msg.assistant.has-streammark::before,
+    .msg.assistant.is-streaming::after,
+    .msg.assistant.has-streammark::after{
       display:none !important;
       content:none !important;
     }
 
-    /* ::before以外で丸が出ているケースもまとめて消す（UI乱立防止） */
+    /* ::before以外で丸が出ているケースもまとめて消す（UI乱立防止）
+       - bubbleの疑似要素(::before/::after)
+       - 既存avatar系(.avatar/.dot)
+       - 想定外の「丸専用」要素（.msg-icon / .assistant-icon / .circle）も保険で潰す
+    */
     .msg.assistant.is-streaming .dot,
     .msg.assistant.has-streammark .dot,
     .msg.assistant.is-streaming .avatar,
     .msg.assistant.has-streammark .avatar,
+    .msg.assistant.is-streaming .msg-icon,
+    .msg.assistant.has-streammark .msg-icon,
+    .msg.assistant.is-streaming .assistant-icon,
+    .msg.assistant.has-streammark .assistant-icon,
+    .msg.assistant.is-streaming .circle,
+    .msg.assistant.has-streammark .circle,
     .msg.assistant.is-streaming .bubble::before,
-    .msg.assistant.has-streammark .bubble::before{
+    .msg.assistant.has-streammark .bubble::before,
+    .msg.assistant.is-streaming .bubble::after,
+    .msg.assistant.has-streammark .bubble::after{
       display:none !important;
       content:none !important;
     }
@@ -331,14 +345,32 @@ const clearAiRunIndicator = () => {
 
   const load = () => {
     try {
+      // 1) 優先：現在の保存先キー
       const raw = localStorage.getItem(getStorageKey());
-      if (!raw) return null;
-      return JSON.parse(raw);
-    } catch { return null; }
+      if (raw) return JSON.parse(raw);
+
+      // 2) フォールバック：反対側キー（保存先切替で空に見える事故を防ぐ）
+      const otherKey = (getStorageKey() === STORAGE_KEY_LOCAL) ? STORAGE_KEY_CLOUD : STORAGE_KEY_LOCAL;
+      const raw2 = localStorage.getItem(otherKey);
+      if (raw2) return JSON.parse(raw2);
+
+      return null;
+    } catch {
+      return null;
+    }
   };
 
   const save = (s) => {
-    try { localStorage.setItem(getStorageKey(), JSON.stringify(s)); } catch {}
+    try {
+      const v = JSON.stringify(s);
+
+      // 1) 現在の保存先
+      localStorage.setItem(getStorageKey(), v);
+
+      // 2) 反対側にも同期（切替で履歴/画像が消えたように見える事故を防ぐ）
+      localStorage.setItem(STORAGE_KEY_LOCAL, v);
+      localStorage.setItem(STORAGE_KEY_CLOUD, v);
+    } catch {}
   };
 
   /* ================= state ================= */
@@ -4278,8 +4310,8 @@ const closeSettings = () => {
   };
 
   const shouldUseSora = (userText) => {
-    // unify with isImageGenerationRequest()
-    return isImageGenerationRequest(userText);
+    // テキストが画像生成意図なら必ず Sora を使う（履歴/既存画像の有無に影響されない）
+    return isImageGenerationRequest(String(userText || ""));
   };
 
   const setStreaming = (on) => {
@@ -4413,7 +4445,7 @@ const closeSettings = () => {
 
     // ===== Sora image generation (front complete) =====
     // NOTE: generation is allowed only when NO image attachments (GPT-like: attached images mean "analyze")
-    if (!hasImageAttachment && isImageGenerationRequest(userText)) {
+    if (!hasImageAttachment && shouldUseSora(userText)) {
       // 送信直後に「生成中」を可視化（待ち時間の不安解消）
       try {
         updateMessage(m.id, `AUREA_IMAGE_PENDING\n${String(userText || "").trim()}`);
@@ -4458,12 +4490,21 @@ const closeSettings = () => {
         try { apiChatAbortCtrl?.abort(); } catch {}
         apiChatAbortCtrl = new AbortController();
 
-        const r = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-          signal: apiChatAbortCtrl.signal
-        });
+        const __imgTimeout = setTimeout(() => {
+          try { apiChatAbortCtrl.abort(); } catch {}
+        }, 25000);
+
+        let r = null;
+        try {
+          r = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+            signal: apiChatAbortCtrl.signal
+          });
+        } finally {
+          try { clearTimeout(__imgTimeout); } catch {}
+        }
 
         const j = await r.json().catch(() => null);
         const url = String(j?.image?.url || "").trim();
