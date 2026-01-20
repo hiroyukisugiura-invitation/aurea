@@ -5026,6 +5026,7 @@ const closeSettings = () => {
     if (files) {
       await addFilesAsAttachments(files);
       try { renderAttachTray(); } catch {}
+      try { updateSendButtonVisibility(); } catch {}
     }
   }, true);
 
@@ -5064,6 +5065,7 @@ const closeSettings = () => {
     if (files) {
       await addFilesAsAttachments(files);
       try { renderAttachTray(); } catch {}
+      try { updateSendButtonVisibility(); } catch {}
     }
   }, true);
 
