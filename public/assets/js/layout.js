@@ -3233,7 +3233,12 @@ const closeSettings = () => {
         };
 
         // Pending (Sora running)
-        if (msg?.role === "assistant" && raw0.startsWith("AUREA_IMAGE_PENDING\n")) {
+          if (
+            msg?.role === "assistant"
+            && raw0.startsWith("AUREA_IMAGE_PENDING\n")
+            && typeof window.__AUREA_STREAMING_MID__ === "string"
+            && window.__AUREA_STREAMING_MID__ === msg.id
+          ) {
           ensureSoraPendingFx();
 
           // ===== pseudo progress (GPT-like) =====
@@ -4532,9 +4537,9 @@ const closeSettings = () => {
       unlockAndClearAttachments();
       renderSidebar();
       return;
-    }
+      }
 
-    const runId = ++multiAiRunId;
+      const runId = ++multiAiRunId;
 
     const statuses = {};
     MULTI_AI.forEach((a) => (statuses[a.name] = "queued"));
