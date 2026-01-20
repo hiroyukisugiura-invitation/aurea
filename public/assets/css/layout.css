@@ -1509,6 +1509,13 @@ body.theme-light .images-empty{
   cursor:pointer;
   user-select:none;
   white-space:nowrap;
+
+  /* overlap防止：必ずボタンとして横並びで描画 */
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 auto;
+  min-width:72px;
 }
 
 .settings-modal .panel-data .storage-opt:hover{
@@ -2574,14 +2581,23 @@ body.view-project:not(.has-chat) .scroll-down-btn{
   overflow:hidden;
   background:rgba(20,21,22,.6);
   border:1px solid rgba(255,255,255,.12);
+
+  /* 余白（黒帯）を消して“線”を出さない */
+  aspect-ratio: 1 / 1;
 }
+
 .ai-image-card img{
   width:100%;
-  max-height:360px;
-  object-fit:contain;
+  height:100%;
+  max-height:none;
+
+  /* contain をやめて、枠いっぱいに表示（黒帯が出ない） */
+  object-fit:cover;
+
   display:block;
   background:rgba(0,0,0,.18);
 }
+
 .ai-image-caption{
   padding:8px 12px;
   font-size:12px;

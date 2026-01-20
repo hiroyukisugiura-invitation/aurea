@@ -618,73 +618,24 @@ const clearAiRunIndicator = () => {
       dataNow.textContent = onLocal ? tr("dataNowLocal") : tr("dataNowCloud");
     }
 
-    const ensureStorageSelect = () => {
-      let sel = document.getElementById("dataStorageSelect");
-      if (sel) return sel;
-
-      const panel = document.querySelector(".settings-modal .panel-data");
-      if (!panel) return null;
-
-      // 「クラウド」「端末内」ボタンの親に差し込む（IDが無くても動く）
-      const btns = Array.from(panel.querySelectorAll("button"));
-      const cloudBtn = btns.find(b => (b.textContent || "").trim() === "クラウド") || null;
-      const localBtn = btns.find(b => (b.textContent || "").trim() === "端末内") || null;
-
-      const host = cloudBtn?.parentElement || localBtn?.parentElement;
-      if (!host) return null;
-
-      // wrap（badge表示用）
-      const wrap = document.createElement("div");
-      wrap.className = "data-storage-wrap";
-      wrap.id = "dataStorageWrap";
-
-      const badge = document.createElement("span");
-      badge.className = "data-storage-badge";
-      badge.id = "dataStorageBadge";
-      badge.textContent = "🔒 Pro";
-      wrap.appendChild(badge);
-
-      sel = document.createElement("select");
-      sel.id = "dataStorageSelect";
-      sel.className = "select";
-      sel.setAttribute("aria-label", "データの保存先");
-      sel.innerHTML = `
-        <option value="cloud">クラウド</option>
-        <option value="local">端末内</option>
-      `;
-
-      // 既存の2ボタンは非表示（レイアウトは保持）
-      if (cloudBtn) cloudBtn.style.display = "none";
-      if (localBtn) localBtn.style.display = "none";
-
-      wrap.appendChild(sel);
-      host.appendChild(wrap);
-
-      return sel;
-    };
-
-    const storageSelect = ensureStorageSelect();
-    if (storageSelect) {
-      storageSelect.value = onLocal ? "local" : "cloud";
-
-      // Pro gated hint (visual only)
-      const planNow = String(state.plan || "Free").trim();
-      const isFree = (planNow === "Free");
-
+    // Data storage (Cloud / Local) — use existing toggle buttons in index.html
+    // Remove legacy injected select if it exists (prevents overlap)
+    try {
+      const sel = document.getElementById("dataStorageSelect");
       const wrap = document.getElementById("dataStorageWrap");
-      const badge = document.getElementById("dataStorageBadge");
+      if (sel) sel.remove();
+      if (wrap) wrap.remove();
+    } catch {}
 
-      if (wrap) {
-        if (isFree) wrap.setAttribute("data-locked", "1");
-        else wrap.removeAttribute("data-locked");
-      }
+    // show original buttons (in case they were hidden by older code)
+    const btnCloud = document.getElementById("btnStorageCloud");
+    const btnLocal = document.getElementById("btnStorageLocal");
+    if (btnCloud) btnCloud.style.display = "";
+    if (btnLocal) btnLocal.style.display = "";
 
-      if (badge) {
-        badge.style.display = isFree ? "inline-flex" : "none";
-      }
-
-      autoSizeSelect(storageSelect);
-    }
+    // active state
+    if (btnCloud) btnCloud.classList.toggle("is-active", !onLocal);
+    if (btnLocal) btnLocal.classList.toggle("is-active", onLocal);
 
     // Apps status
     const appCards = Array.from(document.querySelectorAll(".panel-apps .apps-grid .saas"));
@@ -6472,49 +6423,41 @@ if (authResult === "ok") {
       window.location.href = `/api/google/connect?returnTo=${rt}`;
     };
 
-    // select は openSettings() 後に動的生成されるので委譲で拾う
-    document.addEventListener("change", (e) => {
-      const t = e.target;
-      if (!(t instanceof Element)) return;
-      if (t.id !== "dataStorageSelect") return;
+    // Use existing buttons in index.html (btnStorageCloud / btnStorageLocal)
+    const btnCloud = document.getElementById("btnStorageCloud");
+    const btnLocal = document.getElementById("btnStorageLocal");
 
-      const v = String(t.value || "cloud").trim();
-      const next = (v === "local") ? "local" : "cloud";
+    const applyToggleUi = (mode) => {
+      const isLocal = (mode === "local");
+      if (btnCloud) btnCloud.classList.toggle("is-active", !isLocal);
+      if (btnLocal) btnLocal.classList.toggle("is-active", isLocal);
+      syncSettingsUi();
+    };
 
+    btnCloud?.addEventListener("click", () => {
       // cloud is Pro gated
-      if (next === "cloud" && isFreePlan()) {
-        // 変更は保留（UIは元に戻す）
-        try { t.value = "local"; } catch {}
-        state.settings.dataStorage = "local";
-        try { localStorage.setItem(STORAGE_PREF_KEY, "local"); } catch {}
-        saveSettings();
-        syncSettingsUi();
-
-        // after upgrade, user can retry switching to cloud
+      if (isFreePlan()) {
         try { localStorage.setItem(PENDING_STORAGE_MODE_KEY, "cloud"); } catch {}
-
-        // Billing（プラン選択）を先に開く
         openPlanModalForCloudStorage();
+        applyToggleUi("local");
         return;
       }
 
       // cloud requires Google connect
-      if (next === "cloud" && !isGoogleConnected()) {
-        // 変更は保留（UIは元に戻す）
-        try { t.value = "local"; } catch {}
-        state.settings.dataStorage = "local";
-        try { localStorage.setItem(STORAGE_PREF_KEY, "local"); } catch {}
-        saveSettings();
-        syncSettingsUi();
-
-        // Googleアカウントへ接続へ遷移
+      if (!isGoogleConnected()) {
         startGoogleConnectForCloudStorage();
+        applyToggleUi("local");
         return;
       }
 
-      setStorageMode(next);
-      syncSettingsUi();
-    }, true);
+      setStorageMode("cloud");
+      applyToggleUi("cloud");
+    });
+
+    btnLocal?.addEventListener("click", () => {
+      setStorageMode("local");
+      applyToggleUi("local");
+    });
 
 /* ===== Apps ===== */
     const btnAddSaas = document.querySelector(".panel-apps .apps-header .btn");
