@@ -3184,26 +3184,30 @@ const closeSettings = () => {
               display:flex;
               flex-direction:column;
               gap:8px;
+              box-sizing:border-box;
             }
             .ai-image-card .aurea-sora-progress__top{
               display:flex;
               align-items:center;
               justify-content:space-between;
-              gap:10px;
+              gap:8px;
               font-size:12px;
               line-height:1;
               color:rgba(255,255,255,.86);
               opacity:.92;
               white-space:nowrap;
-              overflow:hidden;
-              text-overflow:ellipsis;
+
+              /* %を見切らせない */
+              overflow:visible;
             }
             .ai-image-card .aurea-sora-progress__title{
+              min-width:0;
               overflow:hidden;
               text-overflow:ellipsis;
             }
             .ai-image-card .aurea-sora-progress__txt{
               flex:0 0 auto;
+              margin-left:6px;
               font-variant-numeric: tabular-nums;
               opacity:.82;
             }
@@ -5009,22 +5013,30 @@ const closeSettings = () => {
     e.stopPropagation();
   }, true);
 
-  board?.addEventListener("drop", async (e) => {
-    const dt = e.dataTransfer;
-    if (!boardHasFileItems(dt)) return;
+board?.addEventListener("drop", async (e) => {
+  const dt = e.dataTransfer;
+  if (!boardHasFileItems(dt)) return;
 
-    e.preventDefault();
-    e.stopPropagation();
+  e.preventDefault();
+  e.stopPropagation();
 
-    try { ensureAttachTray(); } catch {}
+  try { ensureAttachTray(); } catch {}
 
-    const files = (dt && dt.files && dt.files.length) ? dt.files : null;
-    if (files) {
-      await addFilesAsAttachments(files);
-      try { renderAttachTray(); } catch {}
-      try { updateSendButtonVisibility(); } catch {}
-    }
-  }, true);
+  const files = (dt && dt.files && dt.files.length) ? dt.files : null;
+  if (files) {
+    await addFilesAsAttachments(files);
+    try { renderAttachTray(); } catch {}
+    try { updateSendButtonVisibility(); } catch {}
+
+    // ★ GPT同等：画像ドロップ時は自動で解析を開始
+    // テキストが空でも send() を呼ぶ
+    try {
+      setTimeout(() => {
+        send();
+      }, 0);
+    } catch {}
+  }
+}, true);
 
     /* ================= drag & drop (Ask bar attach) ================= */
   const hasFileItems = (dt) => {
