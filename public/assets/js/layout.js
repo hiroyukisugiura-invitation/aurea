@@ -4443,6 +4443,9 @@ const closeSettings = () => {
           const imgMsg = `AUREA_IMAGE\n${url}\n${p}`;
           updateMessage(m.id, imgMsg);
 
+          // ★ 完了ステータスを保存（リロード時の誤再稼働防止）
+          try { setMessageMeta(m.id, { status: "done", ai: "Sora" }); } catch {}
+
           try { setAiRunIndicator({ phase: "run", statuses: { Sora: "done", GPT: "queued" } }); } catch {}
           try { clearAiRunIndicator(); } catch {}
           try { window.__AUREA_STREAMING_MID__ = ""; } catch {}
@@ -4458,31 +4461,34 @@ const closeSettings = () => {
       } catch {}
 
       // fail-safe（backend未接続でも Sora発動＝必ず画像を返す）
-      try {
-        const p = String(userText || "").trim();
-        const url = makePlaceholderImageDataUrl(p);
-
         try {
-          addImageToLibrary({
-            prompt: p,
-            src: url,
-            from: { threadId: getActiveThreadId(), context: state.context }
-          });
+          const p = String(userText || "").trim();
+          const url = makePlaceholderImageDataUrl(p);
+
+          try {
+            addImageToLibrary({
+              prompt: p,
+              src: url,
+              from: { threadId: getActiveThreadId(), context: state.context }
+            });
+          } catch {}
+
+          const imgMsg = `AUREA_IMAGE\n${url}\n${p}`;
+          updateMessage(m.id, imgMsg);
+
+          // ★ 完了ステータスを保存（リロード時の誤再稼働防止）
+          try { setMessageMeta(m.id, { status: "done", ai: "Sora" }); } catch {}
+
+          try { setAiRunIndicator({ phase: "run", statuses: { Sora: "done", GPT: "queued" } }); } catch {}
+          try { clearAiRunIndicator(); } catch {}
+          try { window.__AUREA_STREAMING_MID__ = ""; } catch {}
+
+          renderChat();
+          setStreaming(false);
+          unlockAndClearAttachments();
+          renderSidebar();
+          return;
         } catch {}
-
-        const imgMsg = `AUREA_IMAGE\n${url}\n${p}`;
-        updateMessage(m.id, imgMsg);
-
-        try { setAiRunIndicator({ phase: "run", statuses: { Sora: "done", GPT: "queued" } }); } catch {}
-        try { clearAiRunIndicator(); } catch {}
-        try { window.__AUREA_STREAMING_MID__ = ""; } catch {}
-
-        renderChat();
-        setStreaming(false);
-        unlockAndClearAttachments();
-        renderSidebar();
-        return;
-      } catch {}
 
       // fail-safe（必ず placeholder 画像で返す）
       try {
@@ -4513,6 +4519,9 @@ const closeSettings = () => {
 
       // 最終フォールバック（UIを壊さない）
       updateMessage(m.id, `AUREA_IMAGE\n${makePlaceholderImageDataUrl(String(userText || "").trim())}\n${String(userText || "").trim()}`);
+
+      // ★ 完了ステータスを保存（リロード時の誤再稼働防止）
+      try { setMessageMeta(m.id, { status: "done", ai: "Sora" }); } catch {}
 
       try { setAiRunIndicator({ phase: "run", statuses: { Sora: "done", GPT: "queued" } }); } catch {}
       try { clearAiRunIndicator(); } catch {}
