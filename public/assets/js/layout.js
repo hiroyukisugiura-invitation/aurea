@@ -3056,6 +3056,55 @@ const closeSettings = () => {
               position:relative;
               z-index:1;
             }
+
+            /* ===== progress (GPT-like) ===== */
+            .ai-image-card .aurea-sora-progress{
+              position:absolute;
+              top:12px;
+              left:12px;
+              right:12px;
+              z-index:1;
+              pointer-events:none;
+              display:flex;
+              flex-direction:column;
+              gap:8px;
+            }
+            .ai-image-card .aurea-sora-progress__top{
+              display:flex;
+              align-items:center;
+              justify-content:space-between;
+              gap:10px;
+              font-size:12px;
+              line-height:1;
+              color:rgba(255,255,255,.86);
+              opacity:.92;
+              white-space:nowrap;
+              overflow:hidden;
+              text-overflow:ellipsis;
+            }
+            .ai-image-card .aurea-sora-progress__title{
+              overflow:hidden;
+              text-overflow:ellipsis;
+            }
+            .ai-image-card .aurea-sora-progress__txt{
+              flex:0 0 auto;
+              font-variant-numeric: tabular-nums;
+              opacity:.82;
+            }
+            .ai-image-card .aurea-sora-progress__track{
+              height:6px;
+              border-radius:999px;
+              background:rgba(255,255,255,.10);
+              border:1px solid rgba(255,255,255,.10);
+              overflow:hidden;
+            }
+            .ai-image-card .aurea-sora-progress__bar{
+              height:100%;
+              width:0%;
+              border-radius:999px;
+              background:rgba(255,255,255,.65);
+            }
+
             .ai-image-card .aurea-sora-pending-label{
               position:absolute;
               bottom:12px;
@@ -3078,14 +3127,95 @@ const closeSettings = () => {
         if (msg?.role === "assistant" && raw0.startsWith("AUREA_IMAGE_PENDING\n")) {
           ensureSoraPendingFx();
 
+          // ===== pseudo progress (GPT-like) =====
+          // NOTE: real progress is not available; this is for UX only.
+          // - 0 -> 90% smoothly
+          // - on completion, message changes to AUREA_IMAGE and this block disappears
+          try {
+            if (!window.__AUREA_IMG_PROGRESS__) window.__AUREA_IMG_PROGRESS__ = {};
+          } catch {}
+
+          const mid = String(msg?.id || "");
+          const store = (() => {
+            try { return window.__AUREA_IMG_PROGRESS__ || {}; } catch { return {}; }
+          })();
+
+          if (mid && !store[mid]) {
+            store[mid] = { startedAt: Date.now() };
+            try { window.__AUREA_IMG_PROGRESS__ = store; } catch {}
+          }
+
+          const calcPct = () => {
+            const now = Date.now();
+            const start = store[mid]?.startedAt ? Number(store[mid].startedAt) : now;
+            const t = Math.max(0, (now - start) / 1000); // seconds
+            // fast -> slow curve, cap at 90
+            const p = 5 + 85 * (1 - Math.exp(-t / 3.8));
+            return Math.max(0, Math.min(90, Math.round(p)));
+          };
+
+          const isEn = ((state.settings?.language || "ja") === "en");
+          const pct = calcPct();
+
+          // Ensure updater loop (DOM direct update; no rerender needed)
+          const ensureProgressLoop = () => {
+            try {
+              if (window.__AUREA_IMG_PROGRESS_TICK__) return;
+              window.__AUREA_IMG_PROGRESS_TICK__ = setInterval(() => {
+                const els = Array.from(document.querySelectorAll(".aurea-sora-progress"));
+                if (!els.length) {
+                  try { clearInterval(window.__AUREA_IMG_PROGRESS_TICK__); } catch {}
+                  window.__AUREA_IMG_PROGRESS_TICK__ = null;
+                  return;
+                }
+
+                const st = (() => {
+                  try { return window.__AUREA_IMG_PROGRESS__ || {}; } catch { return {}; }
+                })();
+
+                const now = Date.now();
+
+                for (const el of els) {
+                  const m = String(el.getAttribute("data-mid") || "");
+                  const start = st[m]?.startedAt ? Number(st[m].startedAt) : now;
+                  const t = Math.max(0, (now - start) / 1000);
+                  const p = 5 + 85 * (1 - Math.exp(-t / 3.8));
+                  const pct2 = Math.max(0, Math.min(90, Math.round(p)));
+
+                  const bar = el.querySelector(".aurea-sora-progress__bar");
+                  const txt = el.querySelector(".aurea-sora-progress__txt");
+
+                  if (bar) bar.style.width = `${pct2}%`;
+                  if (txt) txt.textContent = `${pct2}%`;
+                }
+              }, 240);
+            } catch {}
+          };
+
+          ensureProgressLoop();
+
           const lines = raw0.split("\n");
           const prompt = String(lines.slice(1).join("\n") || "").trim();
+
+          const title = isEn ? "Creating image" : "画像を生成中";
+          const sub = isEn ? "Generating…" : "生成中…";
 
           return `
             <div class="ai-image-card" style="position:relative;">
               <div class="aurea-sora-pending" aria-label="Generating image">
                 <div class="aurea-sora-spinner" aria-hidden="true"></div>
-                <div class="aurea-sora-pending-label">${escHtml(prompt || "Generating…")}</div>
+
+                <div class="aurea-sora-progress" data-mid="${escHtml(mid)}">
+                  <div class="aurea-sora-progress__top">
+                    <div class="aurea-sora-progress__title">${escHtml(title)}</div>
+                    <div class="aurea-sora-progress__txt">${pct}%</div>
+                  </div>
+                  <div class="aurea-sora-progress__track">
+                    <div class="aurea-sora-progress__bar" style="width:${pct}%"></div>
+                  </div>
+                </div>
+
+                <div class="aurea-sora-pending-label">${escHtml(prompt || sub)}</div>
               </div>
             </div>
           `.trim();
