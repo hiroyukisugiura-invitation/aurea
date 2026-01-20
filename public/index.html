@@ -421,11 +421,21 @@
                     <div class="v" id="dataStorageNow" data-i18n="dataNowCloud">現在：クラウド</div>
                   </div>
 
-                  <div style="display:flex;gap:8px;align-items:center;justify-content:flex-end">
-                    <button class="btn secondary" type="button" id="btnStorageCloud" style="height:32px;padding:0 12px;border-radius:999px;">
+                  <div class="storage-toggle" role="group" aria-label="保存先切替">
+                    <button
+                      class="storage-opt is-active"
+                      type="button"
+                      id="btnStorageCloud"
+                      data-storage="cloud"
+                    >
                       <span data-i18n="storageCloud">クラウド</span>
                     </button>
-                    <button class="btn secondary" type="button" id="btnStorageLocal" style="height:32px;padding:0 12px;border-radius:999px;">
+                    <button
+                      class="storage-opt"
+                      type="button"
+                      id="btnStorageLocal"
+                      data-storage="local"
+                    >
                       <span data-i18n="storageLocal">端末内</span>
                     </button>
                   </div>

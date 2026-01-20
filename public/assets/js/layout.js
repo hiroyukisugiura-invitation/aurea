@@ -97,6 +97,17 @@ const ensureAiMeteorFx = () => {
       content:none !important;
     }
 
+    /* ::before以外で丸が出ているケースもまとめて消す（UI乱立防止） */
+    .msg.assistant.is-streaming .dot,
+    .msg.assistant.has-streammark .dot,
+    .msg.assistant.is-streaming .avatar,
+    .msg.assistant.has-streammark .avatar,
+    .msg.assistant.is-streaming .bubble::before,
+    .msg.assistant.has-streammark .bubble::before{
+      display:none !important;
+      content:none !important;
+    }
+
     .msg.assistant{
       position:relative;
     }
@@ -2051,13 +2062,70 @@ const closeSettings = () => {
   };
 
   const fileToDataUrl = (file) => new Promise((resolve) => {
+    // drag&drop / スクショ貼り付け系で FileReader が空を返すケースの保険を入れる
+    const inferMimeFromName = (name) => {
+      const n = String(name || "").toLowerCase();
+      if (n.endsWith(".png")) return "image/png";
+      if (n.endsWith(".jpg") || n.endsWith(".jpeg")) return "image/jpeg";
+      if (n.endsWith(".webp")) return "image/webp";
+      if (n.endsWith(".gif")) return "image/gif";
+      if (n.endsWith(".bmp")) return "image/bmp";
+      if (n.endsWith(".svg")) return "image/svg+xml";
+      if (n.endsWith(".pdf")) return "application/pdf";
+      if (n.endsWith(".csv")) return "text/csv";
+      if (n.endsWith(".md")) return "text/markdown";
+      if (n.endsWith(".html") || n.endsWith(".htm")) return "text/html";
+      if (n.endsWith(".txt")) return "text/plain";
+      return "";
+    };
+
+    const arrayBufferToBase64 = (ab) => {
+      try {
+        const bytes = new Uint8Array(ab || new ArrayBuffer(0));
+        let binary = "";
+        const chunk = 0x8000;
+        for (let i = 0; i < bytes.length; i += chunk) {
+          binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+        }
+        return btoa(binary);
+      } catch {
+        return "";
+      }
+    };
+
+    const tryFallback = async () => {
+      try {
+        const ab = await file.arrayBuffer();
+        const b64 = arrayBufferToBase64(ab);
+        if (!b64) return "";
+
+        const mime0 = String(file?.type || "").trim();
+        const mime = mime0 || inferMimeFromName(file?.name || "") || "application/octet-stream";
+        return `data:${mime};base64,${b64}`;
+      } catch {
+        return "";
+      }
+    };
+
     try {
       const fr = new FileReader();
-      fr.onload = () => resolve(String(fr.result || ""));
-      fr.onerror = () => resolve("");
+      fr.onload = async () => {
+        const out = String(fr.result || "").trim();
+        if (out) {
+          resolve(out);
+          return;
+        }
+        const fb = await tryFallback();
+        resolve(fb);
+      };
+      fr.onerror = async () => {
+        const fb = await tryFallback();
+        resolve(fb);
+      };
       fr.readAsDataURL(file);
     } catch {
-      resolve("");
+      // last fallback
+      tryFallback().then(resolve).catch(() => resolve(""));
     }
   });
 

@@ -1484,6 +1484,42 @@ body.theme-light .images-empty{
   white-space:nowrap;
 }
 
+/* ===== Data storage toggle (Cloud / Local) ===== */
+/* index.html 側は storage-toggle / storage-opt を使っているため、ここで定義して被りを解消 */
+.settings-modal .panel-data .storage-toggle{
+  display:inline-flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:0;
+  border:1px solid var(--line);
+  border-radius:999px;
+  overflow:hidden;
+  background:transparent;
+  flex:0 0 auto;
+  max-width:100%;
+}
+
+.settings-modal .panel-data .storage-opt{
+  height:32px;
+  padding:0 12px;
+  border:0;
+  background:transparent;
+  color:var(--text);
+  opacity:.85;
+  cursor:pointer;
+  user-select:none;
+  white-space:nowrap;
+}
+
+.settings-modal .panel-data .storage-opt:hover{
+  background:var(--soft);
+}
+
+.settings-modal .panel-data .storage-opt.is-active{
+  background:rgba(255,255,255,.10);
+  opacity:1;
+}
+
 /* light theme */
 body.theme-light .settings-modal .panel-data .data-storage-wrap[data-locked="1"] .select{
   background:
@@ -1496,6 +1532,9 @@ body.theme-light .settings-modal .panel-data .data-storage-wrap[data-locked="1"]
 }
 body.theme-light .settings-modal .panel-data .data-storage-badge{
   background:rgba(0,0,0,.03);
+}
+body.theme-light .settings-modal .panel-data .storage-opt.is-active{
+  background:rgba(0,0,0,.08);
 }
 
 .settings-modal{
