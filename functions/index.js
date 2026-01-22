@@ -1592,6 +1592,19 @@ const makePlaceholderImageDataUrl = (prompt) => {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 };
 
+app.post("/api/chat", async (req, res) => {
+  try {
+    // /api/chat は /chat に統一
+    req.url = "/chat";
+    app.handle(req, res);
+    return;
+  } catch (e) {
+    const msg = String(e && e.message ? e.message : e || "");
+    res.status(500).json({ ok: false, reason: "chat_failed", msg });
+    return;
+  }
+});
+
 app.post("/chat", async (req, res) => {
       /* ================= AUREA Data Trainer (Embedding Match) ================= */
 
