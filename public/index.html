@@ -615,5 +615,308 @@
 
 <script src="/assets/js/i18n.js" defer></script>
 <script src="/assets/js/layout.js" defer></script>
+
+<script defer>
+(() => {
+  const $ = (sel, root=document) => root.querySelector(sel);
+
+  const chatRoot = $(".view-chat .chat");
+  const input = $(".ask textarea.in");
+  const sendBtn = $('.ask [data-action="send"]');
+  const stopBtn = $('.ask [data-action="stop"]');
+  const addFileBtn = $('.plus-pop [data-action="add-file"]');
+  const imagesGrid = $("#imagesGrid");
+
+  if (!chatRoot || !input || !sendBtn || !addFileBtn) return;
+
+  // ===== state =====
+  let pendingAttachments = [];
+  let busy = false;
+  let aborter = null;
+
+  const LS_IMAGES = "aurea_saved_images_v1";
+
+  const loadSavedImages = () => {
+    try {
+      const a = JSON.parse(localStorage.getItem(LS_IMAGES) || "[]");
+      return Array.isArray(a) ? a : [];
+    } catch { return []; }
+  };
+
+  const saveImageToLibrary = (img) => {
+    if (!img || !img.url) return;
+    const list = loadSavedImages();
+    list.unshift({
+      url: String(img.url),
+      prompt: String(img.prompt || ""),
+      ts: Date.now()
+    });
+    // 上限（暴走防止）
+    const out = list.slice(0, 200);
+    try { localStorage.setItem(LS_IMAGES, JSON.stringify(out)); } catch {}
+  };
+
+  const renderLibrary = () => {
+    if (!imagesGrid) return;
+    const list = loadSavedImages();
+
+    imagesGrid.innerHTML = "";
+    for (const it of list) {
+      const card = document.createElement("div");
+      card.className = "img-card";
+      card.style.cssText = "border:1px solid rgba(255,255,255,.10);border-radius:16px;overflow:hidden;background:rgba(255,255,255,.02)";
+
+      const img = document.createElement("img");
+      img.src = it.url;
+      img.alt = it.prompt || "AUREA image";
+      img.style.cssText = "display:block;width:100%;height:auto";
+
+      const meta = document.createElement("div");
+      meta.style.cssText = "padding:10px 12px;color:rgba(255,255,255,.72);font-size:12px;line-height:1.5";
+      meta.textContent = it.prompt || "";
+
+      card.appendChild(img);
+      card.appendChild(meta);
+      imagesGrid.appendChild(card);
+    }
+  };
+
+  const escapeHtml = (s) => String(s || "")
+    .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+
+  const appendMsg = ({ role, title, html }) => {
+    const wrap = document.createElement("div");
+    wrap.className = "msg" + (role === "user" ? " user" : "");
+
+    const head = document.createElement("div");
+    head.className = "msg-head";
+
+    const rr = document.createElement("div");
+    rr.className = "msg-role";
+    rr.textContent = title || (role === "user" ? "You" : "AUREA");
+
+    const actions = document.createElement("div");
+    actions.className = "msg-actions";
+
+    head.appendChild(rr);
+    head.appendChild(actions);
+
+    const body = document.createElement("div");
+    body.className = "msg-body";
+    body.innerHTML = html || "";
+
+    wrap.appendChild(head);
+    wrap.appendChild(body);
+
+    // chat containerが空なら最低限のラッパを作る（既存UIは壊さない）
+    if (!chatRoot.querySelector(".msgs")) {
+      const msgs = document.createElement("div");
+      msgs.className = "msgs";
+      chatRoot.innerHTML = "";
+      chatRoot.appendChild(msgs);
+    }
+
+    chatRoot.querySelector(".msgs").appendChild(wrap);
+    chatRoot.scrollTop = chatRoot.scrollHeight;
+    return wrap;
+  };
+
+  const setBusy = (v) => {
+    busy = !!v;
+    try { sendBtn.disabled = busy; } catch {}
+    if (stopBtn) stopBtn.style.display = busy ? "" : "none";
+  };
+
+  const fileToB64 = (file) => new Promise((resolve) => {
+    const r = new FileReader();
+    r.onload = () => {
+      const res = String(r.result || "");
+      const idx = res.indexOf("base64,");
+      resolve(idx >= 0 ? res.slice(idx + 7) : "");
+    };
+    r.onerror = () => resolve("");
+    r.readAsDataURL(file);
+  });
+
+  const detectRoute = (file) => {
+    const name = String(file?.name || "").toLowerCase();
+    const mime = String(file?.type || "");
+
+    if (mime.startsWith("image/")) return "image";
+    if (mime === "application/pdf" || name.endsWith(".pdf")) return "pdf";
+    if (mime === "text/csv" || name.endsWith(".csv")) return "text";
+    if (mime.startsWith("text/") || name.endsWith(".txt") || name.endsWith(".md") || name.endsWith(".html") || name.endsWith(".htm")) return "text";
+    return "file";
+  };
+
+  const pushFiles = async (files) => {
+    const arr = Array.from(files || []);
+    for (const f of arr) {
+      const b64 = await fileToB64(f);
+      const route = detectRoute(f);
+      const type = (route === "image") ? "image" : "file";
+
+      pendingAttachments.push({
+        type,
+        route,
+        name: f.name || "file",
+        mime: f.type || "",
+        size: f.size || 0,
+        data: b64
+      });
+    }
+  };
+
+  const stop = () => {
+    try { if (aborter) aborter.abort(); } catch {}
+    aborter = null;
+    setBusy(false);
+  };
+
+  const send = async ({ autoFromDrop = false } = {}) => {
+    if (busy) return;
+
+    const text = String(input.value || "").trim();
+    const hasAttach = pendingAttachments.length > 0;
+
+    if (!text && !hasAttach) return;
+
+    // UI: dropだけ送信でも、入力欄は空にする（Askに残さない）
+    if (autoFromDrop && !text) {
+      input.value = "";
+    }
+
+    // user message
+    appendMsg({
+      role: "user",
+      title: "You",
+      html: `<div>${escapeHtml(text || "")}</div>${hasAttach ? `<div style="margin-top:8px;opacity:.7;font-size:12px">(${pendingAttachments.length} attachments)</div>` : ""}`
+    });
+
+    setBusy(true);
+    aborter = new AbortController();
+
+    // assistant placeholder
+    const a = appendMsg({
+      role: "assistant",
+      title: "AUREA",
+      html: `<div style="opacity:.75">...</div>`
+    });
+
+    try {
+      const payload = {
+        prompt: text,
+        attachments: pendingAttachments.slice(),
+        context: {}
+      };
+
+      pendingAttachments = [];
+
+      const r = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: aborter.signal
+      });
+
+      const j = await r.json().catch(() => null);
+
+      if (!r.ok || !j || !j.ok) {
+        a.querySelector(".msg-body").innerHTML = `<div>${escapeHtml((j && j.reason) ? j.reason : "failed")}</div>`;
+        setBusy(false);
+        return;
+      }
+
+      // image response
+      if (j.image && j.image.url) {
+        const url = String(j.image.url);
+        const pr = String((j.image.prompt || text) || "");
+
+        a.querySelector(".msg-body").innerHTML =
+          `<div style="font-weight:700;margin-bottom:8px">AUREA Image</div>` +
+          `<div style="opacity:.75;margin-bottom:10px">${escapeHtml(pr)}</div>` +
+          `<img src="${escapeHtml(url)}" alt="AUREA Image" style="max-width:100%;border-radius:14px;border:1px solid rgba(255,255,255,.10)" />`;
+
+        // 保存（履歴/ライブラリ）
+        saveImageToLibrary({ url, prompt: pr });
+        renderLibrary();
+
+        setBusy(false);
+        return;
+      }
+
+      // text response
+      const result = j.result || {};
+      const gpt = (result && typeof result.GPT === "string") ? result.GPT : "";
+      const out = gpt || "";
+
+      a.querySelector(".msg-body").innerHTML = `<div>${escapeHtml(out).replaceAll("\n", "<br>")}</div>`;
+      setBusy(false);
+    } catch (e) {
+      a.querySelector(".msg-body").innerHTML = `<div>${escapeHtml("aborted_or_failed")}</div>`;
+      setBusy(false);
+      void e;
+    }
+  };
+
+  // ===== events =====
+  sendBtn.addEventListener("click", () => send());
+
+  if (stopBtn) stopBtn.addEventListener("click", () => stop());
+
+  // Enter send (既存のsendModeは触らない：最低限)
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      send();
+    }
+  });
+
+  // add file (button)
+  addFileBtn.addEventListener("click", async (e) => {
+    e.preventDefault();
+
+    const inp = document.createElement("input");
+    inp.type = "file";
+    inp.multiple = true;
+    inp.accept = ".png,.jpg,.jpeg,.webp,.pdf,.txt,.md,.csv,.html,.htm";
+
+    inp.addEventListener("change", async () => {
+      await pushFiles(inp.files);
+
+      // 入力が空なら即送信（スクショドロップ＝即解析/生成）
+      const text = String(input.value || "").trim();
+      if (!text) await send({ autoFromDrop: true });
+    });
+
+    inp.click();
+  });
+
+  // drop anywhere on ask area
+  const askWrap = $(".ask-wrap");
+  if (askWrap) {
+    askWrap.addEventListener("dragover", (e) => {
+      e.preventDefault();
+    });
+    askWrap.addEventListener("drop", async (e) => {
+      e.preventDefault();
+      const dt = e.dataTransfer;
+      if (!dt) return;
+
+      if (dt.files && dt.files.length) {
+        await pushFiles(dt.files);
+
+        // 入力が空なら即送信
+        const text = String(input.value || "").trim();
+        if (!text) await send({ autoFromDrop: true });
+      }
+    });
+  }
+
+  // 初期：ライブラリ描画
+  renderLibrary();
+})();
+</script>
+
 </body>
 </html>

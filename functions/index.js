@@ -1096,10 +1096,54 @@ const runMistral = async ({ prompt, parts }) => {
 
 const runSoraImage = async ({ prompt }) => {
   if (!MULTI_AI_ENABLED) return null;
+
   const key = getSoraKey() || getOpenAIKey();
   if (!key) return null;
-  // stub
-  return null;
+
+  const p0 = String(prompt || "").trim();
+  if (!p0) return null;
+
+  const enhancedPrompt = [
+    p0,
+    "",
+    "Constraints:",
+    "- No watermark, no logos, no text unless explicitly requested.",
+    "- High quality, clean composition.",
+  ].join("\n");
+
+  try {
+    const r = await fetch("https://api.openai.com/v1/images/generations", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${key}`
+      },
+      body: JSON.stringify({
+        model: "gpt-image-1",
+        prompt: enhancedPrompt,
+        n: 1,
+        size: "1024x1024"
+      })
+    });
+
+    const j = await r.json().catch(() => null);
+
+    const b64 =
+      (j && Array.isArray(j.data) && j.data[0] && j.data[0].b64_json)
+        ? String(j.data[0].b64_json)
+        : "";
+
+    if (!r.ok || !b64) return null;
+
+    // 既存の /api/chat と同じ形式（dataURL）で返す
+    return {
+      url: `data:image/png;base64,${b64}`,
+      prompt: p0
+    };
+  } catch (e) {
+    dbg("runSoraImage failed", e);
+    return null;
+  }
 };
 
 const callOpenAIText = async ({ system, user, userParts, model }) => {
