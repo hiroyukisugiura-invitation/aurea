@@ -877,6 +877,14 @@ body.view-images .board{
   line-height:1.45;
   padding:6px 2px;
   max-height:240px;
+
+  /* 右の縦線（スクロールバー/インジケータ）を出さない */
+  overflow-y:auto;
+  scrollbar-width:none;          /* Firefox */
+}
+.ask .in::-webkit-scrollbar{
+  width:0;
+  height:0;                      /* Chrome/Safari */
 }
 
 .ask .mini{

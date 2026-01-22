@@ -129,15 +129,10 @@ const ensureAiMeteorFx = () => {
       position:relative;
     }
 
-    /* 枠なし・文字だけ（左の薄い丸位置） */
+    /* streammark は使わない（解析ゲージに一本化） */
     .msg.assistant .aurea-streammark{
-      position:absolute;
-      left:-6px;
-      top:18px;
-      display:block;
-      pointer-events:none;
-      user-select:none;
-      z-index:2;
+      display:none !important;
+      content:none !important;
     }
 
     .msg.assistant .aurea-streammark__txt{
@@ -2058,6 +2053,10 @@ const closeSettings = () => {
     el = document.createElement("div");
     el.id = "aureaStreamProgressPill";
     el.style.cssText = `
+      position:absolute;
+      top:-44px;
+      left:14px;
+
       display:none;
       align-items:center;
       gap:10px;
@@ -2072,6 +2071,7 @@ const closeSettings = () => {
       font-family: -apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Hiragino Sans','Noto Sans JP',sans-serif;
       pointer-events:none;
       max-width:320px;
+      z-index:2;
     `;
 
     el.innerHTML = `
@@ -2082,10 +2082,14 @@ const closeSettings = () => {
       </div>
     `;
 
-    // Ask左に内蔵（無い場合のみ body に退避）
-    const host = document.querySelector(".ask .left");
-    if (host) host.insertBefore(el, host.firstChild);
-    else document.body.appendChild(el);
+    // Ask左上に固定（Askが無い場合のみ body に退避）
+    const ask = document.querySelector(".ask");
+    if (ask) {
+      ask.style.position = "relative";
+      ask.appendChild(el);
+    } else {
+      document.body.appendChild(el);
+    }
 
     return el;
   };

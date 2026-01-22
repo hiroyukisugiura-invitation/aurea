@@ -1602,13 +1602,10 @@ app.post("/api/chat", async (req, res) => {
             Authorization: `Bearer ${key}`
           },
           body: JSON.stringify({
-            // GPT image model（Images API official）
             model: "gpt-image-1",
             prompt: enhancedPrompt,
             n: 1,
-            size: "1024x1024",
-            output_format: "png",
-            quality: "high"
+            size: "1024x1024"
           })
         });
 
