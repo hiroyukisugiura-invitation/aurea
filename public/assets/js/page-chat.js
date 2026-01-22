@@ -74,13 +74,17 @@
     .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
 
   const ensureMsgs = () => {
-    if (!chatRoot.querySelector(".msgs")) {
-      const msgs = document.createElement("div");
-      msgs.className = "msgs";
-      chatRoot.innerHTML = "";
-      chatRoot.appendChild(msgs);
-    }
-    return chatRoot.querySelector(".msgs");
+    let msgs = chatRoot.querySelector(".msgs");
+    if (msgs) return msgs;
+
+    msgs = document.createElement("div");
+    msgs.className = "msgs";
+
+    // 既存UIは絶対に消さない（既存トークのDOMを破壊しない）
+    // 末尾に追加して、今ある表示を保持する
+    chatRoot.appendChild(msgs);
+
+    return msgs;
   };
 
   const appendMsg = ({ role, title, html }) => {
@@ -110,7 +114,10 @@
     wrap.appendChild(body);
 
     msgs.appendChild(wrap);
-    chatRoot.scrollTop = chatRoot.scrollHeight;
+
+    // scroll container は chatRoot とは限らないため、安全に末尾へ
+    try { wrap.scrollIntoView({ block: "end" }); } catch {}
+
     return wrap;
   };
 
