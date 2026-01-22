@@ -596,7 +596,7 @@ body.view-project .brand-rail{
 .ai-run-indicator{
   position:absolute;
   left:0;
-  top:232px;     /* AUREAロゴ直下 */
+  top:140px;     /* ← 上へ移動（スクショ2基準） */
   width:56px;    /* brand-rail 内 */
 
   padding:0;
@@ -663,7 +663,7 @@ body.view-project .brand-rail{
 }
 
 .ai-run-indicator .ai-run__ai--more{
-  color:rgba(255,255,255,.55);
+  display:none !important;   /* ← 完全に非表示 */
 }
 
 @keyframes aiTextMeteor{
@@ -2647,3 +2647,12 @@ body.view-project:not(.has-chat) .scroll-down-btn{
    divider lines are handled in layout.js (inline styles)
    no CSS override needed here
 ===== */
+
+/* ===== FORCE REMOVE useless image-card inner shadow (解析中に見える謎の表示) ===== */
+.ai-image-card::before,
+.ai-image-card::after {
+  display: none !important;
+  content: none !important;
+  box-shadow: none !important;
+  background: none !important;
+}

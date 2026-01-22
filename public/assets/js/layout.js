@@ -342,7 +342,6 @@ const setAiRunIndicator = ({ phase, statuses }) => {
   if (list) {
     const max = 3;
     const items = showList.slice(0, max).map(n => `<div class="ai-run__ai"><span class="ai-run__ai-txt">${escHtml(n)}</span></div>`);
-    if (showList.length > max) items.push(`<div class="ai-run__ai ai-run__ai--more">…</div>`);
     list.innerHTML = items.join("");
   }
 
