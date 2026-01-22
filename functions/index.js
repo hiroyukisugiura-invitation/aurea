@@ -1629,16 +1629,13 @@ app.post("/api/chat", async (req, res) => {
 
     // 画像生成要求は、画像添付が無い時だけ image を返す
     if (!hasImageAttachment && isImageGenerationRequest(prompt)) {
-      const key = getOpenAIKey();
+      const key = getSoraKey() || getOpenAIKey();
 
-      // 失敗時も必ず成功で placeholder を返す（キー無し含む）
+      // キー無しなら「Soraが動けない」ので理由を返す（placeholderで誤魔化さない）
       if (!key) {
-        res.json({
-          ok: true,
-          image: {
-            url: makePlaceholderImageDataUrl(prompt),
-            prompt
-          }
+        res.status(500).json({
+          ok: false,
+          reason: "sora_key_missing"
         });
         return;
       }

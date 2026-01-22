@@ -1,250 +1,292 @@
-// Chat page behavior (messages / send / streaming-ish typing)
+(() => {
+  const $ = (sel, root = document) => root.querySelector(sel);
 
-const $ = (q, el = document) => el.querySelector(q);
-const $$ = (q, el = document) => Array.from(el.querySelectorAll(q));
+  const chatRoot = $(".view-chat .chat");
+  const input = $(".ask textarea.in");
+  const sendBtn = $('.ask [data-action="send"]');
+  const stopBtn = $('.ask [data-action="stop"]');
+  const addFileBtn = $('.plus-pop [data-action="add-file"]');
+  const imagesGrid = $("#imagesGrid");
 
-const msgs = $('[data-msgs]');
-const input = $('[data-input]');
-const sendBtn = $('[data-send-btn]');
-const hero = $('[data-hero]');
-const chatInner = $('[data-chat-inner]');
-const scrollDownBtn = $('[data-scroll-down]');
-const threadTitle = $('[data-thread-title]');
-const threadList = $('[data-thread-list]');
+  if (!chatRoot || !input || !sendBtn) return;
 
-const T = (key, vars) => (typeof window.__AUREA_T === 'function' ? window.__AUREA_T(key, vars) : key);
-const getLang = () => (window.__AUREA_LANG === 'ja' ? 'ja' : 'en');
+  let pendingAttachments = [];
+  let busy = false;
+  let aborter = null;
 
-const demoThreads = [
-  { id: 't1', name_en: 'New chat', name_ja: '新しいチャット' },
-  { id: 't2', name_en: 'AUREA roadmap', name_ja: 'AUREA ロードマップ' },
-  { id: 't3', name_en: 'Enterprise proposal draft', name_ja: '企業提案ドラフト' },
-  { id: 't4', name_en: 'UI review notes', name_ja: 'UIレビュー' },
-];
+  const LS_IMAGES = "aurea_saved_images_v1";
 
-let activeThread = 't1';
-
-function isAiReportsEnabled() {
-  try {
-    const raw =
-      localStorage.getItem("aurea_main_v1_cloud") ||
-      localStorage.getItem("aurea_main_v1_local");
-
-    if (!raw) return false;
-
-    const st = JSON.parse(raw);
-    return !!st?.settings?.showAiReports;
-  } catch {
-    return false;
-  }
-}
-
-function threadName(t) {
-  return getLang() === 'ja' ? t.name_ja : t.name_en;
-}
-
-function renderThreads() {
-  threadList.innerHTML = demoThreads
-    .map((t) => {
-      const active = t.id === activeThread ? 'is-active' : '';
-      return `
-        <div class="thread ${active}" data-thread="${t.id}">
-          <div class="tname">${escapeHtml(threadName(t))}</div>
-          <div class="tdot">⋯</div>
-        </div>
-      `;
-    })
-    .join('');
-
-  const t = demoThreads.find((x) => x.id === activeThread);
-  threadTitle.textContent = threadName(t || demoThreads[0]);
-}
-
-function setActiveThread(id) {
-  activeThread = id;
-  renderThreads();
-  clearMessages();
-  hero.style.display = id === 't1' ? '' : 'none';
-  if (id !== 't1') {
-    addMsg('ai', getLang() === 'ja'
-      ? `これは「${threadName(demoThreads.find(t=>t.id===id))}」です。（UIスケルトン）`
-      : `This is "${threadName(demoThreads.find(t=>t.id===id))}". (UI scaffold)`
-    );
-  }
-  scrollToBottom(true);
-}
-
-threadList.addEventListener('click', (e) => {
-  const el = e.target.closest('[data-thread]');
-  if (!el) return;
-  setActiveThread(el.getAttribute('data-thread'));
-});
-
-$('[data-new-chat]')?.addEventListener('click', () => setActiveThread('t1'));
-
-function clearMessages() {
-  msgs.innerHTML = '';
-}
-
-function addMsg(role, content, { isCode = false } = {}) {
-  const wrap = document.createElement('div');
-  wrap.className = `msg ${role === 'user' ? 'user' : 'ai'}`;
-
-  const roleLabel =
-    role === 'user'
-      ? (getLang() === 'ja' ? 'あなた' : 'You')
-      : 'AUREA';
-
-  const copyLabel = getLang() === 'ja' ? 'コピー' : 'Copy';
-
-const showRepo = isAiReportsEnabled();
-
-wrap.innerHTML = `
-  <div class="msg-head">
-    <div class="msg-role">${roleLabel}</div>
-    <div class="msg-actions">
-      ${showRepo ? `<span class="repo-badge">Repo</span>` : ``}
-      <button class="mini-btn" data-copy type="button">${copyLabel}</button>
-    </div>
-  </div>
-  <div class="msg-body">${isCode ? `<pre><code>${escapeHtml(content)}</code></pre>` : formatText(content)}</div>
-`;
-
-  wrap.querySelector('[data-copy]')?.addEventListener('click', async () => {
+  const loadSavedImages = () => {
     try {
-      await navigator.clipboard.writeText(content);
-      toast(getLang() === 'ja' ? 'コピーしました' : 'Copied');
-    } catch {
-      toast(getLang() === 'ja' ? 'コピーに失敗しました' : 'Copy failed');
+      const a = JSON.parse(localStorage.getItem(LS_IMAGES) || "[]");
+      return Array.isArray(a) ? a : [];
+    } catch { return []; }
+  };
+
+  const saveImageToLibrary = (img) => {
+    if (!img || !img.url) return;
+    const list = loadSavedImages();
+    list.unshift({
+      url: String(img.url),
+      prompt: String(img.prompt || ""),
+      ts: Date.now()
+    });
+    const out = list.slice(0, 200);
+    try { localStorage.setItem(LS_IMAGES, JSON.stringify(out)); } catch {}
+  };
+
+  const renderLibrary = () => {
+    if (!imagesGrid) return;
+    const list = loadSavedImages();
+    imagesGrid.innerHTML = "";
+
+    for (const it of list) {
+      const card = document.createElement("div");
+      card.className = "img-card";
+      card.style.cssText =
+        "border:1px solid rgba(255,255,255,.10);border-radius:16px;overflow:hidden;background:rgba(255,255,255,.02)";
+
+      const img = document.createElement("img");
+      img.src = it.url;
+      img.alt = it.prompt || "AUREA image";
+      img.style.cssText = "display:block;width:100%;height:auto";
+
+      const meta = document.createElement("div");
+      meta.style.cssText = "padding:10px 12px;color:rgba(255,255,255,.72);font-size:12px;line-height:1.5";
+      meta.textContent = it.prompt || "";
+
+      card.appendChild(img);
+      card.appendChild(meta);
+      imagesGrid.appendChild(card);
+    }
+  };
+
+  const escapeHtml = (s) => String(s || "")
+    .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+
+  const ensureMsgs = () => {
+    if (!chatRoot.querySelector(".msgs")) {
+      const msgs = document.createElement("div");
+      msgs.className = "msgs";
+      chatRoot.innerHTML = "";
+      chatRoot.appendChild(msgs);
+    }
+    return chatRoot.querySelector(".msgs");
+  };
+
+  const appendMsg = ({ role, title, html }) => {
+    const msgs = ensureMsgs();
+
+    const wrap = document.createElement("div");
+    wrap.className = "msg" + (role === "user" ? " user" : "");
+
+    const head = document.createElement("div");
+    head.className = "msg-head";
+
+    const rr = document.createElement("div");
+    rr.className = "msg-role";
+    rr.textContent = title || (role === "user" ? "You" : "AUREA");
+
+    const actions = document.createElement("div");
+    actions.className = "msg-actions";
+
+    head.appendChild(rr);
+    head.appendChild(actions);
+
+    const body = document.createElement("div");
+    body.className = "msg-body";
+    body.innerHTML = html || "";
+
+    wrap.appendChild(head);
+    wrap.appendChild(body);
+
+    msgs.appendChild(wrap);
+    chatRoot.scrollTop = chatRoot.scrollHeight;
+    return wrap;
+  };
+
+  const setBusy = (v) => {
+    busy = !!v;
+    try { sendBtn.disabled = busy; } catch {}
+    if (stopBtn) stopBtn.style.display = busy ? "" : "none";
+  };
+
+  const fileToB64 = (file) => new Promise((resolve) => {
+    const r = new FileReader();
+    r.onload = () => {
+      const res = String(r.result || "");
+      const idx = res.indexOf("base64,");
+      resolve(idx >= 0 ? res.slice(idx + 7) : "");
+    };
+    r.onerror = () => resolve("");
+    r.readAsDataURL(file);
+  });
+
+  const detectRoute = (file) => {
+    const name = String(file?.name || "").toLowerCase();
+    const mime = String(file?.type || "");
+
+    if (mime.startsWith("image/")) return "image";
+    if (mime === "application/pdf" || name.endsWith(".pdf")) return "pdf";
+    if (mime.startsWith("text/") || name.endsWith(".txt") || name.endsWith(".md") || name.endsWith(".csv") || name.endsWith(".html") || name.endsWith(".htm")) return "text";
+    return "file";
+  };
+
+  const pushFiles = async (files) => {
+    const arr = Array.from(files || []);
+    for (const f of arr) {
+      const b64 = await fileToB64(f);
+      const route = detectRoute(f);
+      const type = (route === "image") ? "image" : "file";
+
+      pendingAttachments.push({
+        type,
+        route,
+        name: f.name || "file",
+        mime: f.type || "",
+        size: f.size || 0,
+        data: b64
+      });
+    }
+  };
+
+  const stop = () => {
+    try { if (aborter) aborter.abort(); } catch {}
+    aborter = null;
+    setBusy(false);
+  };
+
+  const send = async ({ autoFromDrop = false } = {}) => {
+    if (busy) return;
+
+    const text = String(input.value || "").trim();
+    const hasAttach = pendingAttachments.length > 0;
+
+    if (!text && !hasAttach) return;
+
+    // ドロップのみ送信：Askに残さない
+    if (autoFromDrop && !text) input.value = "";
+
+    appendMsg({
+      role: "user",
+      title: "You",
+      html:
+        `<div>${escapeHtml(text || "")}</div>` +
+        (hasAttach ? `<div style="margin-top:8px;opacity:.7;font-size:12px">(${pendingAttachments.length} attachments)</div>` : "")
+    });
+
+    setBusy(true);
+    aborter = new AbortController();
+
+    const a = appendMsg({
+      role: "assistant",
+      title: "AUREA",
+      html: `<div style="opacity:.75">...</div>`
+    });
+
+    try {
+      const payload = {
+        prompt: text,
+        attachments: pendingAttachments.slice(),
+        context: {}
+      };
+
+      pendingAttachments = [];
+
+      const r = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: aborter.signal
+      });
+
+      const j = await r.json().catch(() => null);
+
+      if (!r.ok || !j || !j.ok) {
+        a.querySelector(".msg-body").innerHTML = `<div>${escapeHtml((j && (j.reason || j.msg)) ? (j.reason || j.msg) : "failed")}</div>`;
+        setBusy(false);
+        return;
+      }
+
+      if (j.image && j.image.url) {
+        const url = String(j.image.url);
+        const pr = String((j.image.prompt || text) || "");
+
+        a.querySelector(".msg-body").innerHTML =
+          `<div style="font-weight:700;margin-bottom:8px">AUREA Image</div>` +
+          `<div style="opacity:.75;margin-bottom:10px">${escapeHtml(pr)}</div>` +
+          `<img src="${escapeHtml(url)}" alt="AUREA Image" style="max-width:100%;border-radius:14px;border:1px solid rgba(255,255,255,.10)" />`;
+
+        saveImageToLibrary({ url, prompt: pr });
+        renderLibrary();
+
+        setBusy(false);
+        return;
+      }
+
+      const result = j.result || {};
+      const gpt = (result && typeof result.GPT === "string") ? result.GPT : "";
+      a.querySelector(".msg-body").innerHTML = `<div>${escapeHtml(gpt).replaceAll("\n", "<br>")}</div>`;
+      setBusy(false);
+
+    } catch (e) {
+      a.querySelector(".msg-body").innerHTML = `<div>${escapeHtml("aborted_or_failed")}</div>`;
+      setBusy(false);
+      void e;
+    }
+  };
+
+  // send btn
+  sendBtn.addEventListener("click", () => send());
+  if (stopBtn) stopBtn.addEventListener("click", () => stop());
+
+  // cmd/ctrl+enter send（既存sendModeは触らない）
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      send();
     }
   });
 
-  msgs.appendChild(wrap);
-  return wrap;
-}
+  // add file menu
+  if (addFileBtn) {
+    addFileBtn.addEventListener("click", async (e) => {
+      e.preventDefault();
 
-function toast(msg) {
-  const t = document.querySelector('[data-toast]');
-  if (!t) return;
-  t.textContent = msg;
-  t.hidden = false;
-  clearTimeout(window.__toastTimer);
-  window.__toastTimer = setTimeout(() => (t.hidden = true), 1200);
-}
+      const inp = document.createElement("input");
+      inp.type = "file";
+      inp.multiple = true;
+      inp.accept = ".png,.jpg,.jpeg,.webp,.pdf,.txt,.md,.csv,.html,.htm";
 
-function formatText(s) {
-  const safe = escapeHtml(s);
-  return safe.replace(/\n/g, '<br>');
-}
+      inp.addEventListener("change", async () => {
+        await pushFiles(inp.files);
+        const t = String(input.value || "").trim();
+        if (!t) await send({ autoFromDrop: true });
+      });
 
-function escapeHtml(s) {
-  return String(s)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
-}
+      inp.click();
+    });
+  }
 
-function autoGrow() {
-  input.style.height = 'auto';
-  input.style.height = Math.min(input.scrollHeight, 180) + 'px';
-}
+  // ===== 重要：ドロップ範囲を「画面全体」にする（Ask以外に落としても反応） =====
+  const onDropFiles = async (e) => {
+    try {
+      const dt = e.dataTransfer;
+      if (!dt || !dt.files || !dt.files.length) return;
 
-input.addEventListener('input', () => {
-  autoGrow();
-  sendBtn.disabled = input.value.trim().length === 0;
-});
+      await pushFiles(dt.files);
 
-input.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) {
+      const t = String(input.value || "").trim();
+      if (!t) await send({ autoFromDrop: true });
+    } catch {}
+  };
+
+  document.addEventListener("dragover", (e) => { e.preventDefault(); }, { passive: false });
+  document.addEventListener("drop", async (e) => {
     e.preventDefault();
-    handleSend();
-  }
-});
+    await onDropFiles(e);
+  }, { passive: false });
 
-sendBtn.addEventListener('click', handleSend);
-
-$$('[data-suggest]').forEach((b) => {
-  b.addEventListener('click', () => {
-    input.value = b.getAttribute('data-suggest') || '';
-    autoGrow();
-    sendBtn.disabled = input.value.trim().length === 0;
-    input.focus();
-  });
-});
-
-function handleSend() {
-  const text = input.value.trim();
-  if (!text) return;
-
-  hero.style.display = 'none';
-
-  addMsg('user', text);
-  input.value = '';
-  autoGrow();
-  sendBtn.disabled = true;
-
-  scrollToBottom(true);
-  streamAureaReply(text);
-}
-
-function scrollToBottom(force = false) {
-  const el = chatInner;
-  if (!el) return;
-  if (force) {
-    el.scrollTop = el.scrollHeight;
-    return;
-  }
-  const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
-  if (atBottom) el.scrollTop = el.scrollHeight;
-}
-
-function streamAureaReply(userText) {
-  const responseEn =
-    `Okay. I’ve got you.\n` +
-    `Here’s a clear next step:\n` +
-    `• Define the goal in one sentence\n` +
-    `• Choose the smallest action that moves it forward\n` +
-    `\nIf you want, paste constraints (time/budget), and I’ll tighten it.`;
-
-  const responseJa =
-    `大丈夫。受け取ったよ。\n` +
-    `まずは次の一手を明確にしよう：\n` +
-    `・目標を1文で定義する\n` +
-    `・前に進むための最小アクションを選ぶ\n` +
-    `\n時間や予算など条件があれば貼って。もっと絞り込む。`;
-
-  const response = getLang() === 'ja' ? responseJa : responseEn;
-
-  const msgEl = addMsg('ai', '');
-  const body = msgEl.querySelector('.msg-body');
-  let i = 0;
-
-  const timer = setInterval(() => {
-    i += Math.max(1, Math.floor(response.length / 120));
-    const chunk = response.slice(0, i);
-    body.innerHTML = chunk.replace(/\n/g, '<br>');
-    scrollToBottom();
-    if (i >= response.length) clearInterval(timer);
-  }, 30);
-}
-
-chatInner.addEventListener('scroll', () => {
-  const atBottom = chatInner.scrollHeight - chatInner.scrollTop - chatInner.clientHeight < 120;
-  scrollDownBtn.hidden = atBottom;
-});
-scrollDownBtn.addEventListener('click', () => scrollToBottom(true));
-
-renderThreads();
-setActiveThread('t1');
-
-// 反映：言語切替後にタイトル/スレッド名も更新されるよう監視
-window.addEventListener('storage', (e) => {
-  if (e.key === 'aurea_lang') {
-    renderThreads();
-  }
-});
-
-renderThreads();
-setActiveThread('t1');
+  // 初期：ライブラリ描画
+  renderLibrary();
+})();
