@@ -90,13 +90,14 @@ const ensureAiMeteorFx = () => {
       100% { transform: translateX(96px); opacity: 0; }
     }
 
-    /* streaming中（解析/生成ラベル表示中）は既存の丸（assistantマーク）を消す */
-    .msg.assistant.is-streaming::before,
-    .msg.assistant.has-streammark::before,
-    .msg.assistant.is-streaming::after,
-    .msg.assistant.has-streammark::after,
-    .msg.assistant.is-streaming .avatar,
-    .msg.assistant.is-streaming .dot{
+    /* assistant msg内の「丸」系は常時消す（ゲージ表示に一本化） */
+    .msg.assistant::before,
+    .msg.assistant::after,
+    .msg.assistant .avatar,
+    .msg.assistant .dot,
+    .msg.assistant .circle,
+    .msg.assistant .msg-icon,
+    .msg.assistant .assistant-icon{
       display:none !important;
       content:none !important;
     }
@@ -2057,36 +2058,35 @@ const closeSettings = () => {
     el = document.createElement("div");
     el.id = "aureaStreamProgressPill";
     el.style.cssText = `
-      position:fixed;
-      left:50%;
-      bottom:92px;
-      transform:translateX(-50%);
-      z-index:10045;
       display:none;
       align-items:center;
       gap:10px;
-      padding:10px 12px;
+      padding:6px 10px;
       border-radius:999px;
       border:1px solid rgba(255,255,255,.12);
-      background:rgba(20,21,22,.86);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
+      background:rgba(20,21,22,.72);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       color:rgba(255,255,255,.92);
       font-size:12px;
       font-family: -apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Hiragino Sans','Noto Sans JP',sans-serif;
-      max-width:min(520px, calc(100% - 24px));
       pointer-events:none;
+      max-width:320px;
     `;
 
     el.innerHTML = `
       <div data-title style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">解析中</div>
       <div data-pct style="font-variant-numeric:tabular-nums;opacity:.85;min-width:42px;text-align:right;">0%</div>
-      <div style="width:160px;height:6px;border-radius:999px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.10);overflow:hidden;">
+      <div style="width:120px;height:6px;border-radius:999px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.10);overflow:hidden;">
         <div data-bar style="width:0%;height:100%;border-radius:999px;background:rgba(255,255,255,.65);"></div>
       </div>
     `;
 
-    document.body.appendChild(el);
+    // Ask左に内蔵（無い場合のみ body に退避）
+    const host = document.querySelector(".ask .left");
+    if (host) host.insertBefore(el, host.firstChild);
+    else document.body.appendChild(el);
+
     return el;
   };
 
@@ -2807,6 +2807,9 @@ const closeSettings = () => {
   };
 
   const addImageToLibrary = ({ prompt, src, from }) => {
+    // Freeプランはライブラリ保存しない
+    if (String(state.plan || "Free").trim() === "Free") return;
+
     const item = {
       id: uid(),
       createdAt: nowISO(),
@@ -3522,11 +3525,9 @@ const closeSettings = () => {
 
             const title = isEn ? "Creating image" : "画像を生成中";
             const sub = isEn ? "Generating…" : "生成中…";
-
             return `
               <div class="ai-image-card" style="position:relative;">
                 <div class="aurea-sora-pending" aria-label="Generating image">
-                  <div class="aurea-sora-spinner" aria-hidden="true"></div>
 
                   <div class="aurea-sora-progress" data-mid="${escHtml(mid)}">
                     <div class="aurea-sora-progress__top">
@@ -3728,35 +3729,17 @@ const closeSettings = () => {
 
         const isStreamingMsg = (typeof window.__AUREA_STREAMING_MID__ === "string" && window.__AUREA_STREAMING_MID__ === m.id);
 
-        // ストリーミング中は assistant の丸アイコン(::before)を消すため class を付与
-        if (isStreamingMsg) {
-          wrap.classList.add("is-streaming");
-          wrap.classList.add("has-streammark");
-        } else {
-          wrap.classList.remove("is-streaming");
-          wrap.classList.remove("has-streammark");
+        // 解析中表示はゲージに一本化（msg側のstreammarkは出さない）
+        wrap.classList.remove("is-streaming");
+        wrap.classList.remove("has-streammark");
+
+        const existed = wrap.querySelector(".aurea-streammark");
+        if (existed) {
+          try { existed.remove(); } catch {}
         }
 
-        // ストリーミング中だけ流星ラベルを生成（乱立防止）
-        const existed = wrap.querySelector(".aurea-streammark");
-        if (!isStreamingMsg) {
-          if (existed) {
-            try { existed.remove(); } catch {}
-          }
-        } else {
-          let mark = existed;
-          if (!mark) {
-            mark = document.createElement("div");
-            mark.className = "aurea-streammark";
-            mark.innerHTML = `
-              <span class="aurea-streammark__txt"></span>
-            `.trim();
-            wrap.insertBefore(mark, wrap.firstChild);
-          }
-
-          const txt = mark.querySelector(".aurea-streammark__txt");
-          if (txt) txt.textContent = getStreamingLabel();
-
+        // streaming中でも通常描画（左の丸が出る原因になるため）
+        if (isStreamingMsg) {
           chatRoot.appendChild(wrap);
           continue;
         }
