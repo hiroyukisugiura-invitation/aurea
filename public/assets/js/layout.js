@@ -5309,20 +5309,34 @@ board?.addEventListener("drop", async (e) => {
 
   try { ensureAttachTray(); } catch {}
 
-  const files = (dt && dt.files && dt.files.length) ? dt.files : null;
-  if (files) {
-    await addFilesAsAttachments(files);
-    try { renderAttachTray(); } catch {}
-    try { updateSendButtonVisibility(); } catch {}
-
-    // ★ GPT同等：画像ドロップ時は自動で解析を開始
-    // テキストが空でも send() を呼ぶ
+  // dt.files が空でも dt.items から拾う（スクショ/ドラッグの差異吸収）
+  const collectFiles = (dt0) => {
     try {
-      setTimeout(() => {
-        send();
-      }, 0);
-    } catch {}
-  }
+      if (!dt0) return [];
+      if (dt0.files && dt0.files.length) return Array.from(dt0.files);
+
+      const items = Array.from(dt0.items || []).filter(it => it && it.kind === "file");
+      const out = [];
+      for (const it of items) {
+        try {
+          const f = it.getAsFile ? it.getAsFile() : null;
+          if (f) out.push(f);
+        } catch {}
+      }
+      return out;
+    } catch {
+      return [];
+    }
+  };
+
+  const files = collectFiles(dt);
+  if (!files.length) return;
+
+  await addFilesAsAttachments(files);
+  try { renderAttachTray(); } catch {}
+  try { updateSendButtonVisibility(); } catch {}
+
+  // 仕様：ドロップ後は Ask に入れるだけ（自動送信しない）
 }, true);
 
     /* ================= drag & drop (Ask bar attach) ================= */
@@ -5347,25 +5361,43 @@ board?.addEventListener("drop", async (e) => {
     e.stopPropagation();
   }, true);
 
-  document.addEventListener("drop", async (e) => {
-    const dt = e.dataTransfer;
-    if (!hasFileItems(dt)) return;
+document.addEventListener("drop", async (e) => {
+  const dt = e.dataTransfer;
+  if (!hasFileItems(dt)) return;
 
-    e.preventDefault();
-    e.stopPropagation();
+  e.preventDefault();
+  e.stopPropagation();
 
-    try { ensureAttachTray(); } catch {}
+  try { ensureAttachTray(); } catch {}
 
-    const files = (dt && dt.files && dt.files.length) ? dt.files : null;
-    if (files) {
-      await addFilesAsAttachments(files);
-      try { renderAttachTray(); } catch {}
-      try { updateSendButtonVisibility(); } catch {}
+  const collectFiles = (dt0) => {
+    try {
+      if (!dt0) return [];
+      if (dt0.files && dt0.files.length) return Array.from(dt0.files);
 
-// ドロップ時は Ask に入れるだけ（自動送信しない）
-/* NO-OP */
+      const items = Array.from(dt0.items || []).filter(it => it && it.kind === "file");
+      const out = [];
+      for (const it of items) {
+        try {
+          const f = it.getAsFile ? it.getAsFile() : null;
+          if (f) out.push(f);
+        } catch {}
+      }
+      return out;
+    } catch {
+      return [];
     }
-  }, true);
+  };
+
+  const files = collectFiles(dt);
+  if (!files.length) return;
+
+  await addFilesAsAttachments(files);
+  try { renderAttachTray(); } catch {}
+  try { updateSendButtonVisibility(); } catch {}
+
+  // ドロップ時は Ask に入れるだけ（自動送信しない）
+}, true);
 
   // (removed) legacy sidebar search handler
   // 検索は mountSidebarSearch() で生成される input (#aureaSearchInput) のみを使用
