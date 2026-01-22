@@ -41,30 +41,56 @@
   // debug logger (layout.js)
   const dbg = (...args) => { try { console.info(...args); } catch {} };
 
-  /* ================= API routing (auto-detect /api vs /ai) ================= */
+  /* ================= API routing (JSON-validated fallback: /api <-> /ai) ================= */
   let AUREA_API_PREFIX = "/api";
 
-  const detectApiPrefix = async () => {
-    const tryOne = async (prefix) => {
-      try {
-        const r = await fetch(`${prefix}/ping`, { method: "GET", cache: "no-store" });
-        return !!(r && r.ok);
-      } catch {
-        return false;
-      }
-    };
-
-    // 優先：/api → fallback：/ai
-    if (await tryOne("/api")) { AUREA_API_PREFIX = "/api"; return; }
-    if (await tryOne("/ai")) { AUREA_API_PREFIX = "/ai"; return; }
-
-    // 最後：現状維持（/api）
-    AUREA_API_PREFIX = "/api";
+  const isJsonResponse = (r) => {
+    try {
+      const ct = String(r?.headers?.get("content-type") || "").toLowerCase();
+      return ct.includes("application/json");
+    } catch {
+      return false;
+    }
   };
 
-  const apiFetch = async (path, options) => {
+  const tryFetchJson = async (prefix, path, options) => {
     const p = String(path || "").startsWith("/") ? String(path) : `/${path}`;
-    return await fetch(`${AUREA_API_PREFIX}${p}`, options || {});
+    const r = await fetch(`${prefix}${p}`, options || {});
+    if (!r || !r.ok) return null;
+    if (!isJsonResponse(r)) return null; // ← index.html(text/html) 返却を弾く
+    return r;
+  };
+
+  const apiFetchJson = async (path, options) => {
+    // 1) 現在 prefix
+    let r = await tryFetchJson(AUREA_API_PREFIX, path, options);
+    if (r) return r;
+
+    // 2) 逆側 prefix
+    const alt = (AUREA_API_PREFIX === "/api") ? "/ai" : "/api";
+    r = await tryFetchJson(alt, path, options);
+    if (r) {
+      AUREA_API_PREFIX = alt; // 成功した方を採用
+      return r;
+    }
+
+    // 3) どちらもJSONで返らない → null
+    return null;
+  };
+
+  const detectApiPrefix = async () => {
+    // ping が JSON で返る方を採用（/api/ping or /ai/ping）
+    try {
+      const r1 = await tryFetchJson("/api", "/ping", { method: "GET", cache: "no-store" });
+      if (r1) { AUREA_API_PREFIX = "/api"; return; }
+    } catch {}
+
+    try {
+      const r2 = await tryFetchJson("/ai", "/ping", { method: "GET", cache: "no-store" });
+      if (r2) { AUREA_API_PREFIX = "/ai"; return; }
+    } catch {}
+
+    AUREA_API_PREFIX = "/api";
   };
 
   /* ================= AI activity fade ================= */
@@ -4708,12 +4734,14 @@ const closeSettings = () => {
 
         let r = null;
         try {
-          r = await apiFetch("/chat", {
+          r = await apiFetchJson("/chat", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
             signal: apiChatAbortCtrl.signal
           });
+
+          if (!r) throw new Error("api_chat_unreachable");
         } finally {
           try { clearTimeout(__imgTimeout); } catch {}
         }
@@ -4878,12 +4906,14 @@ const closeSettings = () => {
       try { apiChatAbortCtrl?.abort(); } catch {}
       apiChatAbortCtrl = new AbortController();
 
-      const r = await apiFetch("/chat", {
+      const r = await apiFetchJson("/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
         signal: apiChatAbortCtrl.signal
       });
+
+      if (!r) throw new Error("api_chat_unreachable");
 
       // non-ok: do not surface internal error text; show user-safe message
       if (!r.ok) {
