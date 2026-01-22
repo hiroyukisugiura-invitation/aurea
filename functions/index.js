@@ -1631,114 +1631,9 @@ app.post("/api/chat", async (req, res) => {
     // 画像生成要求は、画像添付が無い時だけ image を返す
     // 画像生成：テキストで明示的に要求された場合のみ
     if (!hasImageAttachment && isImageGenerationRequest(prompt)) {
-      const key = getSoraKey() || getOpenAIKey();
+      const img = await runSoraImage({ prompt });
 
-      // キー無しなら「Soraが動けない」ので理由を返す（placeholderで誤魔化さない）
-      if (!key) {
-        res.status(500).json({
-          ok: false,
-          reason: "sora_key_missing"
-        });
-        return;
-      }
-
-      const enhancedPrompt = [
-        prompt,
-        "",
-        "Constraints:",
-        "- No watermark, no logos, no text unless explicitly requested.",
-        "- High quality, clean composition.",
-      ].join("\n");
-
-      try {
-        const r = await fetch("https://api.openai.com/v1/images/generations", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${key}`
-          },
-          body: JSON.stringify({
-            model: "gpt-image-1",
-            prompt: enhancedPrompt,
-            n: 1,
-            size: "1024x1024"
-          })
-        });
-
-        const j = await r.json().catch(() => null);
-
-        const b64 =
-          (j && Array.isArray(j.data) && j.data[0] && j.data[0].b64_json)
-            ? String(j.data[0].b64_json)
-            : "";
-
-        // 可能なら Storage に保存して「短いURL」で返す（localStorage容量超過で消える問題を回避）
-        const uploadToStorageAsUrl = async (base64Png) => {
-          try {
-            const s = String(base64Png || "").trim();
-            if (!s) return "";
-
-            const buf = Buffer.from(s, "base64");
-            if (!buf || !buf.length) return "";
-
-            const bucket = admin.storage().bucket();
-            const name = `aurea_images/${Date.now()}_${Math.random().toString(36).slice(2)}.png`;
-            const file = bucket.file(name);
-
-            await file.save(buf, {
-              contentType: "image/png",
-              resumable: false,
-              metadata: { cacheControl: "public, max-age=31536000" }
-            });
-
-            // 署名URL（長期）
-            const [signedUrl] = await file.getSignedUrl({
-              action: "read",
-              expires: "2100-01-01"
-            });
-
-            return String(signedUrl || "").trim();
-          } catch (e) {
-            dbg("uploadToStorageAsUrl failed", e);
-            return "";
-          }
-        };
-
-        // URL優先：1) Storage署名URL 2) APIのurl 3) dataURL（最終手段）
-        let url = "";
-
-        if (b64) {
-          url = await uploadToStorageAsUrl(b64);
-          if (!url) url = `data:image/png;base64,${b64}`;
-        } else {
-          url =
-            (j && Array.isArray(j.data) && j.data[0] && j.data[0].url)
-              ? String(j.data[0].url || "").trim()
-              : "";
-        }
-
-        if (!r.ok || !url) {
-          res.json({
-            ok: true,
-            image: {
-              url: makePlaceholderImageDataUrl(prompt),
-              prompt
-            }
-          });
-          return;
-        }
-
-        res.json({
-          ok: true,
-          image: {
-            url,
-            prompt
-          }
-        });
-        return;
-
-      } catch (e) {
-        void e;
+      if (!img || !img.url) {
         res.json({
           ok: true,
           image: {
@@ -1748,6 +1643,15 @@ app.post("/api/chat", async (req, res) => {
         });
         return;
       }
+
+      res.json({
+        ok: true,
+        image: {
+          url: img.url,
+          prompt: img.prompt || prompt
+        }
+      });
+      return;
     }
 
     // v1: 添付はまだAIに渡さず、存在だけ認識（後工程で実装）
