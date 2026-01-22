@@ -1619,11 +1619,50 @@ app.post("/api/chat", async (req, res) => {
             ? String(j.data[0].b64_json)
             : "";
 
-        // GPT image models return base64 by default; keep URL fallback just in case
-        const url =
-          b64 ? `data:image/png;base64,${b64}`
-          : (j && Array.isArray(j.data) && j.data[0] && j.data[0].url) ? String(j.data[0].url || "").trim()
-          : "";
+        // 可能なら Storage に保存して「短いURL」で返す（localStorage容量超過で消える問題を回避）
+        const uploadToStorageAsUrl = async (base64Png) => {
+          try {
+            const s = String(base64Png || "").trim();
+            if (!s) return "";
+
+            const buf = Buffer.from(s, "base64");
+            if (!buf || !buf.length) return "";
+
+            const bucket = admin.storage().bucket();
+            const name = `aurea_images/${Date.now()}_${Math.random().toString(36).slice(2)}.png`;
+            const file = bucket.file(name);
+
+            await file.save(buf, {
+              contentType: "image/png",
+              resumable: false,
+              metadata: { cacheControl: "public, max-age=31536000" }
+            });
+
+            // 署名URL（長期）
+            const [signedUrl] = await file.getSignedUrl({
+              action: "read",
+              expires: "2100-01-01"
+            });
+
+            return String(signedUrl || "").trim();
+          } catch (e) {
+            dbg("uploadToStorageAsUrl failed", e);
+            return "";
+          }
+        };
+
+        // URL優先：1) Storage署名URL 2) APIのurl 3) dataURL（最終手段）
+        let url = "";
+
+        if (b64) {
+          url = await uploadToStorageAsUrl(b64);
+          if (!url) url = `data:image/png;base64,${b64}`;
+        } else {
+          url =
+            (j && Array.isArray(j.data) && j.data[0] && j.data[0].url)
+              ? String(j.data[0].url || "").trim()
+              : "";
+        }
 
         if (!r.ok || !url) {
           res.json({

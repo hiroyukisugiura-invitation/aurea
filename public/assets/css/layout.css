@@ -553,14 +553,15 @@ body.view-project .topbar{
   flex:1;
   min-height:0;
   padding:0 0 220px;
-  overflow-y:auto;        /* 通常（Chat）はスクロール可 */
+  padding-left:0;          /* 左余白を常にゼロ固定 */
+  overflow-y:auto;
   overflow-x:hidden;
 }
 
 /* Brand rail */
 .brand-rail{
   position:absolute;
-  left:24px;
+  left:0;                 /* 左寄せに固定 */
   top:80px;
   width:56px;
   opacity:.95;
@@ -701,7 +702,7 @@ body.theme-light .ai-run-indicator .ai-run__ai--more{
 
 /* Chat */
 .chat{
-  width:min(760px, calc(100% - 64px));
+  width:min(760px, 100%);
   margin:0 auto;
   padding:18px 0;
   display:flex;
@@ -844,7 +845,26 @@ body.view-images .board{
 }
 
 .ask .left, .ask .right{ display:flex; align-items:center; gap:8px; }
-.ask .right{ margin-left:auto; }
+.ask .right{
+  margin-left:auto;
+
+  /* Askバー右側の縦ライン（区切り）を強制的に消す */
+  border-left:0 !important;
+  box-shadow:none !important;
+}
+.ask .right::before{
+  display:none !important;
+  content:none !important;
+}
+
+/* 右側に縦ライン用DOMがある場合も消す（class名差異吸収） */
+.ask .vline,
+.ask .right .vline,
+.ask .right .divider,
+.ask .right .sep{
+  display:none !important;
+}
+
 .ask .in{
   flex:1;
   min-width:0;
@@ -858,6 +878,7 @@ body.view-images .board{
   padding:6px 2px;
   max-height:240px;
 }
+
 .ask .mini{
   width:34px;height:34px;border-radius:12px;
   border:1px solid transparent;
@@ -1018,7 +1039,7 @@ body.project-open .project-modal{ display:flex; }
 
 /* ================= Views ================= */
 .view{
-  width:min(980px, calc(100% - 64px));
+  width:min(980px, 100%);
   margin:0 auto;
   padding:18px 0 0;
 }
@@ -1263,9 +1284,10 @@ body.view-project .board{
 /* Search results view */
 body.view-search .view{
   width:100%;
-  max-width:760px;              /* PJ一覧と同じ */
+  max-width:760px;
   margin-left:auto;
   margin-right:auto;
+  padding-left:0;        /* 左ズレ防止 */
 }
 
 .view-search .search-head{

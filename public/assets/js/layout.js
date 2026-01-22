@@ -94,7 +94,9 @@ const ensureAiMeteorFx = () => {
     .msg.assistant.is-streaming::before,
     .msg.assistant.has-streammark::before,
     .msg.assistant.is-streaming::after,
-    .msg.assistant.has-streammark::after{
+    .msg.assistant.has-streammark::after,
+    .msg.assistant.is-streaming .avatar,
+    .msg.assistant.is-streaming .dot{
       display:none !important;
       content:none !important;
     }
@@ -2044,7 +2046,106 @@ const closeSettings = () => {
     attachImportTick = null;
   };
 
+  /* ================= streaming progress pill (analysis / generating) ================= */
+  let streamProgressTick = null;
+  let streamProgressP = 0;
+
+  const ensureStreamProgressPill = () => {
+    let el = document.getElementById("aureaStreamProgressPill");
+    if (el) return el;
+
+    el = document.createElement("div");
+    el.id = "aureaStreamProgressPill";
+    el.style.cssText = `
+      position:fixed;
+      left:50%;
+      bottom:92px;
+      transform:translateX(-50%);
+      z-index:10045;
+      display:none;
+      align-items:center;
+      gap:10px;
+      padding:10px 12px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(20,21,22,.86);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      color:rgba(255,255,255,.92);
+      font-size:12px;
+      font-family: -apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Hiragino Sans','Noto Sans JP',sans-serif;
+      max-width:min(520px, calc(100% - 24px));
+      pointer-events:none;
+    `;
+
+    el.innerHTML = `
+      <div data-title style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">解析中</div>
+      <div data-pct style="font-variant-numeric:tabular-nums;opacity:.85;min-width:42px;text-align:right;">0%</div>
+      <div style="width:160px;height:6px;border-radius:999px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.10);overflow:hidden;">
+        <div data-bar style="width:0%;height:100%;border-radius:999px;background:rgba(255,255,255,.65);"></div>
+      </div>
+    `;
+
+    document.body.appendChild(el);
+    return el;
+  };
+
+  const startStreamProgressPill = () => {
+    const el = ensureStreamProgressPill();
+    const titleEl = el.querySelector("[data-title]");
+    const pctEl = el.querySelector("[data-pct]");
+    const barEl = el.querySelector("[data-bar]");
+
+    const isEn = ((state.settings?.language || "ja") === "en");
+    const mode = String(window.__AUREA_STREAMING_LABEL_MODE__ || "analyzing");
+
+    if (titleEl) {
+      titleEl.textContent =
+        (mode === "generating")
+          ? (isEn ? "Generating" : "回答文作成中")
+          : (isEn ? "Analyzing" : "解析中");
+    }
+
+    streamProgressP = 0;
+    if (pctEl) pctEl.textContent = "0%";
+    if (barEl) barEl.style.width = "0%";
+
+    el.style.display = "flex";
+
+    try { clearInterval(streamProgressTick); } catch {}
+    streamProgressTick = setInterval(() => {
+      // 0→90までゆっくり上げる（完了は finish で100）
+      streamProgressP = Math.min(90, streamProgressP + (streamProgressP < 60 ? 6 : 2));
+      if (pctEl) pctEl.textContent = `${streamProgressP}%`;
+      if (barEl) barEl.style.width = `${streamProgressP}%`;
+
+      if (streamProgressP >= 90) {
+        try { clearInterval(streamProgressTick); } catch {}
+        streamProgressTick = null;
+      }
+    }, 220);
+  };
+
+  const finishStreamProgressPill = () => {
+    const el = document.getElementById("aureaStreamProgressPill");
+    if (!el) return;
+
+    const pctEl = el.querySelector("[data-pct]");
+    const barEl = el.querySelector("[data-bar]");
+    if (pctEl) pctEl.textContent = "100%";
+    if (barEl) barEl.style.width = "100%";
+
+    setTimeout(() => {
+      el.style.display = "none";
+    }, 450);
+
+    try { clearInterval(streamProgressTick); } catch {}
+    streamProgressTick = null;
+    streamProgressP = 0;
+  };
+
   const fileToDataUrl = (file) => new Promise((resolve) => {
+
     // drag&drop / スクショ貼り付け系で FileReader が空を返すケースの保険を入れる
     const inferMimeFromName = (name) => {
       const n = String(name || "").toLowerCase();
@@ -2725,6 +2826,72 @@ const closeSettings = () => {
     renderView();
   };
 
+  // ===== Repair: rebuild image library from history (AUREA_IMAGE) =====
+  // - リロード後にライブラリ/履歴から画像が消えたように見える事故を防ぐ
+  // - 既存state.imagesに無い画像だけ追加する（重複防止）
+  const repairImagesLibraryFromThreads = () => {
+    try {
+      if (!Array.isArray(state.images)) state.images = [];
+
+      const existsBySrc = new Set(state.images.map(x => String(x?.src || "").trim()).filter(Boolean));
+
+      const addIfMissing = (src, prompt, from) => {
+        const s = String(src || "").trim();
+        if (!s) return;
+        if (existsBySrc.has(s)) return;
+
+        state.images.unshift({
+          id: uid(),
+          createdAt: nowISO(),
+          prompt: String(prompt || "").trim(),
+          src: s,
+          from: from || null
+        });
+
+        existsBySrc.add(s);
+      };
+
+      const scanThread = (scopeType, projectId, thread) => {
+        const t = thread || {};
+        const tid = String(t.id || "").trim();
+        const msgs = Array.isArray(t.messages) ? t.messages : [];
+
+        for (const m of msgs) {
+          if (!m || m.role !== "assistant") continue;
+          const raw = String(m.content || "");
+
+          if (!raw.startsWith("AUREA_IMAGE\n")) continue;
+
+          const lines = raw.split("\n");
+          const url = String(lines[1] || "").trim();
+          const p = String(lines.slice(2).join("\n") || "").trim();
+
+          addIfMissing(url, p, {
+            threadId: tid || null,
+            context: scopeType === "project"
+              ? { type: "project", projectId: String(projectId || "") }
+              : { type: "global" }
+          });
+        }
+      };
+
+      // global
+      for (const t of (state.threads?.global || [])) {
+        scanThread("global", null, t);
+      }
+
+      // projects
+      const pj = state.threads?.projects || {};
+      for (const pid of Object.keys(pj)) {
+        for (const t of (pj[pid] || [])) {
+          scanThread("project", pid, t);
+        }
+      }
+
+      save(state);
+    } catch {}
+  };
+
   /* ================= search across all conversations ================= */
   const iterAllThreads = () => {
     const out = [];
@@ -3239,7 +3406,9 @@ const closeSettings = () => {
             }
             .ai-image-card .aurea-sora-progress__txt{
               flex:0 0 auto;
-              margin-left:6px;
+              margin-left:8px;
+              min-width:42px;
+              text-align:right;
               font-variant-numeric: tabular-nums;
               opacity:.82;
             }
@@ -4335,6 +4504,20 @@ const closeSettings = () => {
         sendBtn.style.cursor = canSend ? "" : "not-allowed";
       }
     }
+
+    // 解析/生成％ピル
+    if (on) {
+      try { startStreamProgressPill(); } catch {}
+    } else {
+      try { finishStreamProgressPill(); } catch {}
+    }
+
+    // ★ 解析中UIの残留を確実に消す（丸アイコン/流星ラベル/AIインジケータ）
+    if (!on) {
+      try { window.__AUREA_STREAMING_MID__ = ""; } catch {}
+      try { clearAiRunIndicator(); } catch {}
+      try { renderChat(); } catch {}
+    }
   };
 
   const stopStreaming = () => {
@@ -4535,19 +4718,14 @@ const closeSettings = () => {
             });
           } catch {}
 
-          // render image message
+          // render as special image message
           const imgMsg = `AUREA_IMAGE\n${url}\n${p}`;
           updateMessage(m.id, imgMsg);
 
-          // ★ 完了ステータスを保存（リロード時の誤再稼働防止）
+          // 完了ステータスを保存（リロード時の誤再稼働防止）
           try { setMessageMeta(m.id, { status: "done", ai: "Sora" }); } catch {}
 
-          try { setAiRunIndicator({ phase: "run", statuses: { Sora: "done", GPT: "queued" } }); } catch {}
-          try { clearAiRunIndicator(); } catch {}
-          try { window.__AUREA_STREAMING_MID__ = ""; } catch {}
-
           renderChat();
-
           setStreaming(false);
           unlockAndClearAttachments();
           renderSidebar();
@@ -4738,8 +4916,17 @@ const closeSettings = () => {
         // render as special image message
         const imgMsg = `AUREA_IMAGE\n${url}\n${p}`;
         updateMessage(m.id, imgMsg);
-        renderChat();
 
+        // 生成画像を必ずライブラリへ保存
+        try {
+          addImageToLibrary({
+            prompt: p,
+            src: url,
+            from: { threadId: getActiveThreadId(), context: state.context }
+          });
+        } catch {}
+
+        renderChat();
         setStreaming(false);
         unlockAndClearAttachments();
         renderSidebar();
@@ -4747,6 +4934,7 @@ const closeSettings = () => {
       }
 
       if (r.ok && j && j.ok && j.result && typeof j.result === "object") {
+
         apiMap = j.result;
 
         // server-sync mode: still stream GPT text (GPT-like)
@@ -5131,12 +5319,8 @@ board?.addEventListener("drop", async (e) => {
       try { renderAttachTray(); } catch {}
       try { updateSendButtonVisibility(); } catch {}
 
-      // ★ GPT同等：どこにドロップしても即解析開始（テキスト空でも送る）
-      try {
-        setTimeout(() => {
-          send();
-        }, 0);
-      } catch {}
+// ドロップ時は Ask に入れるだけ（自動送信しない）
+/* NO-OP */
     }
   }, true);
 
@@ -6060,6 +6244,9 @@ if (authResult === "ok") {
   if (!state.projects) state.projects = [];
   if (!state.images) state.images = [];
 
+  // 起動時：履歴から画像ライブラリを自動復元（重複なし）
+  try { repairImagesLibraryFromThreads(); } catch {}
+
   // 旧state互換（settings/apps/customApps が無い場合の補完）
   if (!state.settings) {
     state.settings = {
@@ -6713,77 +6900,118 @@ if (authResult === "ok") {
       const rt = encodeURIComponent(`${window.location.origin}/`);
 
       const goStripe = async (plan) => {
-        const p = String(plan || "Free");
+        const p = String(plan || "Free").trim() || "Free";
 
-        const st = (typeof getAuthState === "function") ? (getAuthState() || {}) : {};
-        const uid = String(st.uid || "").trim();
-        const email = String(st.email || "").trim();
-        if (!uid || !email) {
-          alert("checkout_failed: missing_uid_or_email");
-          return;
-        }
+        // 多重クリック防止（checkout中の連打で挙動が壊れるのを防ぐ）
+        try {
+          if (window.__AUREA_STRIPE_CHECKOUT_LOCK__ === true) return;
+          window.__AUREA_STRIPE_CHECKOUT_LOCK__ = true;
+        } catch {}
 
-        // Free は即時ダウングレード（Stripeを通さない）
-        if (p === "Free") {
-          const msg = ((state.settings?.language || "ja") === "en")
-            ? "Downgrade to Free plan?"
-            : "Freeプランにダウングレードしますか？";
-          const ok = await confirmModal(msg);
-          if (!ok) return;
+        const unlock = () => {
+          try { window.__AUREA_STRIPE_CHECKOUT_LOCK__ = false; } catch {}
+        };
+
+        try {
+          // 同一プランを選択した場合は何もしない（不要な確認/遷移を防ぐ）
+          if (String(state.plan || "Free").trim() === p) {
+            unlock();
+            return;
+          }
+
+          const st = (typeof getAuthState === "function") ? (getAuthState() || {}) : {};
+          const uid = String(st.uid || "").trim();
+          const email = String(st.email || "").trim();
+          if (!uid || !email) {
+            alert("checkout_failed: missing_uid_or_email");
+            unlock();
+            return;
+          }
+
+          // Free は即時ダウングレード（Stripeを通さない）
+          if (p === "Free") {
+            const msg = ((state.settings?.language || "ja") === "en")
+              ? "Downgrade to Free plan?"
+              : "Freeプランにダウングレードしますか？";
+            const ok = await confirmModal(msg);
+            if (!ok) { unlock(); return; }
+
+            try {
+              const r = await fetch("/api/billing/downgrade", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ uid, email })
+              });
+
+              const ct = String(r.headers.get("content-type") || "");
+              const j = ct.includes("application/json") ? await r.json().catch(() => null) : null;
+
+              if (!r.ok) {
+                alert(`downgrade_failed: http_${r.status}`);
+                unlock();
+                return;
+              }
+              if (!j || !j.ok) {
+                alert("downgrade_failed: bad_response");
+                unlock();
+                return;
+              }
+            } catch (e) {
+              alert(`downgrade_failed: ${String(e && e.message ? e.message : e)}`);
+              unlock();
+              return;
+            }
+
+            wrap.style.display = "none";
+            wrap.setAttribute("aria-hidden", "true");
+            try { await refreshPlanFromServer(); } catch {}
+            unlock();
+            return;
+          }
+
+          const successUrl = `${window.location.origin}/?billing=success`;
+          const cancelUrl = `${window.location.origin}/?billing=cancel`;
 
           try {
-            const r = await fetch("/api/billing/downgrade", {
+            const r = await fetch("/api/billing/checkout", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ uid, email })
+              body: JSON.stringify({ plan: p, uid, email, successUrl, cancelUrl })
             });
 
             const ct = String(r.headers.get("content-type") || "");
             const j = ct.includes("application/json") ? await r.json().catch(() => null) : null;
 
             if (!r.ok) {
-              alert(`downgrade_failed: http_${r.status}`);
+              // サーバが詳細を返す場合はそれを優先（審査中ブロック等もここで見える）
+              const reason = String(j?.reason || "").trim();
+              const code = String(j?.code || "").trim();
+              const msg = String(j?.msg || "").trim();
+              const hint = [reason, code, msg].filter(Boolean).join(" / ");
+              alert(`checkout_failed: http_${r.status}${hint ? ` (${hint})` : ""}`);
+              unlock();
               return;
             }
-            if (!j || !j.ok) {
-              alert("downgrade_failed: bad_response");
+
+            if (!j || !j.ok || !j.url) {
+              alert("checkout_failed: bad_response");
+              unlock();
               return;
             }
+
+            // ここからStripeへ遷移（戻りは billing=success/cancel）
+            window.location.href = j.url;
+            return;
+
           } catch (e) {
-            alert(`downgrade_failed: ${String(e && e.message ? e.message : e)}`);
+            alert(`checkout_failed: ${String(e && e.message ? e.message : e)}`);
+            unlock();
             return;
           }
 
-          wrap.style.display = "none";
-          wrap.setAttribute("aria-hidden", "true");
-          try { await refreshPlanFromServer(); } catch {}
-          return;
-        }
-
-        const successUrl = `${window.location.origin}/?billing=success`;
-        const cancelUrl = `${window.location.origin}/?billing=cancel`;
-
-        try {
-          const r = await fetch("/api/billing/checkout", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ plan: p, uid, email, successUrl, cancelUrl })
-          });
-
-          const ct = String(r.headers.get("content-type") || "");
-          const j = ct.includes("application/json") ? await r.json().catch(() => null) : null;
-          if (!r.ok) {
-            alert(`checkout_failed: http_${r.status}`);
-            return;
-          }
-          if (!j || !j.ok || !j.url) {
-            alert(`checkout_failed: bad_response`);
-            return;
-          }
-
-          window.location.href = j.url;
-        } catch (e) {
-          alert(`checkout_failed: ${String(e && e.message ? e.message : e)}`);
+        } finally {
+          // Stripeへ遷移できた場合はこのunlockは不要だが、例外経路では確実に解除
+          unlock();
         }
       };
 
@@ -6914,14 +7142,15 @@ if (authResult === "ok") {
       }) || null;
 
     btnChangeEmail?.addEventListener("click", async (e) => {
-
       e.preventDefault();
-      const next = window.prompt(tr("promptNewEmail"), state.user.email || "");
-      if (next === null) return;
-      const v = next.trim();
-      if (!v) return;
-      state.user.email = v;
-      saveUser();
+
+      // 登録メールアドレスはGoogleアカウント側で管理（AUREA側で書き換えない）
+      // Googleアカウント設定へ誘導
+      try {
+        window.open("https://myaccount.google.com/", "_blank", "noopener,noreferrer");
+      } catch {
+        window.location.href = "https://myaccount.google.com/";
+      }
     });
 
     const btnRevoke = document.getElementById("btnRevokeDevice");
