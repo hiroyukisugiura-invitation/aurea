@@ -40,6 +40,33 @@
 
   // debug logger (layout.js)
   const dbg = (...args) => { try { console.info(...args); } catch {} };
+
+  /* ================= API routing (auto-detect /api vs /ai) ================= */
+  let AUREA_API_PREFIX = "/api";
+
+  const detectApiPrefix = async () => {
+    const tryOne = async (prefix) => {
+      try {
+        const r = await fetch(`${prefix}/ping`, { method: "GET", cache: "no-store" });
+        return !!(r && r.ok);
+      } catch {
+        return false;
+      }
+    };
+
+    // 優先：/api → fallback：/ai
+    if (await tryOne("/api")) { AUREA_API_PREFIX = "/api"; return; }
+    if (await tryOne("/ai")) { AUREA_API_PREFIX = "/ai"; return; }
+
+    // 最後：現状維持（/api）
+    AUREA_API_PREFIX = "/api";
+  };
+
+  const apiFetch = async (path, options) => {
+    const p = String(path || "").startsWith("/") ? String(path) : `/${path}`;
+    return await fetch(`${AUREA_API_PREFIX}${p}`, options || {});
+  };
+
   /* ================= AI activity fade ================= */
 let aiActivityRoot = null;
 
@@ -4681,7 +4708,7 @@ const closeSettings = () => {
 
         let r = null;
         try {
-          r = await fetch("/api/chat", {
+          r = await apiFetch("/chat", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
@@ -4851,7 +4878,7 @@ const closeSettings = () => {
       try { apiChatAbortCtrl?.abort(); } catch {}
       apiChatAbortCtrl = new AbortController();
 
-      const r = await fetch("/api/chat", {
+      const r = await apiFetch("/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -7475,4 +7502,9 @@ if (authResult === "ok") {
     autosizeTextarea();
     updateSendButtonVisibility();
   }
+
+  // APIルーティング判定（/api or /ai）
+  (async () => {
+    try { await detectApiPrefix(); } catch {}
+  })();
 })();

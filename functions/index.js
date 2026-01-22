@@ -125,6 +125,19 @@ app.use(stripeWebhook);
 app.use(express.json({ limit: "8mb" }));
 app.use(express.urlencoded({ extended: false, limit: "8mb" }));
 
+// ===== Health check (routing verification) =====
+app.get("/api/ping", (req, res) => {
+  res.json({ ok: true, ts: Date.now() });
+});
+app.get("/ping", (req, res) => {
+  res.json({ ok: true, ts: Date.now() });
+});
+
+// Hosting rewrites が /ai/** を使う環境向け（疎通判定用）
+app.get("/ai/ping", (req, res) => {
+  res.json({ ok: true, ts: Date.now() });
+});
+
 try { admin.initializeApp(); } catch (e) { void e; }
 const db = admin.firestore();
 
