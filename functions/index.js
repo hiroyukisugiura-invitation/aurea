@@ -1607,6 +1607,7 @@ app.post("/api/chat", async (req, res) => {
     const attachments = Array.isArray(req.body?.attachments) ? req.body.attachments : [];
     const context = req.body?.context || {};
 
+    // prompt が空でも、画像/ファイル添付があれば解析として通す
     if (!prompt && attachments.length === 0) {
       res.status(400).json({ ok: false, reason: "empty_input" });
       return;
@@ -1628,6 +1629,7 @@ app.post("/api/chat", async (req, res) => {
     });
 
     // 画像生成要求は、画像添付が無い時だけ image を返す
+    // 画像生成：テキストで明示的に要求された場合のみ
     if (!hasImageAttachment && isImageGenerationRequest(prompt)) {
       const key = getSoraKey() || getOpenAIKey();
 
@@ -1764,7 +1766,11 @@ app.post("/api/chat", async (req, res) => {
 
     // GPT同等：添付だけ投げられた時は、AIに「添付あり・テキスト無し」を明示して起動させる
     const promptForModel = isImplicitAttachmentOnly
-      ? "User uploaded file(s) without any message."
+      ? (
+          hasImageAttachment
+            ? "Analyze the attached image(s). Describe what you see and extract any relevant information."
+            : "User uploaded file(s) without any message."
+        )
       : prompt;
 
     const userParts = [{ type: "input_text", text: promptForModel }];
