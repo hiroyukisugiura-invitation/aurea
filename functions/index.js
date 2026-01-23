@@ -285,10 +285,12 @@ app.post("/api/billing/checkout", async (req, res) => {
   }
 
   try {
-    const { plan, uid, email } = req.body || {};
+    const { plan, uid, email, successUrl, cancelUrl } = req.body || {};
     const p = String(plan || "").trim();
     const u = String(uid || "").trim();
     const em = String(email || "").trim();
+    const su = String(successUrl || "").trim();
+    const cu = String(cancelUrl || "").trim();
 
     if (!p || !u || !em) {
       res.status(400).json({ ok: false, reason: "missing_params" });
@@ -304,11 +306,13 @@ app.post("/api/billing/checkout", async (req, res) => {
 
     const payload = {
       items: [{ price_id: priceId, quantity: 1 }],
-      collection_mode: "automatic",
-      custom_data: { uid: u, plan: p, email: em }
+      customer: { email: em },
+      custom_data: { uid: u, plan: p, email: em },
+      success_url: su || `${req.protocol}://${req.get("host")}/?billing=success`,
+      cancel_url: cu || `${req.protocol}://${req.get("host")}/?billing=cancel`
     };
 
-    const r = await fetch("https://api.paddle.com/transactions?include=checkout", {
+    const r = await fetch("https://api.paddle.com/checkout/sessions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -318,7 +322,10 @@ app.post("/api/billing/checkout", async (req, res) => {
     });
 
     const j = await r.json().catch(() => null);
-    const url = String(j?.data?.checkout?.url || "").trim();
+
+    const url =
+      String(j?.data?.url || "").trim() ||
+      String(j?.data?.checkout?.url || "").trim();
 
     if (!r.ok || !url) {
       const msg =
@@ -331,6 +338,7 @@ app.post("/api/billing/checkout", async (req, res) => {
 
     res.status(200).json({ ok: true, url });
     return;
+
   } catch (e) {
     const msg = String(e && e.message ? e.message : e || "");
     res.status(500).json({ ok: false, reason: "checkout_exception", msg });
