@@ -7406,8 +7406,8 @@ if (authResult === "ok") {
         return "";
       }
     };
-
-    const openLegalModal = (key) => {
+    
+    const openLegalModal = async (key) => {
       if (!legalOverlay || !legalModalTitle || !legalModalBody) return;
 
       const k = (key === "terms" || key === "privacy" || key === "tokusho") ? key : "tokusho";
@@ -7428,6 +7428,7 @@ if (authResult === "ok") {
       // ※ 静的ページの本文と同一テキスト（innerText）を表示
       const safe = escHtml(pageText);
       legalModalBody.innerHTML = safe ? `<div class="reg-text">${safe.replace(/\n/g, "<br>")}</div>` : `<div class="reg-text"></div>`;
+
       legalOverlay.style.display = "flex";
 
       // 長文だけスクロールを付与
@@ -7441,6 +7442,7 @@ if (authResult === "ok") {
         legalOverlay.classList.add("is-open");
       });
     };
+
 
     const closeLegalModal = () => {
       if (!legalOverlay) return;
