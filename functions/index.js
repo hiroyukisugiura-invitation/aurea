@@ -947,7 +947,7 @@ const callOpenAIText = async ({ system, user, userParts, model }) => {
   const key = getOpenAIKey();
   if (!key) return null;
 
-  const m = String(model || "gpt-5.2").trim() || "gpt-5.2";
+  const m = String(model || "gpt-4o").trim() || "gpt-4o";
 
   const sysText = String(system || "").trim();
   const userText = String(user || "").trim();
@@ -1838,7 +1838,7 @@ app.post("/chat", async (req, res) => {
       system: gptSystem,
       user: prompt,
       userParts: gptParts,
-      model: "gpt-5.2"
+      model: "gpt-4o"
     });
 
     if (gptOut) map.GPT = gptOut;
