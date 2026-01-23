@@ -1,14 +1,12 @@
 const { onRequest } = require("firebase-functions/v2/https");
 const express = require("express");
 const admin = require("firebase-admin");
-const Stripe = require("stripe");
 const { defineSecret } = require("firebase-functions/params");
 
-const STRIPE_SECRET_KEY = defineSecret("STRIPE_SECRET_KEY");
-const STRIPE_PRICE_PRO = defineSecret("STRIPE_PRICE_PRO");
-const STRIPE_PRICE_TEAM = defineSecret("STRIPE_PRICE_TEAM");
-const STRIPE_PRICE_ENTERPRISE = defineSecret("STRIPE_PRICE_ENTERPRISE");
-const STRIPE_WEBHOOK_SECRET = defineSecret("STRIPE_WEBHOOK_SECRET");
+const PADDLE_API_KEY = defineSecret("PADDLE_API_KEY");
+const PADDLE_PRICE_PRO = defineSecret("PADDLE_PRICE_PRO");
+const PADDLE_PRICE_TEAM = defineSecret("PADDLE_PRICE_TEAM");
+const PADDLE_PRICE_ENTERPRISE = defineSecret("PADDLE_PRICE_ENTERPRISE");
 
 const GOOGLE_OAUTH_CLIENT_ID = defineSecret("GOOGLE_OAUTH_CLIENT_ID");
 const GOOGLE_OAUTH_REDIRECT_URI = defineSecret("GOOGLE_OAUTH_REDIRECT_URI");
@@ -36,91 +34,23 @@ const GOOGLE_OAUTH_REDIRECT_URI = defineSecret("GOOGLE_OAUTH_REDIRECT_URI");
  * Logging:
  * - set AUREA_DEBUG=1 to enable server debug logs (dbg)
  */
- 
-// Secret が無い状態で Stripe を初期化しない（解析落ち防止）
-const getStripe = () => {
-  const key = String(STRIPE_SECRET_KEY.value() || "").trim();
-  if (!key) return null;
-  return new Stripe(key);
+
+const getPaddleKey = () => {
+  const k = String(PADDLE_API_KEY.value() || "").trim();
+  return k ? k : null;
+};
+
+const getPaddlePriceMap = () => {
+  return {
+    Pro: String(PADDLE_PRICE_PRO.value() || "").trim(),
+    Team: String(PADDLE_PRICE_TEAM.value() || "").trim(),
+    Enterprise: String(PADDLE_PRICE_ENTERPRISE.value() || "").trim()
+  };
 };
 
 const app = express();
 
-// ===== Stripe Webhook（raw専用ルーター）=====
-const stripeWebhook = express.Router();
-
-// raw を最優先で適用（これが超重要）
-stripeWebhook.post(
-  "/api/stripe/webhook",
-  express.raw({ type: "application/json" }),
-  async (req, res) => {
-    const stripe = getStripe();
-    if (!stripe) {
-      res.status(500).send("stripe_key_missing");
-      return;
-    }
-
-    const sig = req.headers["stripe-signature"];
-    const endpointSecret = String(STRIPE_WEBHOOK_SECRET.value() || "").trim();
-
-    let event;
-    try {
-    event = stripe.webhooks.constructEvent(req.rawBody, sig, endpointSecret);
-  } catch (err) {
-    res.status(400).send(`Webhook Error: ${err.message}`);
-    return;
-  }
-
-    try {
-      // 監査ログ
-      await db.collection("stripe_events").doc(event.id).set({
-        type: event.type,
-        created: event.created,
-        livemode: event.livemode,
-        data: event.data.object,
-        receivedAt: admin.firestore.FieldValue.serverTimestamp()
-      });
-
-      // プラン反映
-      if (event.type === "checkout.session.completed") {
-        const session = event.data.object || {};
-        const md = session.metadata || {};
-        const plan = String(md.plan || "").trim();
-        let uid = String(md.uid || "").trim();
-
-        const email =
-          String((session.customer_details || {}).email || "").trim() ||
-          String(session.customer_email || "").trim();
-
-        if ((!uid || uid === "<UID>") && email) {
-          const u = await admin.auth().getUserByEmail(email);
-          uid = u.uid;
-        }
-
-        if (uid && plan) {
-          await db.collection("users").doc(uid).set(
-            {
-              plan,
-              stripeCustomerId: String(session.customer || ""),
-              stripeSubscriptionId: String(session.subscription || ""),
-              updatedAt: admin.firestore.FieldValue.serverTimestamp()
-            },
-            { merge: true }
-          );
-        }
-      }
-
-      res.json({ received: true });
-    } catch (e) {
-      res.status(500).send("webhook_handler_failed");
-    }
-  }
-);
-
-// ★ これを必ず app に mount
-app.use(stripeWebhook);
-
-// ===== それ以外の API は JSON =====
+// ===== API は JSON =====
 // 添付（base64）を含むため上限を引き上げ
 app.use(express.json({ limit: "8mb" }));
 app.use(express.urlencoded({ extended: false, limit: "8mb" }));
@@ -346,214 +276,65 @@ const consumeInvite = async (req, res) => {
   }
 };
 
-/* ================= Billing (Stripe) ================= */
+/* ================= Billing (Paddle) ================= */
 app.post("/api/billing/checkout", async (req, res) => {
-  const stripe = getStripe();
-  if (!stripe) {
-    res.status(500).json({ ok: false, reason: "stripe_key_missing" });
+  const key = getPaddleKey();
+  if (!key) {
+    res.status(500).json({ ok: false, reason: "paddle_key_missing" });
     return;
   }
 
   try {
-    const { plan, uid, email, successUrl, cancelUrl } = req.body || {};
-    if (!plan || !uid || !email) {
+    const { plan, uid, email } = req.body || {};
+    const p = String(plan || "").trim();
+    const u = String(uid || "").trim();
+    const em = String(email || "").trim();
+
+    if (!p || !u || !em) {
       res.status(400).json({ ok: false, reason: "missing_params" });
       return;
     }
 
-    const priceMap = {
-      Pro: String(STRIPE_PRICE_PRO.value() || "").trim(),
-      Team: String(STRIPE_PRICE_TEAM.value() || "").trim(),
-      Enterprise: String(STRIPE_PRICE_ENTERPRISE.value() || "").trim()
-    };
-
-    const price = priceMap[plan];
-    if (!price) {
+    const priceMap = getPaddlePriceMap();
+    const priceId = String(priceMap[p] || "").trim();
+    if (!priceId) {
       res.status(400).json({ ok: false, reason: "invalid_plan" });
       return;
     }
 
-    const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
-      payment_method_types: ["card"],
-      line_items: [{ price, quantity: 1 }],
-      customer_email: email,
-      success_url: successUrl || `${req.protocol}://${req.get("host")}/?billing=success`,
-      cancel_url: cancelUrl || `${req.protocol}://${req.get("host")}/?billing=cancel`,
-      metadata: { uid, plan }
+    const payload = {
+      items: [{ price_id: priceId, quantity: 1 }],
+      collection_mode: "automatic",
+      custom_data: { uid: u, plan: p, email: em }
+    };
+
+    const r = await fetch("https://api.paddle.com/transactions?include=checkout", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${key}`
+      },
+      body: JSON.stringify(payload)
     });
 
-    res.json({ ok: true, url: session.url });
-  } catch (e) {
-    const msg = String(e && e.message ? e.message : e || "");
-    const type = String(e && e.type ? e.type : "");
-    const code = String(e && e.code ? e.code : "");
-    const param = String(e && e.param ? e.param : "");
-    res.status(400).json({ ok: false, reason: "checkout_failed", type, code, param, msg });
-  }
-});
+    const j = await r.json().catch(() => null);
+    const url = String(j?.data?.checkout?.url || "").trim();
 
-app.post("/api/billing/downgrade", async (req, res) => {
-  const stripe = getStripe();
-  if (!stripe) {
-    res.status(500).json({ ok: false, reason: "stripe_key_missing" });
+    if (!r.ok || !url) {
+      const msg =
+        (j && j.error && (j.error.message || j.error.type))
+          ? String(j.error.message || j.error.type)
+          : `http_${r.status}`;
+      res.status(400).json({ ok: false, reason: "checkout_failed", msg });
+      return;
+    }
+
+    res.status(200).json({ ok: true, url });
     return;
-  }
-
-  let stripeSkipped = false;
-  let stripeError = "";
-
-  try {
-    const uid = String(req.body?.uid || "").trim();
-    if (!uid) {
-      res.status(400).json({ ok: false, reason: "missing_uid" });
-      return;
-    }
-
-    const snap = await db.collection("users").doc(uid).get();
-    const d = snap.exists ? (snap.data() || {}) : {};
-
-    const subId = String(d.stripeSubscriptionId || "").trim();
-    const customerId = String(d.stripeCustomerId || "").trim();
-
-    // Stripe は「できたら解約」扱い：失敗しても throw しない（Free確定を最優先）
-    try {
-      // 1) subscriptionId があればそれをキャンセル
-      if (subId) {
-        try {
-          await stripe.subscriptions.del(subId);
-        } catch (e) {
-          const code = String(e && e.code ? e.code : "");
-          const msg = String(e && e.message ? e.message : e || "");
-          const isMissing = (code === "resource_missing") || msg.includes("No such subscription");
-          if (!isMissing) {
-            stripeSkipped = true;
-            stripeError = msg || code || "stripe_cancel_failed";
-          }
-        }
-      }
-
-      // 2) subscriptionId が無い場合は customerId から active/trialing を探してキャンセル
-      if (!subId && customerId) {
-        try {
-          const list = await stripe.subscriptions.list({
-            customer: customerId,
-            status: "all",
-            limit: 10
-          });
-
-          const cand = (list.data || []).find(s =>
-            s && (s.status === "active" || s.status === "trialing" || s.status === "past_due")
-          );
-
-          if (cand && cand.id) {
-            try {
-              await stripe.subscriptions.del(String(cand.id));
-            } catch (e) {
-              const msg = String(e && e.message ? e.message : e || "");
-              stripeSkipped = true;
-              stripeError = msg || "stripe_cancel_failed";
-            }
-          }
-        } catch (e) {
-          const msg = String(e && e.message ? e.message : e || "");
-          stripeSkipped = true;
-          stripeError = msg || "stripe_list_failed";
-        }
-      }
-    } catch (e) {
-      const msg = String(e && e.message ? e.message : e || "");
-      stripeSkipped = true;
-      stripeError = msg || "stripe_failed";
-    }
-
-    // Firestore を Free に確定（ここは必ず通す）
-    await db.collection("users").doc(uid).set(
-      {
-        plan: "Free",
-        stripeSubscriptionId: "",
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      },
-      { merge: true }
-    );
-
-    res.json({ ok: true, stripeSkipped, stripeError });
   } catch (e) {
     const msg = String(e && e.message ? e.message : e || "");
-    const type = String(e && e.type ? e.type : "");
-    const code = String(e && e.code ? e.code : "");
-    const param = String(e && e.param ? e.param : "");
-    res.status(400).json({ ok: false, reason: "downgrade_failed", type, code, param, msg });
-  }
-});
-
-/* ================= TEMP: Force plan (remove later) ================= */
-app.post("/api/stripe/test-complete", async (req, res) => {
-  const stripe = getStripe();
-  if (!stripe) {
-    res.status(500).json({ ok: false, reason: "stripe_key_missing" });
+    res.status(500).json({ ok: false, reason: "checkout_exception", msg });
     return;
-  }
-
-  try {
-    let uid = String(req.body?.uid || "").trim();
-    const plan = String(req.body?.plan || "").trim();
-
-    if (!uid) {
-      const email = String(req.body?.email || "").trim();
-      if (email) {
-        try {
-          const u = await admin.auth().getUserByEmail(email);
-          uid = String(u.uid || "").trim();
-        } catch (e) {
-          void e;
-        }
-      }
-    }
-
-    if (!uid) {
-      res.status(400).json({ ok: false, reason: "missing_uid" });
-      return;
-    }
-
-    // plan が指定されていれば、その plan を Firestore に書く（Stripeは触らない）
-    if (plan) {
-      await db.collection("users").doc(uid).set(
-        {
-          plan,
-          updatedAt: admin.firestore.FieldValue.serverTimestamp()
-        },
-        { merge: true }
-      );
-      res.json({ ok: true });
-      return;
-    }
-
-    // plan 未指定なら Free に戻す（可能なら subscription を cancel）
-    const snap = await db.collection("users").doc(uid).get();
-    const d = snap.exists ? (snap.data() || {}) : {};
-    const subId = String(d.stripeSubscriptionId || "").trim();
-
-    if (subId) {
-      await stripe.subscriptions.del(subId);
-    }
-
-    await db.collection("users").doc(uid).set(
-      {
-        plan: "Free",
-        stripeSubscriptionId: "",
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      },
-      { merge: true }
-    );
-
-    res.json({ ok: true });
-  } catch (e) {
-    const msg = String(e && e.message ? e.message : e || "");
-    const type = String(e && e.type ? e.type : "");
-    const code = String(e && e.code ? e.code : "");
-    const param = String(e && e.param ? e.param : "");
-    res.status(400).json({ ok: false, reason: "test_complete_failed", type, code, param, msg });
   }
 });
 
@@ -2067,11 +1848,10 @@ exports.api = onRequest(
   {
     region: "us-central1",
     secrets: [
-      STRIPE_SECRET_KEY,
-      STRIPE_PRICE_PRO,
-      STRIPE_PRICE_TEAM,
-      STRIPE_PRICE_ENTERPRISE,
-      STRIPE_WEBHOOK_SECRET,
+      PADDLE_API_KEY,
+      PADDLE_PRICE_PRO,
+      PADDLE_PRICE_TEAM,
+      PADDLE_PRICE_ENTERPRISE,
 
       OPENAI_API_KEY,
 
@@ -2083,8 +1863,8 @@ exports.api = onRequest(
 
       GOOGLE_OAUTH_CLIENT_ID,
       GOOGLE_OAUTH_REDIRECT_URI,
-
     ]
   },
   app
 );
+
