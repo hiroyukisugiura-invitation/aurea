@@ -9,143 +9,177 @@
   <style>
     :root{
       --bg:#0b0b0d;
-      --card:#111114;
       --text:rgba(255,255,255,.92);
-      --muted:rgba(255,255,255,.70);
+      --muted:rgba(255,255,255,.65);
       --line:rgba(255,255,255,.12);
-      --soft:rgba(255,255,255,.06);
+      --btn:rgba(255,255,255,.06);
+      --btn2:rgba(255,255,255,.08);
     }
     html,body{height:100%}
     body{
       margin:0;
-      background:radial-gradient(1200px 700px at 20% 10%, rgba(255,255,255,.08), transparent 55%),
-                 radial-gradient(900px 600px at 90% 40%, rgba(255,255,255,.06), transparent 60%),
-                 var(--bg);
+      background:
+        radial-gradient(1200px 700px at 20% 10%, rgba(255,255,255,.08), transparent 55%),
+        radial-gradient(900px 600px at 90% 40%, rgba(255,255,255,.06), transparent 60%),
+        var(--bg);
       color:var(--text);
       font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
-      display:flex;align-items:center;justify-content:center;
-      padding:18px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:28px 18px;
     }
-    .card{
-      width:min(520px, calc(100% - 24px));
-      background:rgba(17,17,20,.92);
-      border:1px solid var(--line);
-      border-radius:18px;
-      box-shadow:0 18px 60px rgba(0,0,0,.55);
-      overflow:hidden;
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
+
+    .wrap{
+      width:min(860px, 100%);
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:18px;
     }
-    .hd{
-      padding:18px 18px 14px;
-      border-bottom:1px solid rgba(255,255,255,.08);
-      display:flex;align-items:center;justify-content:space-between;gap:10px;
-    }
+
     .brand{
-      display:flex;align-items:center;gap:10px;min-width:0;
+      font-weight:500;
+      letter-spacing:.28em;
+      font-size:clamp(56px, 9vw, 92px);
+      line-height:1;
+      text-align:center;
+      user-select:none;
     }
-    .logo{
-      width:28px;height:28px;border-radius:8px;
-      background:linear-gradient(135deg, rgba(255,255,255,.18), rgba(255,255,255,.06));
-      border:1px solid rgba(255,255,255,.12);
-      display:grid;place-items:center;
-      font-weight:700;font-size:13px;
+
+    .panel{
+      width:min(520px, 100%);
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      text-align:center;
+      gap:10px;
     }
-    .ttl{font-weight:700;font-size:14px}
-    .bd{padding:16px 18px 18px}
-    .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-    .pill{
-      display:inline-flex;align-items:center;gap:8px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(255,255,255,.06);
-      border-radius:999px;
-      padding:8px 10px;
-      font-size:12px;
-      color:var(--muted);
-      max-width:100%;
-    }
-    .pill strong{color:var(--text);font-weight:600}
-    .msg{
-      margin-top:12px;
+
+    .welcome{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:6px 12px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.04);
+      border-radius:10px;
       font-size:13px;
-      line-height:1.65;
+      color:rgba(255,255,255,.82);
+      margin-top:2px;
+    }
+
+    .desc{
+      margin:0;
+      font-size:12px;
+      line-height:1.7;
       color:var(--muted);
       white-space:pre-wrap;
       word-break:break-word;
     }
-    .err{
-      margin-top:12px;
+
+    .btnRow{
+      margin-top:6px;
+      display:flex;
+      gap:12px;
+      width:100%;
+      justify-content:center;
+    }
+
+    .btnPrimary{
+      width:190px;
+      max-width:calc(50% - 6px);
+      height:42px;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.06);
+      color:rgba(255,255,255,.90);
       font-size:13px;
-      line-height:1.65;
+      cursor:pointer;
+      transition:background .15s ease, border-color .15s ease, transform .05s ease;
+    }
+    .btnPrimary:hover{
+      background:rgba(255,255,255,.08);
+      border-color:rgba(255,255,255,.16);
+    }
+    .btnPrimary:active{transform:translateY(1px)}
+    .btnPrimary:disabled{opacity:.55; cursor:not-allowed}
+
+    .note{
+      margin-top:2px;
+      font-size:11px;
+      line-height:1.6;
+      color:rgba(255,255,255,.45);
+    }
+
+    .legalRow{
+      margin-top:8px;
+      display:flex;
+      gap:10px;
+      justify-content:center;
+      flex-wrap:wrap;
+    }
+    .btnGhost{
+      height:26px;
+      padding:0 10px;
+      border-radius:9px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.04);
+      color:rgba(255,255,255,.70);
+      font-size:11px;
+      cursor:pointer;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      transition:background .15s ease, border-color .15s ease;
+    }
+    .btnGhost:hover{
+      background:rgba(255,255,255,.06);
+      border-color:rgba(255,255,255,.16);
+    }
+
+    .err{
+      margin-top:6px;
+      font-size:12px;
+      line-height:1.6;
       color:rgba(255,200,200,.92);
       white-space:pre-wrap;
       word-break:break-word;
+      display:none;
     }
-    .btn{
-      margin-top:14px;
-      width:100%;
-      height:44px;
-      border-radius:12px;
-      border:1px solid rgba(255,255,255,.14);
-      background:rgba(255,255,255,.08);
-      color:var(--text);
-      cursor:pointer;
-      font-size:13px;
-      display:flex;align-items:center;justify-content:center;gap:10px;
+
+    @media (max-width: 420px){
+      .btnPrimary{width:calc(50% - 6px)}
     }
-    .btn:disabled{opacity:.55;cursor:not-allowed}
-    .spin{
-      width:16px;height:16px;border-radius:50%;
-      border:2px solid rgba(255,255,255,.18);
-      border-top-color:rgba(255,255,255,.76);
-      animation: r 1s linear infinite;
-    }
-    @keyframes r{to{transform:rotate(360deg)}}
-    .foot{
-      padding:12px 18px 16px;
-      border-top:1px solid rgba(255,255,255,.08);
-      font-size:11px;
-      color:rgba(255,255,255,.55);
-      line-height:1.6;
-    }
-    a{color:inherit}
   </style>
 </head>
 
 <body>
-  <div class="card" role="dialog" aria-label="AUREA Login">
-    <div class="hd">
-      <div class="brand">
-        <div class="logo" aria-hidden="true">A</div>
-        <div class="ttl">AUREA Login</div>
-      </div>
-      <div class="pill" id="modePill" aria-label="Mode">
-        Mode: <strong id="modeText">Personal</strong>
-      </div>
-    </div>
+  <main class="wrap" aria-label="AUREA Login">
+    <div class="brand" aria-hidden="true">AUREA</div>
 
-    <div class="bd">
-      <div class="row">
-        <div class="pill" id="invitePill" style="display:none">
-          Invite: <strong id="inviteText"></strong>
-        </div>
+    <section class="panel">
+      <div class="welcome">ようこそ AUREA へ</div>
+
+      <p class="desc" id="statusMsg">初回利用にはログイン登録が必要です。&#10;Google アカウントと連携して続行してください。</p>
+      <div class="err" id="errorMsg"></div>
+
+      <div class="btnRow" role="group" aria-label="Login mode">
+        <button class="btnPrimary" id="btnPersonal" type="button">Personal</button>
+        <button class="btnPrimary" id="btnCompany" type="button">Company</button>
       </div>
 
-      <div class="msg" id="statusMsg">Google アカウントでログインします…</div>
-      <div class="err" id="errorMsg" style="display:none"></div>
+      <div class="note">※ 未ログイン状態では AUREA 本体は利用できません</div>
 
-      <button class="btn" id="btnStart" type="button" disabled>
-        <span class="spin" aria-hidden="true"></span>
-        <span id="btnLabel">Signing in…</span>
-      </button>
-    </div>
-
-    <div class="foot">
-      Email/Password は使用しません。<br>
-      Company は招待制（期限：発行から7日）です。<br>
-      期限切れの場合は管理者に再招待を依頼してください。
-    </div>
-  </div>
+      <div class="legalRow" aria-label="Legal links">
+        <a class="btnGhost" href="/legal.html">特定商取引法に基づく表記</a>
+        <a class="btnGhost" href="/terms.html">利用規約</a>
+        <a class="btnGhost" href="/privacy.html">プライバシーポリシー</a>
+      </div>
+    </section>
+  </main>
 
   <!-- Firebase (compat CDN) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
@@ -161,14 +195,10 @@
 
       const $ = (id) => document.getElementById(id);
 
-      const modeText = $("modeText");
-      const modePill = $("modePill");
-      const invitePill = $("invitePill");
-      const inviteText = $("inviteText");
       const statusMsg = $("statusMsg");
       const errorMsg = $("errorMsg");
-      const btnStart = $("btnStart");
-      const btnLabel = $("btnLabel");
+      const btnPersonal = $("btnPersonal");
+      const btnCompany = $("btnCompany");
 
       const params = new URLSearchParams(location.search);
       const modeParam = (params.get("mode") || "").trim();
@@ -217,59 +247,20 @@
         location.replace(url.toString());
       };
 
-      const setModeUI = (m) => {
-        const label = (m === "company") ? "Company" : "Personal";
-        if (modeText) modeText.textContent = label;
-        if (modePill) modePill.setAttribute("aria-label", `Mode: ${label}`);
-      };
-
-      const setInviteUI = (token) => {
-        if (!token) {
-          if (invitePill) invitePill.style.display = "none";
-          return;
-        }
-        if (inviteText) inviteText.textContent = token;
-        if (invitePill) invitePill.style.display = "";
-      };
-
       const showError = (text) => {
         if (errorMsg) {
           errorMsg.textContent = text || "Login error";
           errorMsg.style.display = "block";
         }
-        if (statusMsg) statusMsg.textContent = "";
       };
 
-      // mode 결정: URL > 저장값 > personal
+      // mode 決定: URL > 保存値 > personal
       let mode = (modeParam === "company") ? "company" : (modeParam === "personal" ? "personal" : null);
       if (!mode) mode = getSavedMode() || "personal";
-      setSavedMode(mode);
-      setModeUI(mode);
 
-      // 기업 모드: invite 필수
-      if (mode === "company") {
-        if (!inviteParam) {
-          const invRaw = (() => {
-            try {
-              const s = localStorage.getItem(INVITE_KEY);
-              return s ? JSON.parse(s) : null;
-            } catch { return null; }
-          })();
-          const token = invRaw?.token ? String(invRaw.token) : "";
-          if (!token) {
-            // 招待無しで company は絶対に通さない
-            redirectToIndexError("invite_invalid");
-            return;
-          }
-          setInviteUI(token);
-        } else {
-          setInvite({ token: inviteParam, receivedAt: new Date().toISOString() });
-          setInviteUI(inviteParam);
-        }
-      } else {
-        // personal は招待不要
-        clearInvite();
-        setInviteUI("");
+      // company invite の保存（URLにあれば保存）
+      if (inviteParam) {
+        setInvite({ token: inviteParam, receivedAt: new Date().toISOString() });
       }
 
       // company アカウントを personal で使わせない（既に company loggedIn がある場合）
@@ -279,7 +270,7 @@
         return;
       }
 
-      // Firebase Hosting の init.json から config を自動取得（貼り付け不要）
+      // Firebase Hosting の init.json から config を自動取得
       const fetchFirebaseConfig = async () => {
         try {
           const r = await fetch("/__/firebase/init.json", { cache: "no-store" });
@@ -294,31 +285,17 @@
       const cfg = await fetchFirebaseConfig();
       if (!cfg || typeof cfg !== "object") {
         showError("Firebase 設定が取得できません（/__/firebase/init.json）");
-        btnStart.disabled = true;
-        btnLabel.textContent = "Config missing";
+        btnPersonal.disabled = true;
+        btnCompany.disabled = true;
         return;
       }
 
-      try {
-        firebase.initializeApp(cfg);
-      } catch (e) {
-        // 既に初期化済み等は許容
-        void e;
-      }
+      try { firebase.initializeApp(cfg); } catch (e) { void e; }
 
       const auth = firebase.auth();
       const provider = new firebase.auth.GoogleAuthProvider();
 
       const consumeCompanyInvite = async (token, user) => {
-        // 招待制はサーバ検証必須（無いなら通さない）
-        // 想定API:
-        // POST /api/company/invite/consume
-        // body: { token, email, uid }
-        // 200 ok
-        // 400 invalid -> invite_invalid
-        // 409 used -> invite_used
-        // 410 expired -> invite_expired
-        // 403 domain -> domain_not_allowed
         try {
           const r = await fetch("/api/company/invite/consume", {
             method: "POST",
@@ -327,12 +304,10 @@
           });
 
           if (r && r.ok) return { ok: true };
-
           if (r && r.status === 409) return { ok: false, reason: "invite_used" };
           if (r && r.status === 410) return { ok: false, reason: "invite_expired" };
           if (r && r.status === 403) return { ok: false, reason: "domain_not_allowed" };
           if (r && r.status === 400) return { ok: false, reason: "invite_invalid" };
-
           return { ok: false, reason: "invite_invalid" };
         } catch {
           return { ok: false, reason: "invite_invalid" };
@@ -341,7 +316,6 @@
 
       const handleRedirectResultOnce = async () => {
         try {
-          statusMsg.textContent = "ログイン状態を確認しています…";
           const res = await auth.getRedirectResult();
           if (res && res.user) {
             const user = res.user;
@@ -368,23 +342,21 @@
           void e;
         }
 
-        // 未ログインなら待機（自動で redirect を開始しない＝ループ防止）
-        statusMsg.textContent = "Google アカウントでログインしてください。";
-        btnStart.disabled = false;
-        btnLabel.textContent = "Continue with Google";
+        // 未ログイン：UIは待機（ボタン押下で開始）
+        if (statusMsg) {
+          statusMsg.textContent = "初回利用にはログイン登録が必要です。\nGoogle アカウントと連携して続行してください。";
+        }
       };
 
       const startLogin = async () => {
-        btnStart.disabled = true;
-        btnLabel.textContent = "Signing in…";
+        btnPersonal.disabled = true;
+        btnCompany.disabled = true;
 
         try {
-          statusMsg.textContent = "Google アカウント認証を開始します…";
           const res = await auth.signInWithPopup(provider);
           const user = res && res.user;
           if (!user) throw new Error("no_user");
 
-          // Company の場合だけ invite 消費
           if (mode === "company") {
             const inv = (() => {
               try {
@@ -404,17 +376,39 @@
         } catch (e) {
           console.error(e);
           showError("Google ログインに失敗しました。");
-          btnStart.disabled = false;
-          btnLabel.textContent = "Continue with Google";
+          btnPersonal.disabled = false;
+          btnCompany.disabled = false;
         }
       };
 
-      btnStart.addEventListener("click", (e) => {
+      btnPersonal.addEventListener("click", (e) => {
         e.preventDefault();
+        mode = "personal";
+        setSavedMode("personal");
+        clearInvite();
         startLogin();
       });
 
-      // 先に「戻り結果」を処理。ここで redirect は開始しない。
+      btnCompany.addEventListener("click", (e) => {
+        e.preventDefault();
+        mode = "company";
+        setSavedMode("company");
+
+        const invRaw = (() => {
+          try {
+            const s = localStorage.getItem(INVITE_KEY);
+            return s ? JSON.parse(s) : null;
+          } catch { return null; }
+        })();
+
+        const token = invRaw?.token ? String(invRaw.token) : "";
+        if (!token) {
+          redirectToIndexError("invite_invalid");
+          return;
+        }
+        startLogin();
+      });
+
       await handleRedirectResultOnce();
     })();
   </script>

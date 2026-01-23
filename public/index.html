@@ -11,32 +11,51 @@
 
 <body class="" data-auth="required">
   <!-- AUTH GATE (block until authenticated) -->
-  <div id="authGate" style="position:fixed;inset:0;z-index:9999;background:rgba(10,10,12,.85);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center">
-    <div style="max-width:520px;width:calc(100% - 32px);background:#111;border-radius:16px;padding:28px 24px;color:#fff;box-shadow:0 20px 60px rgba(0,0,0,.5)">
-      <div style="font-size:20px;font-weight:600;margin-bottom:8px">ようこそ AUREA へ</div>
-      <div style="opacity:.85;line-height:1.6;margin-bottom:18px">
-        初回利用にはログイン登録が必要です。<br>
-        Google アカウントと連携して続行してください。
+  <div id="authGate" style="position:fixed;inset:0;z-index:9999;background:rgba(10,10,12,.85);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:28px 18px">
+    <div style="width:min(860px,100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px">
+
+      <div style="font-weight:500;letter-spacing:.28em;font-size:clamp(56px,9vw,92px);line-height:1;text-align:center;user-select:none">
+        AUREA
       </div>
 
-      <div style="display:flex;gap:12px;flex-wrap:wrap">
-        <button id="btnAuthPersonal" type="button" style="flex:1 1 200px;height:44px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#1a1a1a;color:#fff">
-          Personal
-        </button>
-        <button id="btnAuthCompany" type="button" style="flex:1 1 200px;height:44px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#1a1a1a;color:#fff">
-          Company
-        </button>
-      </div>
+      <div style="width:min(520px,100%);display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px">
 
-      <div style="margin-top:14px;font-size:12px;line-height:1.6">
-        <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;opacity:.9">
-          <a href="/terms.html" style="color:#9fb4ff;text-decoration:underline">Terms of Service</a>
-          <a href="/privacy.html" style="color:#9fb4ff;text-decoration:underline">Privacy Policy</a>
-          <a href="/legal.html" style="color:#9fb4ff;text-decoration:underline">Legal / Refund Policy</a>
+        <div style="display:inline-flex;align-items:center;justify-content:center;padding:6px 12px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);border-radius:10px;font-size:13px;color:rgba(255,255,255,.82);margin-top:2px">
+          ようこそ AUREA へ
         </div>
-        <div style="margin-top:10px;opacity:.6">
+
+        <div style="margin:0;font-size:12px;line-height:1.7;color:rgba(255,255,255,.65);white-space:pre-wrap;word-break:break-word">
+          初回利用にはログイン登録が必要です。
+          <br>
+          Google アカウントと連携して続行してください。
+        </div>
+
+        <div style="margin-top:6px;display:flex;gap:12px;width:100%;justify-content:center">
+          <button id="btnAuthPersonal" type="button" style="width:190px;max-width:calc(50% - 6px);height:42px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:rgba(255,255,255,.90);font-size:13px;cursor:pointer">
+            Personal
+          </button>
+
+          <button id="btnAuthCompany" type="button" style="width:190px;max-width:calc(50% - 6px);height:42px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:rgba(255,255,255,.90);font-size:13px;cursor:pointer">
+            Company
+          </button>
+        </div>
+
+        <div style="margin-top:2px;font-size:11px;line-height:1.6;color:rgba(255,255,255,.45)">
           ※ 未ログイン状態では AUREA 本体は利用できません
         </div>
+
+        <div style="margin-top:8px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+          <a href="/legal.html" style="height:26px;padding:0 10px;border-radius:9px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:rgba(255,255,255,.70);font-size:11px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center">
+            特定商取引法に基づく表記
+          </a>
+          <a href="/terms.html" style="height:26px;padding:0 10px;border-radius:9px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:rgba(255,255,255,.70);font-size:11px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center">
+            利用規約
+          </a>
+          <a href="/privacy.html" style="height:26px;padding:0 10px;border-radius:9px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:rgba(255,255,255,.70);font-size:11px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center">
+            プライバシーポリシー
+          </a>
+        </div>
+
       </div>
     </div>
   </div>

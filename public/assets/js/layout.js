@@ -6217,8 +6217,14 @@ btnNewChat?.addEventListener("click", (e) => {
     msg = document.createElement("div");
     msg.id = "authGateMsg";
     msg.style.cssText = "margin-top:12px;opacity:.92;font-size:12px;line-height:1.55;color:#fff;";
-    const card = authGate.querySelector("div > div"); // gate card
-    if (card) card.appendChild(msg);
+
+    const btn = authGate.querySelector("#btnAuthPersonal") || authGate.querySelector("#btnAuthCompany");
+    const btnRow = btn ? btn.closest("div") : null;
+    const panel = btnRow ? btnRow.parentElement : null;
+
+    const host = panel || authGate;
+    host.appendChild(msg);
+
     return msg;
   };
 
@@ -7377,9 +7383,9 @@ if (authResult === "ok") {
             商品以外の料金：通信料等は利用者負担<br>
             支払方法：クレジットカード<br>
             支払時期：申込時に確定、以後は更新日に自動課金<br>
-            提供時期：本サービスは現在、段階的な提供を行っており、準備が整い次第、登録メールアドレス宛に案内します<br>
-            返品・キャンセル：デジタルサービスの性質上、原則不可（ただし初回決済日から7日以内で、かつサービス未提供の場合に限り申請により返金）<br>
-            お問い合わせ：contact@aurea-ai.app　担当まで
+            提供時期：支払い完了時に提供反映します<br>
+            返品・キャンセル：デジタルサービスの性質上、原則不可<br>
+            お問い合わせ：contact@aurea-ai.app
           </div>
         `,
         en: `
