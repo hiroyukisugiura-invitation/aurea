@@ -7126,12 +7126,12 @@ if (authResult === "ok") {
 
         // 多重クリック防止（checkout中の連打で挙動が壊れるのを防ぐ）
         try {
-          if (window.__AUREA_STRIPE_CHECKOUT_LOCK__ === true) return;
-          window.__AUREA_STRIPE_CHECKOUT_LOCK__ = true;
+          if (window.__AUREA_PADDLE_CHECKOUT_LOCK__ === true) return;
+          window.__AUREA_PADDLE_CHECKOUT_LOCK__ = true;
         } catch {}
 
         const unlock = () => {
-          try { window.__AUREA_STRIPE_CHECKOUT_LOCK__ = false; } catch {}
+          try { window.__AUREA_PADDLE_CHECKOUT_LOCK__ = false; } catch {}
         };
 
         try {
@@ -7150,43 +7150,12 @@ if (authResult === "ok") {
             return;
           }
 
-          // Free は即時ダウングレード（Stripeを通さない）
+          // Free は（Webhook未使用の間）サーバ側の確定ができないため、ここでは何もしない
           if (p === "Free") {
             const msg = ((state.settings?.language || "ja") === "en")
-              ? "Downgrade to Free plan?"
-              : "Freeプランにダウングレードしますか？";
-            const ok = await confirmModal(msg);
-            if (!ok) { unlock(); return; }
-
-            try {
-              const r = await fetch("/api/billing/downgrade", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ uid, email })
-              });
-
-              const ct = String(r.headers.get("content-type") || "");
-              const j = ct.includes("application/json") ? await r.json().catch(() => null) : null;
-
-              if (!r.ok) {
-                alert(`downgrade_failed: http_${r.status}`);
-                unlock();
-                return;
-              }
-              if (!j || !j.ok) {
-                alert("downgrade_failed: bad_response");
-                unlock();
-                return;
-              }
-            } catch (e) {
-              alert(`downgrade_failed: ${String(e && e.message ? e.message : e)}`);
-              unlock();
-              return;
-            }
-
-            wrap.style.display = "none";
-            wrap.setAttribute("aria-hidden", "true");
-            try { await refreshPlanFromServer(); } catch {}
+              ? "Free downgrade will be available after billing is fully activated."
+              : "Freeへのダウングレードは決済の本稼働後に有効化します。";
+            alert(msg);
             unlock();
             return;
           }
@@ -7205,7 +7174,6 @@ if (authResult === "ok") {
             const j = ct.includes("application/json") ? await r.json().catch(() => null) : null;
 
             if (!r.ok) {
-              // サーバが詳細を返す場合はそれを優先（審査中ブロック等もここで見える）
               const reason = String(j?.reason || "").trim();
               const code = String(j?.code || "").trim();
               const msg = String(j?.msg || "").trim();
@@ -7221,7 +7189,7 @@ if (authResult === "ok") {
               return;
             }
 
-            // ここからStripeへ遷移（戻りは billing=success/cancel）
+            // Paddle Hosted Checkout へ遷移（戻りは billing=success/cancel）
             window.location.href = j.url;
             return;
 
@@ -7232,7 +7200,6 @@ if (authResult === "ok") {
           }
 
         } finally {
-          // Stripeへ遷移できた場合はこのunlockは不要だが、例外経路では確実に解除
           unlock();
         }
       };
@@ -7256,10 +7223,6 @@ if (authResult === "ok") {
               <div style="margin-top:8px;font-size:12px;line-height:1.6;color:rgba(255,255,255,.70);white-space:pre-line;">${escHtml(L_NOTE)}</div>
               <div style="
                 margin-top:10px;
-                padding:10px 12px;
-                border-radius:12px;
-                border:1px solid rgba(255,255,255,.10);
-                background:rgba(255,255,255,.04);
                 font-size:12px;
                 line-height:1.6;
                 color:rgba(255,255,255,.75);
