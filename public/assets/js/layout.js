@@ -7513,7 +7513,7 @@ if (authResult === "ok") {
 
       // contenteditable（本文を直接編集）
       // ===== admin lock =====
-      const ADMIN_EMAIL = "contact@aurea-ai.app";
+      const ADMIN_EMAIL = "hiroyuki.sugiura@aurea-ai.app";
 
       // Firebase Auth がある前提（無ければ常に read-only）
       const isAdminUser = (() => {
