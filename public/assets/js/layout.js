@@ -6266,6 +6266,12 @@ const hideAuthGate = () => {
     const m = (mode === "company") ? "company" : "personal";
     const invite = getInvite();
 
+    // Company は invite 必須（無ければ遷移させず、その場でメッセージ）
+    if (m === "company" && !(invite?.token)) {
+      setGateMessage("この招待URLは無効です。管理者に再招待を依頼してください。");
+      return;
+    }
+
     const url = new URL("/login.html", window.location.origin);
     url.searchParams.set("mode", m);
 
@@ -6418,6 +6424,13 @@ if (authResult === "ok") {
     }
 
     if (b.id === "btnAuthCompany") {
+      // Company は invite 必須（無ければ遷移させない）
+      const inv = getInvite();
+      if (!(inv?.token)) {
+        setGateMessage("この招待URLは無効です。管理者に再招待を依頼してください。");
+        return;
+      }
+
       setAuthMode("company");
       window.__AUREA_AUTH_MODE__ = "company";
       startGoogleLogin("company");
@@ -6442,6 +6455,14 @@ if (authResult === "ok") {
 
   btnAuthCompany?.addEventListener("click", (e) => {
     e.preventDefault();
+
+    // Company は invite 必須（無ければ遷移させない）
+    const inv = getInvite();
+    if (!(inv?.token)) {
+      setGateMessage("この招待URLは無効です。管理者に再招待を依頼してください。");
+      return;
+    }
+
     setAuthMode("company");
     window.__AUREA_AUTH_MODE__ = "company";
     startGoogleLogin("company");
