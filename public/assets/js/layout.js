@@ -7476,11 +7476,86 @@ if (authResult === "ok") {
         return t.trim();
       };
 
-      const normalized = normalizeLegalText(k, pageText);
-      const safe = escHtml(normalized);
+      // ===== Manual edit override (localStorage) =====
+      const LEGAL_OVERRIDE_KEY = "aurea_legal_override_v1";
+
+      const loadLegalOverrideMap = () => {
+        try {
+          const raw = localStorage.getItem(LEGAL_OVERRIDE_KEY);
+          if (!raw) return {};
+          const obj = JSON.parse(raw);
+          return (obj && typeof obj === "object") ? obj : {};
+        } catch { return {}; }
+      };
+
+      const saveLegalOverrideMap = (map) => {
+        try { localStorage.setItem(LEGAL_OVERRIDE_KEY, JSON.stringify(map || {})); } catch {}
+      };
+
+      const getLegalOverride = (kind) => {
+        const m = loadLegalOverrideMap();
+        const v = m && m[kind] != null ? String(m[kind] || "") : "";
+        return v.trim() ? v : "";
+      };
+
+      const setLegalOverride = (kind, text) => {
+        const m = loadLegalOverrideMap();
+        m[kind] = String(text || "");
+        saveLegalOverrideMap(m);
+      };
+
+      // 1) ベース本文（静的ページ → normalize） or 2) 既存override を優先
+      const baseText = normalizeLegalText(k, pageText);
+      const overrideText = getLegalOverride(k);
+      const showText = overrideText || baseText;
+
+      const safe = escHtml(showText);
+
+      // contenteditable（本文を直接編集）
       legalModalBody.innerHTML = safe
-        ? `<div class="reg-text">${safe.replace(/\n/g, "<br>")}</div>`
-        : `<div class="reg-text"></div>`;
+        ? `<div class="reg-text" contenteditable="true" data-legal-edit="1" data-legal-key="${escHtml(k)}">${safe.replace(/\n/g, "<br>")}</div>`
+        : `<div class="reg-text" contenteditable="true" data-legal-edit="1" data-legal-key="${escHtml(k)}"></div>`;
+
+      // paste をプレーンテキスト化（HTML混入防止）
+      // input を debounce 保存（改行/文面を手動で整えられるようにする）
+      if (!window.__AUREA_LEGAL_EDIT_BOUND__) {
+        window.__AUREA_LEGAL_EDIT_BOUND__ = true;
+
+        let tmr = null;
+
+        const saveFromEl = (el) => {
+          try {
+            const kind = String(el.getAttribute("data-legal-key") || "").trim();
+            if (!kind) return;
+
+            // innerText で改行を保持
+            const txt = String(el.innerText || "").replace(/\r/g, "").trim();
+            setLegalOverride(kind, txt);
+          } catch {}
+        };
+
+        legalModalBody.addEventListener("paste", (e) => {
+          const t = e.target;
+          if (!(t instanceof Element)) return;
+          const el = t.closest("[data-legal-edit='1']");
+          if (!el) return;
+
+          e.preventDefault();
+
+          const text = (e.clipboardData || window.clipboardData).getData("text") || "";
+          document.execCommand("insertText", false, text);
+        });
+
+        legalModalBody.addEventListener("input", (e) => {
+          const t = e.target;
+          if (!(t instanceof Element)) return;
+          const el = t.closest("[data-legal-edit='1']");
+          if (!el) return;
+
+          try { clearTimeout(tmr); } catch {}
+          tmr = setTimeout(() => saveFromEl(el), 180);
+        });
+      }
 
       legalOverlay.style.display = "flex";
 
