@@ -7107,6 +7107,20 @@ if (authResult === "ok") {
             <div style="min-width:0;">
               <div style="font-size:16px;font-weight:700;line-height:1.2;">${escHtml(L_TITLE)}</div>
               <div style="margin-top:8px;font-size:12px;line-height:1.6;color:rgba(255,255,255,.70);white-space:pre-line;">${escHtml(L_NOTE)}</div>
+              <div style="
+                margin-top:10px;
+                padding:10px 12px;
+                border-radius:12px;
+                border:1px solid rgba(255,255,255,.10);
+                background:rgba(255,255,255,.04);
+                font-size:12px;
+                line-height:1.6;
+                color:rgba(255,255,255,.75);
+              ">
+                ※ 本サービスは現在、段階的な提供を行っています。<br>
+                プラン選択後、直ちにサービス提供や継続的な課金が開始されることはありません。<br>
+                提供開始時期については、準備が整い次第、登録されたメールアドレス宛にご案内します。
+              </div>
             </div>
             <button id="aureaPlanClose" type="button" style="
               width:32px;height:32px;border-radius:10px;border:1px solid rgba(255,255,255,.12);
@@ -7253,8 +7267,8 @@ if (authResult === "ok") {
             商品以外の料金：通信料等は利用者負担<br>
             支払方法：クレジットカード<br>
             支払時期：申込時に確定、以後は更新日に自動課金<br>
-            提供時期：決済完了後、直ちに利用可能<br>
-            返品・キャンセル：デジタルサービスの性質上、不可（法令に基づく場合を除く）<br>
+            提供時期：本サービスは現在、段階的な提供を行っており、準備が整い次第、登録メールアドレス宛に案内します<br>
+            返品・キャンセル：デジタルサービスの性質上、原則不可（ただし初回決済日から7日以内で、かつサービス未提供の場合に限り申請により返金）<br>
             お問い合わせ：contact@aurea-ai.app　担当まで
           </div>
         `,
@@ -7265,8 +7279,8 @@ if (authResult === "ok") {
             Additional fees: Communication charges etc. are borne by the user<br>
             Payment method: Credit card<br>
             Payment timing: Confirmed at purchase; automatically charged on renewal date thereafter<br>
-            Service availability: Available immediately after successful payment<br>
-            Refunds/Cancellations: Generally not available due to the nature of digital services (except where required by law)<br>
+            Service availability: This service is currently provided in phases. Access will be announced by email once ready<br>
+            Refunds/Cancellations: Generally not available due to the nature of digital services (except where required by law). Refunds are available only if the service has not been provided and the request is made within 7 days of the first payment<br>
             Contact:contact@aurea-ai.app　(Attn.)
           </div>
         `
