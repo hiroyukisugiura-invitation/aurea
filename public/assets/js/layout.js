@@ -7221,16 +7221,16 @@ if (authResult === "ok") {
             <div style="min-width:0;">
               <div style="font-size:16px;font-weight:700;line-height:1.2;">${escHtml(L_TITLE)}</div>
               <div style="margin-top:8px;font-size:12px;line-height:1.6;color:rgba(255,255,255,.70);white-space:pre-line;">${escHtml(L_NOTE)}</div>
-              <div style="
-                margin-top:10px;
-                font-size:12px;
-                line-height:1.6;
-                color:rgba(255,255,255,.75);
-              ">
-                ※ 本サービスは現在、段階的な提供を行っています。<br>
-                プラン選択後、直ちにサービス提供や継続的な課金が開始されることはありません。<br>
-                提供開始時期については、準備が整い次第、登録されたメールアドレス宛にご案内します。
-              </div>
+            <div style="
+              margin:10px 0 14px;
+              font-size:12px;
+              line-height:1.6;
+              color:rgba(255,255,255,.75);
+            ">
+              ※ 本サービスは現在、段階的な提供を行っています。<br>
+              プラン選択後、直ちにサービス提供や継続的な課金が開始されることはありません。<br>
+              提供開始時期については、準備が整い次第、登録されたメールアドレス宛にご案内します。
+            </div>
             </div>
             <button id="aureaPlanClose" type="button" style="
               width:32px;height:32px;border-radius:10px;border:1px solid rgba(255,255,255,.12);
