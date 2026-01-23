@@ -41,7 +41,7 @@
   // debug logger (layout.js)
   const dbg = (...args) => { try { console.info(...args); } catch {} };
 
-  /* ================= API routing (JSON-validated fallback: /api <-> /ai) ================= */
+  /* ================= API routing (JSON-validated: use /api only) ================= */
   let AUREA_API_PREFIX = "/api";
 
   const isJsonResponse = (r) => {
@@ -56,40 +56,27 @@
   const tryFetchJson = async (prefix, path, options) => {
     const p = String(path || "").startsWith("/") ? String(path) : `/${path}`;
     const r = await fetch(`${prefix}${p}`, options || {});
-    if (!r || !r.ok) return null;
-    if (!isJsonResponse(r)) return null; // ← index.html(text/html) 返却を弾く
+    if (!r) return null;
+
+    // JSON で返るなら status(200/400/500) に関係なく返す（重要）
+    if (!isJsonResponse(r)) return null;
+
     return r;
   };
 
   const apiFetchJson = async (path, options) => {
-    // 1) 現在 prefix
-    let r = await tryFetchJson(AUREA_API_PREFIX, path, options);
+    // 本番は /api 固定（/ai は Hosting で index.html を返す事故があるため使わない）
+    const r = await tryFetchJson("/api", path, options);
     if (r) return r;
-
-    // 2) 逆側 prefix
-    const alt = (AUREA_API_PREFIX === "/api") ? "/ai" : "/api";
-    r = await tryFetchJson(alt, path, options);
-    if (r) {
-      AUREA_API_PREFIX = alt; // 成功した方を採用
-      return r;
-    }
-
-    // 3) どちらもJSONで返らない → null
     return null;
   };
 
   const detectApiPrefix = async () => {
-    // ping が JSON で返る方を採用（/api/ping or /ai/ping）
+    // 本番は /api 固定（ping 成功だけ確認）
     try {
       const r1 = await tryFetchJson("/api", "/ping", { method: "GET", cache: "no-store" });
       if (r1) { AUREA_API_PREFIX = "/api"; return; }
     } catch {}
-
-    try {
-      const r2 = await tryFetchJson("/ai", "/ping", { method: "GET", cache: "no-store" });
-      if (r2) { AUREA_API_PREFIX = "/ai"; return; }
-    } catch {}
-
     AUREA_API_PREFIX = "/api";
   };
 
