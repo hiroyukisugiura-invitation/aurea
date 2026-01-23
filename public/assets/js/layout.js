@@ -7512,9 +7512,31 @@ if (authResult === "ok") {
       const safe = escHtml(showText);
 
       // contenteditable（本文を直接編集）
+      // ===== admin lock =====
+      const ADMIN_EMAIL = "contact@aurea-ai.app";
+
+      // Firebase Auth がある前提（無ければ常に read-only）
+      const isAdminUser = (() => {
+        try {
+          const u = firebase?.auth?.().currentUser;
+          return !!(u && u.email && u.email === ADMIN_EMAIL);
+        } catch {
+          return false;
+        }
+      })();
+
       legalModalBody.innerHTML = safe
-        ? `<div class="reg-text" contenteditable="true" data-legal-edit="1" data-legal-key="${escHtml(k)}">${safe.replace(/\n/g, "<br>")}</div>`
-        : `<div class="reg-text" contenteditable="true" data-legal-edit="1" data-legal-key="${escHtml(k)}"></div>`;
+        ? `<div class="reg-text"
+              ${isAdminUser ? 'contenteditable="true"' : 'contenteditable="false"'}
+              data-legal-edit="${isAdminUser ? '1' : '0'}"
+              data-legal-key="${escHtml(k)}">
+              ${safe.replace(/\n/g, "<br>")}
+          </div>`
+        : `<div class="reg-text"
+              ${isAdminUser ? 'contenteditable="true"' : 'contenteditable="false"'}
+              data-legal-edit="${isAdminUser ? '1' : '0'}"
+              data-legal-key="${escHtml(k)}">
+          </div>`;
 
       // paste をプレーンテキスト化（HTML混入防止）
       // input を debounce 保存（改行/文面を手動で整えられるようにする）
