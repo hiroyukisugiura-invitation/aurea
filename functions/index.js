@@ -316,7 +316,8 @@ app.post("/api/billing/checkout", async (req, res) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${key}`
+        "Authorization": `Bearer ${key}`,
+        "Paddle-Version": "1"
       },
       body: JSON.stringify(payload)
     });
