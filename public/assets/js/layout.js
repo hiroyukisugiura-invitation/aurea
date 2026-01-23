@@ -7525,10 +7525,61 @@ if (authResult === "ok") {
         saveLegalOverrideMap(m);
       };
 
-      // 1) ベース本文（静的ページ → normalize） or 2) 既存override を優先
+      // tokusho（設定ポップ）だけ固定文言にする（/legal.html は変更しない）
+      const TOKUSHO_POPUP_TEXT = [
+        "■ 製品名：AUREA（オーリア）",
+        "",
+        "■ 事業代表者名：杉浦 広之",
+        "",
+        "■ 所在地：",
+        "〒106-0044",
+        "東京都港区東麻布3丁目5-15 瀬里奈グリーンハイツ903",
+        "",
+        "■ お問い合わせ",
+        "・電話番号：090-3040-4250",
+        "・メールアドレス：contact@aurea-ai.app",
+        "※お問い合わせは原則「メール」での対応になります",
+        "",
+        "■ 販売 URL：https://aurea-2026.web.app/",
+        "",
+        "■ 販売価格：",
+        "・Proプラン：月額 30,000円（税込）",
+        "・Teamプラン：月額 69,000円（税込）",
+        "・Enterpriseプラン：月額 200,000円〜（税込）",
+        "",
+        "■ 商品代金以外の必要料金：",
+        "・インターネット接続にかかる通信料は利用者の負担となります",
+        "",
+        "■ 支払方法：",
+        "・クレジットカード決済（Stripe）",
+        "",
+        "■ 支払時期：",
+        "お申込み時に初回決済が行われます。",
+        "但し、継続的な課金はサービス提供開始後に適用されます",
+        "",
+        "■ 提供時期：",
+        "・決済完了後にサービスの受け渡し、提供されます",
+        "",
+        "■ 解約について：",
+        "・本サービスは月額課金制のデジタルサービスです",
+        "・ユーザーはいつでも解約することができます",
+        "　(プラン解約処理は解約設定時の月末になります)",
+        "・解約後も、次回更新日まではサービスをご利用いただけます",
+        "・日割りによる返金は行っておりません",
+        "",
+        "■ 返品・返金について：",
+        "デジタルサービスの性質上、購入後の返品・返金には対応しておりません",
+        "但し、法令に基づく場合はこの限りではありません"
+      ].join("\n");
+
+      // 1) tokusho は固定文言（全ユーザー共通）
+      // 2) terms/privacy は従来どおり（静的ページ → normalize → override）
       const baseText = normalizeLegalText(k, pageText);
       const overrideText = getLegalOverride(k);
-      const showText = overrideText || baseText;
+
+      const showText = (k === "tokusho")
+        ? TOKUSHO_POPUP_TEXT
+        : (overrideText || baseText);
 
       const safe = escHtml(showText);
 
@@ -7537,6 +7588,7 @@ if (authResult === "ok") {
       const ADMIN_EMAIL = "hiroyuki.sugiura@aurea-ai.app";
 
       // Firebase Auth がある前提（無ければ常に read-only）
+      // tokusho は全ユーザー共通の固定文言のため、誰でも編集不可
       const isAdminUser = (() => {
         try {
           const u = firebase?.auth?.().currentUser;
@@ -7546,16 +7598,18 @@ if (authResult === "ok") {
         }
       })();
 
+      const canEdit = (k !== "tokusho") && isAdminUser;
+
       legalModalBody.innerHTML = safe
         ? `<div class="reg-text"
-              ${isAdminUser ? 'contenteditable="true"' : 'contenteditable="false"'}
-              data-legal-edit="${isAdminUser ? '1' : '0'}"
+              ${canEdit ? 'contenteditable="true"' : 'contenteditable="false"'}
+              data-legal-edit="${canEdit ? '1' : '0'}"
               data-legal-key="${escHtml(k)}">
               ${safe.replace(/\n/g, "<br>")}
           </div>`
         : `<div class="reg-text"
-              ${isAdminUser ? 'contenteditable="true"' : 'contenteditable="false"'}
-              data-legal-edit="${isAdminUser ? '1' : '0'}"
+              ${canEdit ? 'contenteditable="true"' : 'contenteditable="false"'}
+              data-legal-edit="${canEdit ? '1' : '0'}"
               data-legal-key="${escHtml(k)}">
           </div>`;
 
