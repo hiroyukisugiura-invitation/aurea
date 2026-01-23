@@ -7406,7 +7406,7 @@ if (authResult === "ok") {
         return "";
       }
     };
-    
+
     const openLegalModal = async (key) => {
       if (!legalOverlay || !legalModalTitle || !legalModalBody) return;
 
@@ -7424,10 +7424,63 @@ if (authResult === "ok") {
       // 静的ページ（/legal.html /terms.html /privacy.html）の本文をそのまま表示（UIは現状の小ポップのまま）
       const pageText = await fetchLegalPageText(k);
 
-      // 表示は “文章のみ” に統一（小ポップに収まるよう HTML は作らない）
-      // ※ 静的ページの本文と同一テキスト（innerText）を表示
-      const safe = escHtml(pageText);
-      legalModalBody.innerHTML = safe ? `<div class="reg-text">${safe.replace(/\n/g, "<br>")}</div>` : `<div class="reg-text"></div>`;
+      // 表示テキスト整形（UI/サイズはそのまま、文言整形だけ）
+      const normalizeLegalText = (kind, src) => {
+        let t = String(src || "").replace(/\r/g, "");
+
+        // スクロール内の重複タイトル行を削除（上部に既にタイトルがあるため）
+        t = t
+          .split("\n")
+          .filter(line => {
+            const s = String(line || "").trim();
+            return s !== "特定商取引法に基づく表記" && s !== "利用規約" && s !== "プライバシーポリシー";
+          })
+          .join("\n");
+
+        // 連続する空行は「1行」に圧縮（= 改行2つまで）
+        t = t.replace(/\n{3,}/g, "\n\n");
+
+        // 利用規約：条タイトル直後の「空白改行」を削除（条ごとには1段空白は残す）
+        if (kind === "terms") {
+          // 第N条見出し直後に空行がある場合 → 1行に詰める
+          t = t.replace(/(第\d+条（[^）]+）)\n\s*\n+/g, "$1\n");
+          // 「第N条〜」の前の空行を1段に統一
+          t = t.replace(/\n{2,}(第\d+条（)/g, "\n\n$1");
+        }
+
+        // プライバシーポリシー：1. 取得する情報 を指定フォーマットに固定（見やすさ優先）
+        if (kind === "privacy") {
+          const block = [
+            "1. 取得する情報",
+            "当サービスでは、以下の情報を取得する場合があります。",
+            "・氏名、メールアドレスなどの登録情報",
+            "・ログイン情報、利用履歴、操作ログ",
+            "・決済に関連する情報（※クレジットカード情報は当サービスでは保持せず、Stripeが管理します）",
+            "・お問い合わせ時に提供される情報"
+          ].join("\n");
+
+          // 既存の「1. 取得する情報」〜「2.」直前までを差し替え（無ければ先頭へ挿入）
+          if (/^1\.\s*取得する情報/m.test(t)) {
+            t = t.replace(/(^|\n)1\.\s*取得する情報[\s\S]*?(?=\n2\.\s)/m, (m0) => {
+              const prefix = m0.startsWith("\n") ? "\n" : "";
+              return `${prefix}${block}\n`;
+            });
+          } else {
+            t = `${block}\n\n${t}`.trim();
+          }
+
+          // 連続空行を再度圧縮
+          t = t.replace(/\n{3,}/g, "\n\n");
+        }
+
+        return t.trim();
+      };
+
+      const normalized = normalizeLegalText(k, pageText);
+      const safe = escHtml(normalized);
+      legalModalBody.innerHTML = safe
+        ? `<div class="reg-text">${safe.replace(/\n/g, "<br>")}</div>`
+        : `<div class="reg-text"></div>`;
 
       legalOverlay.style.display = "flex";
 
