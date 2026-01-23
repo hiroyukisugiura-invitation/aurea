@@ -3,10 +3,10 @@ const express = require("express");
 const admin = require("firebase-admin");
 const { defineSecret } = require("firebase-functions/params");
 
-const PADDLE_API_KEY = defineSecret("PADDLE_API_KEY");
-const PADDLE_PRICE_PRO = defineSecret("PADDLE_PRICE_PRO");
-const PADDLE_PRICE_TEAM = defineSecret("PADDLE_PRICE_TEAM");
-const PADDLE_PRICE_ENTERPRISE = defineSecret("PADDLE_PRICE_ENTERPRISE");
+const STRIPE_SECRET_KEY = defineSecret("STRIPE_SECRET_KEY");
+const STRIPE_PRICE_PRO = defineSecret("STRIPE_PRICE_PRO");
+const STRIPE_PRICE_TEAM = defineSecret("STRIPE_PRICE_TEAM");
+const STRIPE_PRICE_ENTERPRISE = defineSecret("STRIPE_PRICE_ENTERPRISE");
 
 const GOOGLE_OAUTH_CLIENT_ID = defineSecret("GOOGLE_OAUTH_CLIENT_ID");
 const GOOGLE_OAUTH_REDIRECT_URI = defineSecret("GOOGLE_OAUTH_REDIRECT_URI");
@@ -35,16 +35,16 @@ const GOOGLE_OAUTH_REDIRECT_URI = defineSecret("GOOGLE_OAUTH_REDIRECT_URI");
  * - set AUREA_DEBUG=1 to enable server debug logs (dbg)
  */
 
-const getPaddleKey = () => {
-  const k = String(PADDLE_API_KEY.value() || "").trim();
+const getStripeKey = () => {
+  const k = String(STRIPE_SECRET_KEY.value() || "").trim();
   return k ? k : null;
 };
 
-const getPaddlePriceMap = () => {
+const getStripePriceMap = () => {
   return {
-    Pro: String(PADDLE_PRICE_PRO.value() || "").trim(),
-    Team: String(PADDLE_PRICE_TEAM.value() || "").trim(),
-    Enterprise: String(PADDLE_PRICE_ENTERPRISE.value() || "").trim()
+    Pro: String(STRIPE_PRICE_PRO.value() || "").trim(),
+    Team: String(STRIPE_PRICE_TEAM.value() || "").trim(),
+    Enterprise: String(STRIPE_PRICE_ENTERPRISE.value() || "").trim()
   };
 };
 
@@ -278,9 +278,9 @@ const consumeInvite = async (req, res) => {
 
 /* ================= Billing (Paddle) ================= */
 app.post("/api/billing/checkout", async (req, res) => {
-  const key = getPaddleKey();
+  const key = getStripeKey();
   if (!key) {
-    res.status(500).json({ ok: false, reason: "paddle_key_missing" });
+    res.status(500).json({ ok: false, reason: "stripe_key_missing" });
     return;
   }
 
@@ -297,36 +297,43 @@ app.post("/api/billing/checkout", async (req, res) => {
       return;
     }
 
-    const priceMap = getPaddlePriceMap();
+    const priceMap = getStripePriceMap();
     const priceId = String(priceMap[p] || "").trim();
     if (!priceId) {
       res.status(400).json({ ok: false, reason: "invalid_plan" });
       return;
     }
 
-    const payload = {
-      items: [{ price_id: priceId, quantity: 1 }],
-      customer: { email: em },
-      custom_data: { uid: u, plan: p, email: em },
-      success_url: su || `${req.protocol}://${req.get("host")}/?billing=success`,
-      cancel_url: cu || `${req.protocol}://${req.get("host")}/?billing=cancel`
-    };
+    const success = su || `${req.protocol}://${req.get("host")}/?billing=success`;
+    const cancel  = cu || `${req.protocol}://${req.get("host")}/?billing=cancel`;
 
-    const r = await fetch("https://api.paddle.com/checkout/sessions", {
+    // Stripe Checkout Sessions API (no SDK; fetch with form encoding)
+    const form = new URLSearchParams();
+    form.set("mode", "subscription");
+    form.set("success_url", success);
+    form.set("cancel_url", cancel);
+    form.set("customer_email", em);
+
+    form.set("line_items[0][price]", priceId);
+    form.set("line_items[0][quantity]", "1");
+
+    // metadata（後でwebhook/Firestore反映に使う）
+    form.set("metadata[uid]", u);
+    form.set("metadata[plan]", p);
+    form.set("metadata[email]", em);
+
+    const r = await fetch("https://api.stripe.com/v1/checkout/sessions", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
         "Authorization": `Bearer ${key}`,
-        "Paddle-Version": "1"
+        "Content-Type": "application/x-www-form-urlencoded"
       },
-      body: JSON.stringify(payload)
+      body: form.toString()
     });
 
     const j = await r.json().catch(() => null);
 
-    const url =
-      String(j?.data?.url || "").trim() ||
-      String(j?.data?.checkout?.url || "").trim();
+    const url = String(j?.url || "").trim();
 
     if (!r.ok || !url) {
       const msg =
@@ -1857,10 +1864,10 @@ exports.api = onRequest(
   {
     region: "us-central1",
     secrets: [
-      PADDLE_API_KEY,
-      PADDLE_PRICE_PRO,
-      PADDLE_PRICE_TEAM,
-      PADDLE_PRICE_ENTERPRISE,
+      STRIPE_SECRET_KEY,
+      STRIPE_PRICE_PRO,
+      STRIPE_PRICE_TEAM,
+      STRIPE_PRICE_ENTERPRISE,
 
       OPENAI_API_KEY,
 
