@@ -5284,14 +5284,28 @@ const closeSettings = () => {
   }, true);
 
     // ===== board-level drag & drop (project home included) =====
-  const boardHasFileItems = (dt) => {
-    try {
-      if (!dt) return false;
-      if (dt.files && dt.files.length) return true;
-      if (dt.items && dt.items.length) return Array.from(dt.items).some(it => it && it.kind === "file");
-      return false;
-    } catch { return false; }
-  };
+const boardHasFileItems = (dt) => {
+  try {
+    if (!dt) return false;
+
+    // 1) 通常ファイル
+    if (dt.files && dt.files.length) return true;
+
+    // 2) items(file)
+    if (dt.items && dt.items.length) {
+      if (Array.from(dt.items).some(it => it && it.kind === "file")) return true;
+    }
+
+    // 3) スクショ系（data:image / uri-list / text/plain）
+    const uri =
+      String(dt.getData ? (dt.getData("text/uri-list") || dt.getData("text/plain") || "") : "").trim();
+
+    if (uri.startsWith("data:image/")) return true;
+    if (/^https?:\/\/.+\.(png|jpg|jpeg|webp|gif|bmp|svg)(\?.*)?$/i.test(uri)) return true;
+
+    return false;
+  } catch { return false; }
+};
 
   board?.addEventListener("dragover", (e) => {
     const dt = e.dataTransfer;
@@ -5410,10 +5424,22 @@ board?.addEventListener("drop", async (e) => {
   const hasFileItems = (dt) => {
     try {
       if (!dt) return false;
+
+      // 1) 通常ファイル
       if (dt.files && dt.files.length) return true;
+
+      // 2) items(file)
       if (dt.items && dt.items.length) {
-        return Array.from(dt.items).some(it => it && it.kind === "file");
+        if (Array.from(dt.items).some(it => it && it.kind === "file")) return true;
       }
+
+      // 3) スクショ系（data:image / uri-list / text/plain）
+      const uri =
+        String(dt.getData ? (dt.getData("text/uri-list") || dt.getData("text/plain") || "") : "").trim();
+
+      if (uri.startsWith("data:image/")) return true;
+      if (/^https?:\/\/.+\.(png|jpg|jpeg|webp|gif|bmp|svg)(\?.*)?$/i.test(uri)) return true;
+
       return false;
     } catch {
       return false;
