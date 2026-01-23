@@ -5309,12 +5309,15 @@ board?.addEventListener("drop", async (e) => {
 
   try { ensureAttachTray(); } catch {}
 
-  // dt.files が空でも dt.items から拾う（スクショ/ドラッグの差異吸収）
-  const collectFiles = (dt0) => {
+  // dt.files が空でも dt.items / uri / dataURL から拾う（スクショ/ドラッグ差異吸収）
+  const collectFiles = async (dt0) => {
     try {
       if (!dt0) return [];
+
+      // 1) 通常ファイル
       if (dt0.files && dt0.files.length) return Array.from(dt0.files);
 
+      // 2) items(file)
       const items = Array.from(dt0.items || []).filter(it => it && it.kind === "file");
       const out = [];
       for (const it of items) {
@@ -5323,13 +5326,77 @@ board?.addEventListener("drop", async (e) => {
           if (f) out.push(f);
         } catch {}
       }
-      return out;
+      if (out.length) return out;
+
+      // 3) uri-list / text/plain が画像(data: / http) の場合も拾う
+      const uri =
+        String(dt0.getData ? (dt0.getData("text/uri-list") || dt0.getData("text/plain") || "") : "").trim();
+
+      if (!uri) return [];
+
+      const isDataImage = uri.startsWith("data:image/");
+      const isHttpImage = /^https?:\/\/.+\.(png|jpg|jpeg|webp|gif|bmp|svg)(\?.*)?$/i.test(uri);
+
+      if (!isDataImage && !isHttpImage) return [];
+
+      const toFileFromDataUrl = (dataUrl) => {
+        try {
+          const m = /^data:([^;]+);base64,(.+)$/i.exec(String(dataUrl || "").trim());
+          if (!m) return null;
+          const mime = String(m[1] || "image/png").trim();
+          const b64 = String(m[2] || "").trim();
+          if (!b64) return null;
+
+          const bin = atob(b64);
+          const bytes = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+
+          const ext =
+            mime.includes("png") ? "png" :
+            mime.includes("jpeg") ? "jpg" :
+            mime.includes("webp") ? "webp" :
+            mime.includes("gif") ? "gif" :
+            mime.includes("bmp") ? "bmp" :
+            mime.includes("svg") ? "svg" : "png";
+
+          const name = `drop_${Date.now()}.${ext}`;
+          return new File([bytes], name, { type: mime });
+        } catch {
+          return null;
+        }
+      };
+
+      if (isDataImage) {
+        const f = toFileFromDataUrl(uri);
+        return f ? [f] : [];
+      }
+
+      // http(s) の画像URL：fetch して File 化
+      try {
+        const r = await fetch(uri, { method: "GET", mode: "cors", cache: "no-store" });
+        if (!r || !r.ok) return [];
+        const blob = await r.blob();
+        const mime = String(blob.type || "image/png");
+        const ext =
+          mime.includes("png") ? "png" :
+          mime.includes("jpeg") ? "jpg" :
+          mime.includes("webp") ? "webp" :
+          mime.includes("gif") ? "gif" :
+          mime.includes("bmp") ? "bmp" :
+          mime.includes("svg") ? "svg" : "png";
+
+        const name = `drop_${Date.now()}.${ext}`;
+        return [new File([blob], name, { type: mime })];
+      } catch {
+        return [];
+      }
+
     } catch {
       return [];
     }
   };
 
-  const files = collectFiles(dt);
+  const files = await collectFiles(dt);
   if (!files.length) return;
 
   await addFilesAsAttachments(files);
@@ -5370,11 +5437,14 @@ document.addEventListener("drop", async (e) => {
 
   try { ensureAttachTray(); } catch {}
 
-  const collectFiles = (dt0) => {
+  const collectFiles = async (dt0) => {
     try {
       if (!dt0) return [];
+
+      // 1) 通常ファイル
       if (dt0.files && dt0.files.length) return Array.from(dt0.files);
 
+      // 2) items(file)
       const items = Array.from(dt0.items || []).filter(it => it && it.kind === "file");
       const out = [];
       for (const it of items) {
@@ -5383,13 +5453,77 @@ document.addEventListener("drop", async (e) => {
           if (f) out.push(f);
         } catch {}
       }
-      return out;
+      if (out.length) return out;
+
+      // 3) uri-list / text/plain が画像(data: / http) の場合も拾う
+      const uri =
+        String(dt0.getData ? (dt0.getData("text/uri-list") || dt0.getData("text/plain") || "") : "").trim();
+
+      if (!uri) return [];
+
+      const isDataImage = uri.startsWith("data:image/");
+      const isHttpImage = /^https?:\/\/.+\.(png|jpg|jpeg|webp|gif|bmp|svg)(\?.*)?$/i.test(uri);
+
+      if (!isDataImage && !isHttpImage) return [];
+
+      const toFileFromDataUrl = (dataUrl) => {
+        try {
+          const m = /^data:([^;]+);base64,(.+)$/i.exec(String(dataUrl || "").trim());
+          if (!m) return null;
+          const mime = String(m[1] || "image/png").trim();
+          const b64 = String(m[2] || "").trim();
+          if (!b64) return null;
+
+          const bin = atob(b64);
+          const bytes = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+
+          const ext =
+            mime.includes("png") ? "png" :
+            mime.includes("jpeg") ? "jpg" :
+            mime.includes("webp") ? "webp" :
+            mime.includes("gif") ? "gif" :
+            mime.includes("bmp") ? "bmp" :
+            mime.includes("svg") ? "svg" : "png";
+
+          const name = `drop_${Date.now()}.${ext}`;
+          return new File([bytes], name, { type: mime });
+        } catch {
+          return null;
+        }
+      };
+
+      if (isDataImage) {
+        const f = toFileFromDataUrl(uri);
+        return f ? [f] : [];
+      }
+
+      // http(s) の画像URL：fetch して File 化
+      try {
+        const r = await fetch(uri, { method: "GET", mode: "cors", cache: "no-store" });
+        if (!r || !r.ok) return [];
+        const blob = await r.blob();
+        const mime = String(blob.type || "image/png");
+        const ext =
+          mime.includes("png") ? "png" :
+          mime.includes("jpeg") ? "jpg" :
+          mime.includes("webp") ? "webp" :
+          mime.includes("gif") ? "gif" :
+          mime.includes("bmp") ? "bmp" :
+          mime.includes("svg") ? "svg" : "png";
+
+        const name = `drop_${Date.now()}.${ext}`;
+        return [new File([blob], name, { type: mime })];
+      } catch {
+        return [];
+      }
+
     } catch {
       return [];
     }
   };
 
-  const files = collectFiles(dt);
+  const files = await collectFiles(dt);
   if (!files.length) return;
 
   await addFilesAsAttachments(files);
