@@ -7374,71 +7374,36 @@ if (authResult === "ok") {
     const legalModalTitle = document.getElementById("legalModalTitle");
     const legalModalBody = document.getElementById("legalModalBody");
 
-    const legalContent = {
-      tokusho: {
-        ja: `
-          <div class="reg-text">
-            事業者名：INVITATION.co<br>
-            販売価格：各プランページに表示（税抜）<br>
-            商品以外の料金：通信料等は利用者負担<br>
-            支払方法：クレジットカード<br>
-            支払時期：申込時に確定、以後は更新日に自動課金<br>
-            提供時期：支払い完了時に提供反映します<br>
-            返品・キャンセル：デジタルサービスの性質上、原則不可<br>
-            お問い合わせ：contact@aurea-ai.app
-          </div>
-        `,
-        en: `
-          <div class="reg-text">
-            Business name: INVITATION.co<br>
-            Price: Displayed on each plan page (tax excluded)<br>
-            Additional fees: Communication charges etc. are borne by the user<br>
-            Payment method: Credit card<br>
-            Payment timing: Confirmed at purchase; automatically charged on renewal date thereafter<br>
-            Service availability: This service is currently provided in phases. Access will be announced by email once ready<br>
-            Refunds/Cancellations: Generally not available due to the nature of digital services (except where required by law). Refunds are available only if the service has not been provided and the request is made within 7 days of the first payment<br>
-            Contact:contact@aurea-ai.app　(Attn.)
-          </div>
-        `
-      },
+    const LEGAL_PAGE_URL = {
+      tokusho: "/legal.html",
+      terms: "/terms.html",
+      privacy: "/privacy.html"
+    };
 
-      terms: {
-        ja: `
-          <div class="reg-text">
-            本サービスは、AIを用いて情報の整理・要約・提案を提供します。<br>
-            提供される内容は正確性を保証しません。<br>
-            重要な判断は利用者が必ず追加確認を行ってください。<br>
-            不正利用、第三者の権利侵害、法令違反行為は禁止します。<br>
-            当社は、必要に応じてサービス内容の変更・停止を行う場合があります。
-          </div>
-        `,
-        en: `
-          <div class="reg-text">
-            This service provides organization, summaries, and suggestions using AI.<br>
-            We do not guarantee accuracy. Please verify important decisions independently.<br>
-            Misuse, infringement of third-party rights, and illegal activities are prohibited.<br>
-            We may change or suspend the service as necessary.
-          </div>
-        `
-      },
+    const legalPageCache = new Map();
 
-      privacy: {
-        ja: `
-          <div class="reg-text">
-            当社は、アカウント情報（メール、表示名等）および利用ログ等を、<br>
-            サービス提供・改善・不正防止の目的で取り扱います。<br>
-            法令に基づく場合を除き、本人の同意なく第三者へ提供しません。<br>
-            収集・利用・保管の詳細は、本ポリシーおよび関連法令に従います。
-          </div>
-        `,
-        en: `
-          <div class="reg-text">
-            We handle account information (email, display name, etc.) <br>
-            and usage logs for service delivery, improvement, and fraud prevention.<br>
-            We do not provide personal data to third parties without consent except as required by law.<br>
-            Collection, use, and retention follow this policy and applicable laws.
-          </div>
-        `
+    const fetchLegalPageText = async (key) => {
+      const k = (key === "terms" || key === "privacy" || key === "tokusho") ? key : "tokusho";
+      const url = LEGAL_PAGE_URL[k] || "/legal.html";
+
+      if (legalPageCache.has(url)) return String(legalPageCache.get(url) || "");
+
+      try {
+        const r = await fetch(url, { method: "GET", cache: "no-store" });
+        const html = r && r.ok ? await r.text() : "";
+        if (!html) {
+          legalPageCache.set(url, "");
+          return "";
+        }
+
+        const doc = new DOMParser().parseFromString(html, "text/html");
+        const bodyText = String(doc && doc.body ? (doc.body.innerText || "") : "").trim();
+
+        legalPageCache.set(url, bodyText);
+        return bodyText;
+      } catch {
+        legalPageCache.set(url, "");
+        return "";
       }
     };
 
@@ -7456,10 +7421,13 @@ if (authResult === "ok") {
       legalModalBody.style.overflowY = "";
       legalModalBody.style.paddingRight = "";
 
-      const lang = ((state.settings?.language || "ja") === "en") ? "en" : "ja";
-      const html = (legalContent[k] && legalContent[k][lang]) ? legalContent[k][lang] : "";
+      // 静的ページ（/legal.html /terms.html /privacy.html）の本文をそのまま表示（UIは現状の小ポップのまま）
+      const pageText = await fetchLegalPageText(k);
 
-      legalModalBody.innerHTML = html;
+      // 表示は “文章のみ” に統一（小ポップに収まるよう HTML は作らない）
+      // ※ 静的ページの本文と同一テキスト（innerText）を表示
+      const safe = escHtml(pageText);
+      legalModalBody.innerHTML = safe ? `<div class="reg-text">${safe.replace(/\n/g, "<br>")}</div>` : `<div class="reg-text"></div>`;
       legalOverlay.style.display = "flex";
 
       // 長文だけスクロールを付与
