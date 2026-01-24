@@ -1,9 +1,11 @@
 const { onRequest } = require("firebase-functions/v2/https");
 const express = require("express");
+const crypto = require("crypto");
 const admin = require("firebase-admin");
 const { defineSecret } = require("firebase-functions/params");
 
 const STRIPE_SECRET_KEY = defineSecret("STRIPE_SECRET_KEY");
+const STRIPE_WEBHOOK_SECRET = defineSecret("STRIPE_WEBHOOK_SECRET");
 const STRIPE_PRICE_PRO = defineSecret("STRIPE_PRICE_PRO");
 const STRIPE_PRICE_TEAM = defineSecret("STRIPE_PRICE_TEAM");
 const STRIPE_PRICE_ENTERPRISE = defineSecret("STRIPE_PRICE_ENTERPRISE");
@@ -40,15 +42,260 @@ const getStripeKey = () => {
   return k ? k : null;
 };
 
-const getStripePriceMap = () => {
-  return {
-    Pro: String(STRIPE_PRICE_PRO.value() || "").trim(),
-    Team: String(STRIPE_PRICE_TEAM.value() || "").trim(),
-    Enterprise: String(STRIPE_PRICE_ENTERPRISE.value() || "").trim()
-  };
+const normalizePlanLabel = (p) => {
+  const s = String(p || "").trim();
+  if (!s) return "Free";
+  if (s === "Pro" || s === "Team" || s === "Enterprise") return s;
+  const low = s.toLowerCase();
+  if (low === "pro") return "Pro";
+  if (low === "team") return "Team";
+  if (low === "enterprise") return "Enterprise";
+  if (low === "free") return "Free";
+  return s;
+};
+
+const getPlanFromPriceId = (priceId) => {
+  const pid = String(priceId || "").trim();
+  if (!pid) return "";
+  const m = getStripePriceMap();
+  const keys = Object.keys(m || {});
+  for (const k of keys) {
+    if (String(m[k] || "").trim() === pid) return k; // "Pro" | "Team" | "Enterprise"
+  }
+  return "";
 };
 
 const app = express();
+const getStripeWebhookSecret = () => {
+  const s = String(STRIPE_WEBHOOK_SECRET.value() || "").trim();
+  return s ? s : null;
+};
+
+const parseStripeSigHeader = (header) => {
+  const h = String(header || "").trim();
+  if (!h) return null;
+
+  const parts = h.split(",").map(x => x.trim()).filter(Boolean);
+  let t = "";
+  const v1 = [];
+
+  for (const p of parts) {
+    const i = p.indexOf("=");
+    if (i < 0) continue;
+    const k = p.slice(0, i).trim();
+    const v = p.slice(i + 1).trim();
+    if (k === "t") t = v;
+    if (k === "v1") v1.push(v);
+  }
+
+  if (!t || !v1.length) return null;
+  return { t, v1 };
+};
+
+const timingSafeEq = (a, b) => {
+  try {
+    const ba = Buffer.from(String(a || ""), "utf8");
+    const bb = Buffer.from(String(b || ""), "utf8");
+    if (ba.length !== bb.length) return false;
+    return crypto.timingSafeEqual(ba, bb);
+  } catch {
+    return false;
+  }
+};
+
+const verifyStripeSignature = ({ rawBody, sigHeader, secret }) => {
+  const parsed = parseStripeSigHeader(sigHeader);
+  if (!parsed) return false;
+
+  const payload = Buffer.isBuffer(rawBody) ? rawBody : Buffer.from(rawBody || "");
+  const signed = `${parsed.t}.${payload.toString("utf8")}`;
+
+  const expected = crypto
+    .createHmac("sha256", String(secret || ""))
+    .update(signed, "utf8")
+    .digest("hex");
+
+  for (const s of parsed.v1) {
+    if (timingSafeEq(String(s || ""), expected)) return true;
+  }
+  return false;
+};
+
+// Stripe Webhook (must be BEFORE express.json middleware)
+app.post("/api/stripe/webhook", express.raw({ type: "application/json", limit: "2mb" }), async (req, res) => {
+  try {
+    const secret = getStripeWebhookSecret();
+    if (!secret) {
+      res.status(500).send("webhook_secret_missing");
+      return;
+    }
+
+    const sig = String(req.headers["stripe-signature"] || "").trim();
+    const rawBody = req.body;
+
+    if (!sig || !rawBody || !Buffer.isBuffer(rawBody)) {
+      res.status(400).send("invalid_payload");
+      return;
+    }
+
+    const ok = verifyStripeSignature({ rawBody, sigHeader: sig, secret });
+    if (!ok) {
+      res.status(400).send("invalid_signature");
+      return;
+    }
+
+    let evt = null;
+    try {
+      evt = JSON.parse(rawBody.toString("utf8"));
+    } catch {
+      evt = null;
+    }
+
+    const type = String(evt?.type || "").trim();
+    const supported =
+      type === "checkout.session.completed" ||
+      type === "customer.subscription.created" ||
+      type === "customer.subscription.updated" ||
+      type === "customer.subscription.deleted";
+
+    if (!supported) {
+      res.status(200).json({ ok: true, ignored: true });
+      return;
+    }
+
+    const now = admin.firestore.Timestamp.now();
+
+    // ---------- helpers ----------
+    const upsertUserPlan = async ({ uid, plan, email, customerId, subscriptionId, priceId, status, currentPeriodEnd }) => {
+      const u = String(uid || "").trim();
+      if (!u) return;
+
+      const patch = {
+        plan: normalizePlanLabel(plan || "Free"),
+        updatedAt: now
+      };
+
+      if (email) patch.email = String(email || "").trim();
+      if (customerId) patch.stripeCustomerId = String(customerId || "").trim();
+      if (subscriptionId) patch.stripeSubscriptionId = String(subscriptionId || "").trim();
+      if (priceId) patch.stripePriceId = String(priceId || "").trim();
+      if (status) patch.stripeStatus = String(status || "").trim();
+      if (currentPeriodEnd != null) patch.stripeCurrentPeriodEnd = Number(currentPeriodEnd || 0) || 0;
+
+      await db.collection("users").doc(u).set(patch, { merge: true });
+    };
+
+    const setSubMap = async ({ subscriptionId, uid, plan, customerId }) => {
+      const sid = String(subscriptionId || "").trim();
+      if (!sid) return;
+      const u = String(uid || "").trim();
+      if (!u) return;
+
+      await db.collection("stripe_subscriptions").doc(sid).set({
+        uid: u,
+        plan: normalizePlanLabel(plan || "Free"),
+        customerId: String(customerId || "").trim(),
+        updatedAt: now
+      }, { merge: true });
+    };
+
+    const getUidBySub = async (subscriptionId) => {
+      const sid = String(subscriptionId || "").trim();
+      if (!sid) return "";
+      const snap = await db.collection("stripe_subscriptions").doc(sid).get();
+      const d = snap.exists ? (snap.data() || {}) : {};
+      return String(d.uid || "").trim();
+    };
+
+    // ---------- event handlers ----------
+    if (type === "checkout.session.completed") {
+      const obj = evt?.data?.object || {};
+      const mode = String(obj?.mode || "").trim();
+      if (mode !== "subscription") {
+        res.status(200).json({ ok: true, ignored: true });
+        return;
+      }
+
+      const md = obj?.metadata || {};
+      const uid = String(md?.uid || "").trim();
+      const plan0 = normalizePlanLabel(md?.plan || "Free");
+      const email = String(md?.email || obj?.customer_details?.email || obj?.customer_email || "").trim();
+
+      const subscriptionId = String(obj?.subscription || "").trim();
+      const customerId = String(obj?.customer || "").trim();
+
+      // priceId は session から取れない場合があるため、まずは plan を優先
+      await upsertUserPlan({
+        uid,
+        plan: plan0,
+        email,
+        customerId,
+        subscriptionId,
+        status: "checkout_completed"
+      });
+
+      if (subscriptionId) {
+        await setSubMap({ subscriptionId, uid, plan: plan0, customerId });
+      }
+
+      res.status(200).json({ ok: true });
+      return;
+    }
+
+    if (type === "customer.subscription.created" || type === "customer.subscription.updated" || type === "customer.subscription.deleted") {
+      const obj = evt?.data?.object || {};
+      const subscriptionId = String(obj?.id || "").trim();
+      const status = String(obj?.status || "").trim();
+      const customerId = String(obj?.customer || "").trim();
+
+      const item0 = (obj?.items && Array.isArray(obj.items.data) && obj.items.data[0]) ? obj.items.data[0] : null;
+      const priceId = String(item0?.price?.id || "").trim();
+      const planByPrice = getPlanFromPriceId(priceId);
+      const plan = planByPrice ? planByPrice : "";
+
+      let currentPeriodEnd = 0;
+      try {
+        currentPeriodEnd = Number(obj?.current_period_end || 0) || 0; // unix seconds
+      } catch {
+        currentPeriodEnd = 0;
+      }
+
+      const uid = await getUidBySub(subscriptionId);
+
+      // subscription.deleted は Free に戻す
+      const finalPlan =
+        (type === "customer.subscription.deleted")
+          ? "Free"
+          : (plan ? plan : "Pro");
+
+      await upsertUserPlan({
+        uid,
+        plan: finalPlan,
+        customerId,
+        subscriptionId,
+        priceId,
+        status,
+        currentPeriodEnd
+      });
+
+      // map は常に最新化（price 変更など）
+      if (subscriptionId && uid) {
+        await setSubMap({ subscriptionId, uid, plan: finalPlan, customerId });
+      }
+
+      res.status(200).json({ ok: true });
+      return;
+    }
+
+    res.status(200).json({ ok: true });
+    return;
+
+  } catch (e) {
+    const msg = String(e && e.message ? e.message : e || "");
+    res.status(500).send(msg || "webhook_failed");
+    return;
+  }
+});
 
 // ===== API は JSON =====
 // 添付（base64）を含むため上限を引き上げ
@@ -1845,6 +2092,11 @@ app.post("/chat", async (req, res) => {
 
     res.json({
       ok: true,
+
+      // ===== GPT UI compatibility =====
+      // page-chat.js が拾えるように text を直下に出す
+      text: map.GPT || "",
+
       result: map,
       debug: DEBUG
         ? {
@@ -1865,6 +2117,7 @@ exports.api = onRequest(
     region: "us-central1",
     secrets: [
       STRIPE_SECRET_KEY,
+      STRIPE_WEBHOOK_SECRET,
       STRIPE_PRICE_PRO,
       STRIPE_PRICE_TEAM,
       STRIPE_PRICE_ENTERPRISE,
