@@ -834,6 +834,11 @@
       const auth = firebase.auth();
       const provider = new firebase.auth.GoogleAuthProvider();
 
+      // Always show account chooser (prevents silent auto-login)
+      try {
+        provider.setCustomParameters({ prompt: "select_account" });
+      } catch {}
+
       const consumeCompanyInvite = async (token, user) => {
         try {
           const r = await fetch("/api/company/invite/consume", {
@@ -931,21 +936,19 @@
 
       btnCompany.addEventListener("click", (e) => {
         e.preventDefault();
+
+        // Company is invite-URL only (do not trust localStorage token)
+        if (!inviteParam) {
+          showError("Company ログインは招待URLからのみ可能です。");
+          return;
+        }
+
         mode = "company";
         setSavedMode("company");
 
-        const invRaw = (() => {
-          try {
-            const s = localStorage.getItem(INVITE_KEY);
-            return s ? JSON.parse(s) : null;
-          } catch { return null; }
-        })();
+        // inviteParam がある場合は既に setInvite 済み（念のため再保存）
+        try { setInvite({ token: inviteParam, receivedAt: new Date().toISOString() }); } catch {}
 
-        const token = invRaw?.token ? String(invRaw.token) : "";
-        if (!token) {
-          redirectToIndexError("invite_invalid");
-          return;
-        }
         startLogin();
       });
 
