@@ -472,7 +472,6 @@ const clearAiRunIndicator = () => {
     // account
     user: {
       displayName: "",
-      userName: "",
       email: "",
       trustedDevice: "",
       deviceTrusted: false
@@ -812,9 +811,7 @@ const syncAccountUi = () => {
 
   // ===== settings account inputs / fields =====
   const dn = document.getElementById("displayName");
-  const un = document.getElementById("userName");
   if (dn && u.displayName != null) dn.value = safeText(u.displayName);
-  if (un && u.userName != null) un.value = safeText(u.userName);
 
   const planV = document.querySelector(".panel-account .section[aria-label='プラン'] .row .l .v");
   if (planV) planV.textContent = planText;
@@ -830,13 +827,6 @@ const syncAccountUi = () => {
     || document.querySelector(".panel-account [data-trusted-device]");
 
   if (devV) devV.textContent = u.deviceTrusted ? (safeText(u.trustedDevice) || "—") : "—";
-
-  const devBtn = document.getElementById("btnRevokeDevice");
-  if (devBtn) {
-    devBtn.disabled = !u.deviceTrusted;
-    devBtn.style.opacity = u.deviceTrusted ? "" : ".45";
-    devBtn.style.cursor = u.deviceTrusted ? "" : "not-allowed";
-  }
 };
 
 const applyI18n = () => {
@@ -6399,9 +6389,6 @@ if (authResult === "ok") {
       state.user.displayName = local || "";
     }
 
-    // userName は空のまま（ユーザーが設定で入力）
-    if (state.user.userName == null) state.user.userName = "";
-
     // trusted device は初回は「この端末」として扱う（固定値は禁止）
     const ua = String(navigator.userAgent || "");
     const isChrome = /Chrome\//.test(ua) && !/Edg\//.test(ua) && !/OPR\//.test(ua);
@@ -6533,7 +6520,6 @@ if (authResult === "ok") {
   if (!state.user) {
     state.user = {
       displayName: "",
-      userName: "",
       email: "",
       trustedDevice: "",
       deviceTrusted: false
@@ -7152,10 +7138,8 @@ if (authResult === "ok") {
 
     /* ===== Account ===== */
     const dn = document.getElementById("displayName");
-    const un = document.getElementById("userName");
 
     let dnTimer = null;
-    let unTimer = null;
 
     const saveUser = () => {
       save(state);
@@ -7171,16 +7155,6 @@ if (authResult === "ok") {
         dnTimer = setTimeout(saveUser, 250);
       });
       dn.addEventListener("blur", saveUser);
-    }
-
-    if (un) {
-      un.addEventListener("input", () => {
-        const v = (un.value || "").trim();
-        state.user.userName = v || "";
-        if (unTimer) clearTimeout(unTimer);
-        unTimer = setTimeout(saveUser, 250);
-      });
-      un.addEventListener("blur", saveUser);
     }
 
     const ensurePlanModal = () => {
@@ -7417,36 +7391,6 @@ if (authResult === "ok") {
       const m = ensurePlanModal();
       m.style.display = "flex";
       m.setAttribute("aria-hidden", "false");
-    });
-
-    const btnChangeEmail =
-      document.getElementById("btnChangeEmail")
-      || document.querySelector(".panel-account .section[aria-label='サインイン'] button")
-      || Array.from(document.querySelectorAll(".panel-account button")).find(b => {
-        const t = String(b.textContent || "").trim();
-        return t === "変更" || t === "Change";
-      }) || null;
-
-    btnChangeEmail?.addEventListener("click", async (e) => {
-      e.preventDefault();
-
-      // 登録メールアドレスはGoogleアカウント側で管理（AUREA側で書き換えない）
-      // Googleアカウント設定へ誘導
-      try {
-        window.open("https://myaccount.google.com/", "_blank", "noopener,noreferrer");
-      } catch {
-        window.location.href = "https://myaccount.google.com/";
-      }
-    });
-
-    const btnRevoke = document.getElementById("btnRevokeDevice");
-    btnRevoke?.addEventListener("click", async (e) => {
-      e.preventDefault();
-      if (!state.user.deviceTrusted) return;
-      const ok1 = await confirmModal(tr("confirmRevokeDevice"));
-      if (!ok1) return;
-      state.user.deviceTrusted = false;
-      saveUser();
     });
 
     // Legal modal (3 items) — login.html と同一仕様（固定文言 / 編集不可 / fetch無し）
@@ -7881,14 +7825,12 @@ if (authResult === "ok") {
       const p = (j.profile && typeof j.profile === "object") ? j.profile : j;
 
       const dn = String(p.displayName || "").trim();
-      const un = String(p.userName || "").trim();
       const em = String(p.email || "").trim();
 
       if (!state.user || typeof state.user !== "object") state.user = {};
 
       if (em) state.user.email = em;
       if (dn) state.user.displayName = dn;
-      if (un) state.user.userName = un;
 
       persistEverywhereMain();
       try { syncAccountUi(); } catch {}
