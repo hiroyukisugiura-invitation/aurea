@@ -131,13 +131,17 @@ app.post("/api/stripe/webhook", express.raw({ type: "application/json", limit: "
     }
 
     const sig = String(req.headers["stripe-signature"] || "").trim();
-    const rawBody = req.body;
+    const rawBody = (req.rawBody != null) ? req.rawBody : req.body;
 
-    // accept Buffer OR string (Cloud Run / proxy may convert)
+    // accept Buffer / string / object (some runtimes parse JSON before express.raw)
     const bodyBuf =
       Buffer.isBuffer(rawBody)
         ? rawBody
-        : (typeof rawBody === "string" ? Buffer.from(rawBody, "utf8") : null);
+        : (typeof rawBody === "string"
+            ? Buffer.from(rawBody, "utf8")
+            : (rawBody && typeof rawBody === "object"
+                ? Buffer.from(JSON.stringify(rawBody), "utf8")
+                : null));
 
     if (!sig || !bodyBuf) {
       res.status(400).send("invalid_payload");
