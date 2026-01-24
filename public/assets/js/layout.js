@@ -6334,6 +6334,9 @@ linkLogout?.addEventListener("click", async (e) => {
   if (stGate?.loggedIn) {
     setGateMessage("");
     hideAuthGate();
+  } else if (authResult === "ok" || authResult === "error") {
+    // login.html からの戻り（/?auth=ok|error）は、ここで飛ばさない
+    // 下の authResult ハンドラで setAuthState / エラー表示を処理する
   } else {
     // 未ログインは常に login.html（このUIに一本化）
     const p = new URLSearchParams(window.location.search);
