@@ -2180,10 +2180,6 @@ exports.api = onRequest(
       STRIPE_PRICE_ENTERPRISE,
 
       STRIPE_PRICE_PRO_TEST,
-git add functions/index.js
-git commit -m "Add Stripe testMode checkout + dual webhook secrets + price map"
-git push
-firebase deploy --only functions
 
       OPENAI_API_KEY,
 
