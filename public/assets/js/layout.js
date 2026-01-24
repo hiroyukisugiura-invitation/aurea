@@ -7422,403 +7422,152 @@ if (authResult === "ok") {
       saveUser();
     });
 
-    // Legal modal (3 items)
+    // Legal modal (3 items) — login.html と同一仕様（固定文言 / 編集不可 / fetch無し）
     const legalOverlay = document.getElementById("legalOverlay");
     const btnCloseLegalModal = document.getElementById("btnCloseLegalModal");
     const legalModalTitle = document.getElementById("legalModalTitle");
     const legalModalBody = document.getElementById("legalModalBody");
 
-    const LEGAL_PAGE_URL = {
-      tokusho: "/legal.html",
-      terms: "/terms.html",
-      privacy: "/privacy.html"
-    };
+    const TOKUSHO_JA = [
+      "■ 事業製品名：AUREA（オーリア）",
+      "",
+      "■ 事業代表者名：杉浦 広之",
+      "",
+      "■ 所在地：",
+      "〒106-0044",
+      "東京都港区東麻布3(※開示請求があった際は開示致します)",
+      "",
+      "■ お問い合わせ",
+      "・メールアドレス：contact@aurea-ai.app",
+      "※お問い合わせは原則「メール」での対応になります",
+      "",
+      "■ 販売 URL：https://aurea-2026.web.app/",
+      "",
+      "■ 販売価格：",
+      "・Proプラン：月額 30,000円（税込）",
+      "・Teamプラン：月額 69,000円（税込）",
+      "・Enterpriseプラン：月額 200,000円〜（税込）",
+      "",
+      "■ 商品代金以外の必要料金：",
+      "・インターネット接続にかかる通信料は利用者の負担となります",
+      "",
+      "■ 支払方法：",
+      "・クレジットカード決済（Stripe）",
+      "",
+      "■ 支払時期：",
+      "お申込み時に初回決済が行われます。",
+      "但し、継続的な課金はサービス提供開始後に適用されます",
+      "",
+      "■ 提供時期：",
+      "・決済完了後にサービスの受け渡し、提供されます",
+      "",
+      "■ 解約について：",
+      "・本サービスは月額課金制のデジタルサービスです",
+      "・ユーザーはいつでも解約することができます",
+      "　(プラン解約処理は解約設定時の月末になります)",
+      "・解約後も、次回更新日まではサービスをご利用いただけます",
+      "・日割りによる返金は行っておりません",
+      "",
+      "■ 返品・返金について：",
+      "デジタルサービスの性質上、購入後の返品・返金には対応しておりません",
+      "但し、法令に基づく場合はこの限りではありません"
+    ].join("\n");
 
-    const legalPageCache = new Map();
+    const TERMS_JA = [
+      "この利用規約（以下、「本規約」）は、",
+      "AUREA（以下、「当サービス」）が提供するSaaS型サービスの利用条件を定めるものです。",
+      "ユーザーは、本規約に同意した上で当サービスを利用するものとします。",
+      "",
+      "■ 第1条（適用）",
+      "・本規約は、ユーザーと当サービスとの間の一切の関係に適用されます",
+      "",
+      "■ 第2条（利用登録）",
+      "・当サービスの利用にあたり、ユーザーは正確な情報を登録するものとします",
+      "・虚偽の情報が判明した場合、当サービスは利用停止等の措置を取ることがあります",
+      "",
+      "■ 第3条（利用料金および支払方法）",
+      "・当サービスは月額課金制の有料サービスです",
+      "・利用料金および支払方法は、当サービス上に表示される内容に従うものとします",
+      "・決済は Stripe（Stripe, Inc.）を通じて行われます",
+      "",
+      "■ 第4条（解約）",
+      "・ユーザーは、いつでも当サービスの利用を解約することができます",
+      "・解約後も、次回更新日まではサービスを利用することができます",
+      "・日割りによる返金は行いません",
+      "",
+      "■ 第5条（禁止事項）",
+      "・ユーザーは、以下の行為を行ってはなりません",
+      "",
+      "■ 法令または公序良俗に違反する行為",
+      "・不正アクセス、サービス運営を妨害する行為",
+      "・第三者の権利や利益を侵害する行為",
+      "・当サービスが不適切と判断する行為",
+      "",
+      "■ 第6条（サービスの停止・変更）",
+      "・当サービスは、必要に応じて、事前の通知なくサービス内容を変更または停止することがあります",
+      "",
+      "■ 第7条（免責事項）",
+      "・当サービスは、提供する情報の正確性や完全性について保証するものではありません",
+      "・当サービスの利用により生じた損害について、一切の責任を負わないものとします",
+      "",
+      "■ 第8条（規約の変更）",
+      "・当サービスは、本規約を必要に応じて変更することがあります",
+      "・変更後の規約は、本ページに掲載された時点で効力を生じるものとします",
+      "",
+      "■ 第9条（準拠法・管轄）",
+      "・本規約は日本法に準拠します",
+      "・本サービスに関して生じた紛争については、東京地方裁判所を専属的合意管轄とします",
+      "",
+      "■ 第10条（お問い合わせ先）",
+      "・事業代表者名：杉浦 広之",
+      "・メールアドレス：contact@aurea-ai.app"
+    ].join("\n");
 
-    const fetchLegalPageText = async (key) => {
-      const k = (key === "terms" || key === "privacy" || key === "tokusho") ? key : "tokusho";
-      const url = LEGAL_PAGE_URL[k] || "/legal.html";
+    const PRIVACY_JA = [
+      "AUREA（以下、「当サービス」）は、ユーザーの個人情報の保護を重要な責務と考え、",
+      "以下のとおりプライバシーポリシーを定め、適切に取り扱います。",
+      "",
+      "■ 1. 取得する情報",
+      "当サービスでは、以下の情報を取得する場合があります。",
+      "・氏名、メールアドレスなどの登録情報",
+      "・ログイン情報、利用履歴、操作ログ",
+      "・決済に関連する情報（※クレジットカード情報は当サービスでは保持せず、Stripeが管理します）",
+      "・お問い合わせ時に提供される情報",
+      "",
+      "■ 2. 利用目的",
+      "取得した情報は、以下の目的で利用します。",
+      "・サービスの提供・運営・改善のため",
+      "・本人確認、認証、セキュリティ確保のため",
+      "・利用状況の分析および機能改善のため",
+      "・お問い合わせへの対応のため",
+      "・利用規約違反や不正行為への対応のため",
+      "",
+      "■ 3. 外部サービスの利用",
+      "・当サービスでは、決済処理のために Stripe（Stripe, Inc.）を利用しています。",
+      "・決済に関する個人情報は、Stripeのプライバシーポリシーに基づき管理されます。",
+      "",
+      "■ 4. 個人情報の第三者提供",
+      "・法令に基づく場合を除き、本人の同意なく第三者に個人情報を提供することはありません。",
+      "",
+      "■ 5. 個人情報の管理",
+      "・当サービスは、個人情報の漏洩、滅失、改ざん等を防止するため、",
+      "・適切な安全管理措置を講じます。",
+      "",
+      "■ 6. 開示・訂正・削除",
+      "・ユーザーは、自身の個人情報について、開示・訂正・削除を求めることができます。",
+      "・ご希望の場合は、下記お問い合わせ先までご連絡ください。",
+      "",
+      "■ 7. プライバシーポリシーの変更",
+      "・本ポリシーの内容は、必要に応じて変更されることがあります。",
+      "・変更後の内容は、本ページにて公表します。",
+      "",
+      "■ 8. お問い合わせ先",
+      "・事業担当者名：杉浦 広之",
+      "・メールアドレス：contact@aurea-ai.app"
+    ].join("\n");
 
-      if (legalPageCache.has(url)) return String(legalPageCache.get(url) || "");
-
-      try {
-        const r = await fetch(url, { method: "GET", cache: "no-store" });
-        const html = r && r.ok ? await r.text() : "";
-        if (!html) {
-          legalPageCache.set(url, "");
-          return "";
-        }
-
-        const doc = new DOMParser().parseFromString(html, "text/html");
-        const bodyText = String(doc && doc.body ? (doc.body.innerText || "") : "").trim();
-
-        legalPageCache.set(url, bodyText);
-        return bodyText;
-      } catch {
-        legalPageCache.set(url, "");
-        return "";
-      }
-    };
-
-    const openLegalModal = async (key) => {
-      if (!legalOverlay || !legalModalTitle || !legalModalBody) return;
-
-      const k = (key === "terms" || key === "privacy" || key === "tokusho") ? key : "tokusho";
-      legalModalTitle.textContent =
-        (k === "tokusho") ? tr("tokusho")
-        : (k === "terms") ? tr("terms")
-        : tr("privacy");
-
-      // reset (CSS handles padding; JS only controls scroll when needed)
-      legalModalBody.style.maxHeight = "";
-      legalModalBody.style.overflowY = "";
-      legalModalBody.style.paddingRight = "";
-
-      // 静的ページ（/legal.html /terms.html /privacy.html）の本文をそのまま表示（UIは現状の小ポップのまま）
-      const pageText = await fetchLegalPageText(k);
-
-      // 表示テキスト整形（UI/サイズはそのまま、文言整形だけ）
-      const normalizeLegalText = (kind, src) => {
-        let t = String(src || "").replace(/\r/g, "");
-
-        // スクロール内の重複タイトル行を削除（上部に既にタイトルがあるため）
-        t = t
-          .split("\n")
-          .filter(line => {
-            const s = String(line || "").trim();
-            return s !== "特定商取引法に基づく表記" && s !== "利用規約" && s !== "プライバシーポリシー";
-          })
-          .join("\n");
-
-        // 連続する空行は「1行」に圧縮（= 改行2つまで）
-        t = t.replace(/\n{3,}/g, "\n\n");
-
-        // 利用規約：条タイトル直後の「空白改行」を削除（条ごとには1段空白は残す）
-        if (kind === "terms") {
-          // 第N条見出し直後に空行がある場合 → 1行に詰める
-          t = t.replace(/(第\d+条（[^）]+）)\n\s*\n+/g, "$1\n");
-          // 「第N条〜」の前の空行を1段に統一
-          t = t.replace(/\n{2,}(第\d+条（)/g, "\n\n$1");
-        }
-
-        // プライバシーポリシー：1. 取得する情報 を指定フォーマットに固定（見やすさ優先）
-        if (kind === "privacy") {
-          const block = [
-            "1. 取得する情報",
-            "当サービスでは、以下の情報を取得する場合があります。",
-            "・氏名、メールアドレスなどの登録情報",
-            "・ログイン情報、利用履歴、操作ログ",
-            "・決済に関連する情報（※クレジットカード情報は当サービスでは保持せず、Stripeが管理します）",
-            "・お問い合わせ時に提供される情報"
-          ].join("\n");
-
-          // 既存の「1. 取得する情報」〜「2.」直前までを差し替え（無ければ先頭へ挿入）
-          if (/^1\.\s*取得する情報/m.test(t)) {
-            t = t.replace(/(^|\n)1\.\s*取得する情報[\s\S]*?(?=\n2\.\s)/m, (m0) => {
-              const prefix = m0.startsWith("\n") ? "\n" : "";
-              return `${prefix}${block}\n`;
-            });
-          } else {
-            t = `${block}\n\n${t}`.trim();
-          }
-
-          // 連続空行を再度圧縮
-          t = t.replace(/\n{3,}/g, "\n\n");
-        }
-
-        return t.trim();
-      };
-
-      // ===== Manual edit override (localStorage) =====
-      const LEGAL_OVERRIDE_KEY = "aurea_legal_override_v1";
-
-      const loadLegalOverrideMap = () => {
-        try {
-          const raw = localStorage.getItem(LEGAL_OVERRIDE_KEY);
-          if (!raw) return {};
-          const obj = JSON.parse(raw);
-          return (obj && typeof obj === "object") ? obj : {};
-        } catch { return {}; }
-      };
-
-      const saveLegalOverrideMap = (map) => {
-        try { localStorage.setItem(LEGAL_OVERRIDE_KEY, JSON.stringify(map || {})); } catch {}
-      };
-
-      const getLegalOverride = (kind) => {
-        const m = loadLegalOverrideMap();
-        const v = m && m[kind] != null ? String(m[kind] || "") : "";
-        return v.trim() ? v : "";
-      };
-
-      const setLegalOverride = (kind, text) => {
-        const m = loadLegalOverrideMap();
-        m[kind] = String(text || "");
-        saveLegalOverrideMap(m);
-      };
-
-      // tokusho（設定ポップ）だけ固定文言にする（/legal.html は変更しない）
-      const TOKUSHO_POPUP_TEXT = [
-        "■ 事業製品名：AUREA（オーリア）",
-        "",
-        "■ 事業代表者名：杉浦 広之",
-        "",
-        "■ 所在地：",
-        "〒106-0044",
-        "東京都港区東麻布3(※開示請求があった際は開示致します)",
-        "",
-        "■ お問い合わせ",
-        "・メールアドレス：contact@aurea-ai.app",
-        "※お問い合わせは原則「メール」での対応になります",
-        "",
-        "■ 販売 URL：https://aurea-2026.web.app/",
-        "",
-        "■ 販売価格：",
-        "・Proプラン：月額 30,000円（税込）",
-        "・Teamプラン：月額 69,000円（税込）",
-        "・Enterpriseプラン：月額 200,000円〜（税込）",
-        "",
-        "■ 商品代金以外の必要料金：",
-        "・インターネット接続にかかる通信料は利用者の負担となります",
-        "",
-        "■ 支払方法：",
-        "・クレジットカード決済（Stripe）",
-        "",
-        "■ 支払時期：",
-        "お申込み時に初回決済が行われます。",
-        "但し、継続的な課金はサービス提供開始後に適用されます",
-        "",
-        "■ 提供時期：",
-        "・決済完了後にサービスの受け渡し、提供されます",
-        "",
-        "■ 解約について：",
-        "・本サービスは月額課金制のデジタルサービスです",
-        "・ユーザーはいつでも解約することができます",
-        "　(プラン解約処理は解約設定時の月末になります)",
-        "・解約後も、次回更新日まではサービスをご利用いただけます",
-        "・日割りによる返金は行っておりません",
-        "",
-        "■ 返品・返金について：",
-        "デジタルサービスの性質上、購入後の返品・返金には対応しておりません",
-        "但し、法令に基づく場合はこの限りではありません"
-      ].join("\n");
-
-      // 1) tokusho は固定文言（全ユーザー共通）
-      // 2) terms/privacy は従来どおり（静的ページ → normalize → override）
-      const TERMS_POPUP_TEXT = [
-        "この利用規約（以下、「本規約」）は、",
-        "AUREA（以下、「当サービス」）が提供するSaaS型サービスの利用条件を定めるものです。",
-        "ユーザーは、本規約に同意した上で当サービスを利用するものとします。",
-        "",
-        "■ 第1条（適用）",
-        "・本規約は、ユーザーと当サービスとの間の一切の関係に適用されます",
-        "",
-        "■ 第2条（利用登録）",
-        "・当サービスの利用にあたり、ユーザーは正確な情報を登録するものとします",
-        "・虚偽の情報が判明した場合、当サービスは利用停止等の措置を取ることがあります",
-        "",
-        "■ 第3条（利用料金および支払方法）",
-        "・当サービスは月額課金制の有料サービスです",
-        "・利用料金および支払方法は、当サービス上に表示される内容に従うものとします",
-        "・決済は Stripe（Stripe, Inc.）を通じて行われます",
-        "",
-        "■ 第4条（解約）",
-        "・ユーザーは、いつでも当サービスの利用を解約することができます",
-        "・解約後も、次回更新日まではサービスを利用することができます",
-        "・日割りによる返金は行いません",
-        "",
-        "■ 第5条（禁止事項）",
-        "・ユーザーは、以下の行為を行ってはなりません",
-        "",
-        "■ 法令または公序良俗に違反する行為",
-        "・不正アクセス、サービス運営を妨害する行為",
-        "・第三者の権利や利益を侵害する行為",
-        "・当サービスが不適切と判断する行為",
-        "",
-        "■ 第6条（サービスの停止・変更）",
-        "・当サービスは、必要に応じて、事前の通知なくサービス内容を変更または停止することがあります",
-        "",
-        "■ 第7条（免責事項）",
-        "・当サービスは、提供する情報の正確性や完全性について保証するものではありません",
-        "・当サービスの利用により生じた損害について、一切の責任を負わないものとします",
-        "",
-        "■ 第8条（規約の変更）",
-        "・当サービスは、本規約を必要に応じて変更することがあります",
-        "・変更後の規約は、本ページに掲載された時点で効力を生じるものとします",
-        "",
-        "■ 第9条（準拠法・管轄）",
-        "・本規約は日本法に準拠します",
-        "・本サービスに関して生じた紛争については、東京地方裁判所を専属的合意管轄とします",
-        "",
-        "■ 第10条（お問い合わせ先）",
-        "・事業代表者名：杉浦 広之",
-        "・メールアドレス：contact@aurea-ai.app"
-      ].join("\n");
-
-      const PRIVACY_POPUP_TEXT = [
-        "AUREA（以下、「当サービス」）は、ユーザーの個人情報の保護を重要な責務と考え、",
-        "以下のとおりプライバシーポリシーを定め、適切に取り扱います。",
-        "",
-        "■ 1. 取得する情報",
-        "当サービスでは、以下の情報を取得する場合があります。",
-        "・氏名、メールアドレスなどの登録情報",
-        "・ログイン情報、利用履歴、操作ログ",
-        "・決済に関連する情報（※クレジットカード情報は当サービスでは保持せず、Stripeが管理します）",
-        "・お問い合わせ時に提供される情報",
-        "",
-        "■ 2. 利用目的",
-        "取得した情報は、以下の目的で利用します。",
-        "・サービスの提供・運営・改善のため",
-        "・本人確認、認証、セキュリティ確保のため",
-        "・利用状況の分析および機能改善のため",
-        "・お問い合わせへの対応のため",
-        "・利用規約違反や不正行為への対応のため",
-        "",
-        "■ 3. 外部サービスの利用",
-        "・当サービスでは、決済処理のために Stripe（Stripe, Inc.）を利用しています。",
-        "・決済に関する個人情報は、Stripeのプライバシーポリシーに基づき管理されます。",
-        "",
-        "■ 4. 個人情報の第三者提供",
-        "・法令に基づく場合を除き、本人の同意なく第三者に個人情報を提供することはありません。",
-        "",
-        "■ 5. 個人情報の管理",
-        "・当サービスは、個人情報の漏洩、滅失、改ざん等を防止するため、",
-        "・適切な安全管理措置を講じます。",
-        "",
-        "■ 6. 開示・訂正・削除",
-        "・ユーザーは、自身の個人情報について、開示・訂正・削除を求めることができます。",
-        "・ご希望の場合は、下記お問い合わせ先までご連絡ください。",
-        "",
-        "■ 7. プライバシーポリシーの変更",
-        "・本ポリシーの内容は、必要に応じて変更されることがあります。",
-        "・変更後の内容は、本ページにて公表します。",
-        "",
-        "■ 8. お問い合わせ先",
-        "・事業担当者名：杉浦 広之",
-        "・メールアドレス：contact@aurea-ai.app"
-      ].join("\n");
-
-      const baseText = normalizeLegalText(k, pageText);
-      const overrideText = getLegalOverride(k);
-
-      const showText =
-        (k === "tokusho") ? TOKUSHO_POPUP_TEXT
-        : (k === "terms") ? TERMS_POPUP_TEXT
-        : (k === "privacy") ? PRIVACY_POPUP_TEXT
-        : (overrideText || baseText);
-
-      const safe = escHtml(showText);
-
-      // contenteditable（本文を直接編集）
-      // ===== admin lock =====
-      const ADMIN_EMAIL = "hiroyuki.sugiura@aurea-ai.app";
-
-      // Firebase Auth がある前提（無ければ常に read-only）
-      // tokusho は全ユーザー共通の固定文言のため、誰でも編集不可
-      const isAdminUser = (() => {
-        try {
-          const u = firebase?.auth?.().currentUser;
-          return !!(u && u.email && u.email === ADMIN_EMAIL);
-        } catch {
-          return false;
-        }
-      })();
-
-      const canEdit = (k !== "tokusho") && isAdminUser;
-
-      legalModalBody.innerHTML = safe
-        ? `<div class="reg-text"
-              ${canEdit ? 'contenteditable="true"' : 'contenteditable="false"'}
-              data-legal-edit="${canEdit ? '1' : '0'}"
-              data-legal-key="${escHtml(k)}">
-              ${safe.replace(/\n/g, "<br>")}
-          </div>`
-        : `<div class="reg-text"
-              ${canEdit ? 'contenteditable="true"' : 'contenteditable="false"'}
-              data-legal-edit="${canEdit ? '1' : '0'}"
-              data-legal-key="${escHtml(k)}">
-          </div>`;
-
-      // paste をプレーンテキスト化（HTML混入防止）
-      // input を debounce 保存（改行/文面を手動で整えられるようにする）
-      if (!window.__AUREA_LEGAL_EDIT_BOUND__) {
-        window.__AUREA_LEGAL_EDIT_BOUND__ = true;
-
-        let tmr = null;
-
-        const saveFromEl = (el) => {
-          try {
-            const kind = String(el.getAttribute("data-legal-key") || "").trim();
-            if (!kind) return;
-
-            // innerText で改行を保持
-            const txt = String(el.innerText || "").replace(/\r/g, "").trim();
-            setLegalOverride(kind, txt);
-          } catch {}
-        };
-
-        legalModalBody.addEventListener("paste", (e) => {
-          const t = e.target;
-          if (!(t instanceof Element)) return;
-          const el = t.closest("[data-legal-edit='1']");
-          if (!el) return;
-
-          e.preventDefault();
-
-          const text = (e.clipboardData || window.clipboardData).getData("text") || "";
-          document.execCommand("insertText", false, text);
-        });
-
-        legalModalBody.addEventListener("input", (e) => {
-          const t = e.target;
-          if (!(t instanceof Element)) return;
-          const el = t.closest("[data-legal-edit='1']");
-          if (!el) return;
-
-          try { clearTimeout(tmr); } catch {}
-          tmr = setTimeout(() => saveFromEl(el), 180);
-        });
-      }
-
-      legalOverlay.style.display = "flex";
-
-      // 長文だけスクロールを付与
-      requestAnimationFrame(() => {
-        const maxPx = Math.min(Math.round(window.innerHeight * 0.6), 520);
-        if (legalModalBody.scrollHeight > maxPx + 8) {
-          legalModalBody.style.maxHeight = "min(60vh, 520px)";
-          legalModalBody.style.overflowY = "auto";
-          legalModalBody.style.paddingRight = "0px";
-        }
-        legalOverlay.classList.add("is-open");
-      });
-    };
-
-
-    const closeLegalModal = () => {
-      if (!legalOverlay) return;
-      legalOverlay.classList.remove("is-open");
-      setTimeout(() => {
-        legalOverlay.style.display = "none";
-      }, 180);
-    };
-
-    document.querySelectorAll(".settings-modal [data-legal]").forEach((b) => {
-      b.addEventListener("click", (e) => {
-        e.preventDefault();
-        openLegalModal(b.getAttribute("data-legal"));
-      });
-    });
-
-    btnCloseLegalModal?.addEventListener("click", (e) => {
-      e.preventDefault();
-      closeLegalModal();
-    });
-
-    legalOverlay?.addEventListener("click", (e) => {
-      if (e.target === legalOverlay) closeLegalModal();
-    });
+    const TOKUSHO_EN = [
+      "Product: AUREA",
   };
 
   ensureActiveThread();
