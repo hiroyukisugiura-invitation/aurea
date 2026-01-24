@@ -819,54 +819,61 @@ const syncAccountUi = () => {
 
   const applyI18n = () => {
     const lang = state.settings?.language || "ja";
+    const isEn = (lang === "en");
 
     // html lang も同期
-    try { document.documentElement.lang = (lang === "en") ? "en" : "ja"; } catch {}
+    try { document.documentElement.lang = isEn ? "en" : "ja"; } catch {}
 
     const setText = (sel, text) => {
       const el = document.querySelector(sel);
       if (el && text != null) el.textContent = text;
     };
 
+    // tr が未定義キーだと key を返すため、Settings周りはフォールバック辞書で確実に表示する
+    const tt = (key, jaText, enText) => {
+      const v = tr(key);
+      if (v && v !== key) return v;
+      return isEn ? enText : jaText;
+    };
+
     // ===== Sidebar =====
-    setText(".sb-item[data-nav='newChat'] .label", tr("newChat"));
-    setText(".sb-item[data-nav='images'] .label", tr("library"));
+    setText(".sb-item[data-nav='newChat'] .label", tt("newChat", "新しいチャット", "New chat"));
+    setText(".sb-item[data-nav='images'] .label", tt("library", "ライブラリ", "Library"));
 
-    // Group headers（中身は data-i18n で反映）
-
-    // Sidebar search (icon button)
     const sbSearchBtn = document.getElementById("aureaSearchBtn");
-    if (sbSearchBtn) {
-      sbSearchBtn.setAttribute("aria-label", tr("search"));
-    }
+    if (sbSearchBtn) sbSearchBtn.setAttribute("aria-label", tt("search", "検索", "Search"));
 
     // ===== Settings modal (embedded) =====
-    setText(".settings-modal .nav-title", tr("settings"));
+    setText(".settings-modal .nav-title", tt("settings", "設定", "Settings"));
 
-    setText(".settings-modal label[for='tab-general'] .nav-txt", tr("general"));
-    setText(".settings-modal label[for='tab-apps'] .nav-txt", tr("apps"));
-    setText(".settings-modal label[for='tab-data'] .nav-txt", tr("data"));
-    setText(".settings-modal label[for='tab-account'] .nav-txt", tr("accountSecurity"));
+    setText(".settings-modal label[for='tab-general'] .nav-txt", tt("general", "一般", "General"));
+    setText(".settings-modal label[for='tab-apps'] .nav-txt", tt("apps", "アプリ", "Apps"));
+    setText(".settings-modal label[for='tab-data'] .nav-txt", tt("data", "データ", "Data"));
+    setText(".settings-modal label[for='tab-account'] .nav-txt", tt("accountSecurity", "アカウント・セキュリティ", "Account & security"));
 
-    setText(".settings-modal .panel-general .content-title", tr("general"));
-    setText(".settings-modal .panel-apps .content-title", tr("apps"));
-    setText(".settings-modal .panel-data .content-title", tr("data"));
-    setText(".settings-modal .panel-account .content-title", tr("accountSecurity"));
+    setText(".settings-modal .panel-general .content-title", tt("general", "一般", "General"));
+    setText(".settings-modal .panel-apps .content-title", tt("apps", "アプリ", "Apps"));
+    setText(".settings-modal .panel-data .content-title", tt("data", "データ", "Data"));
+    setText(".settings-modal .panel-account .content-title", tt("accountSecurity", "アカウント・セキュリティ", "Account & security"));
+
+    // Settings header sub（HTMLに直書きされがちな部分を上書き）
+    setText(".settings-modal .panel-general .content-sub", isEn ? "Basic device settings" : "端末の基本的な設定");
+    setText(".settings-modal .panel-apps .content-sub", isEn ? "Apps & connectors" : "アプリ連携");
+    setText(".settings-modal .panel-data .content-sub", isEn ? "Data and storage" : "データと保存先");
+    setText(".settings-modal .panel-account .content-sub", isEn ? "User information and security details" : "ユーザー情報とセキュリティ");
+
+    // General rows labels（HTML直書き対策）
+    setText(".settings-modal .panel-general .row:nth-of-type(1) .k", isEn ? "Theme" : "テーマ");
+    setText(".settings-modal .panel-general .row:nth-of-type(2) .k", isEn ? "Language" : "言語");
+    setText(".settings-modal .panel-general .row:nth-of-type(3) .k", isEn ? "Send mode" : "AUREAへの送信方法");
 
     // Apps: "SaaS 追加" button label
     const addBtn = document.querySelector(".settings-modal .panel-apps .apps-header .btn");
-    if (addBtn) {
-      addBtn.innerHTML = `<i class="fa-solid fa-plus"></i> ${tr("addSaas")}`;
-    }
+    if (addBtn) addBtn.innerHTML = `<i class="fa-solid fa-plus"></i> ${tt("addSaas", "SaaS 追加", "Add SaaS")}`;
 
-    // Settings: language select placeholder-like consistency (表示のみ)
+    // Settings: language select aria
     const selLang = document.querySelector(".settings-modal #settingsLang");
-    if (selLang) {
-      selLang.setAttribute("aria-label", tr("language"));
-    }
-
-    // ===== Settings selects: option text normalize (ja/en) =====
-    const isEn = (lang === "en");
+    if (selLang) selLang.setAttribute("aria-label", isEn ? "Language" : "言語");
 
     // ===== AI Logs modal i18n =====
     const arTitle = document.getElementById("aureaAiReportsModalTitle");
@@ -905,12 +912,12 @@ const syncAccountUi = () => {
     if (sendSel) {
       Array.from(sendSel.options || []).forEach((o) => {
         const v = String(o.value || "").trim();
-        if (v === "cmdEnter") o.text = isEn ? "⌘ + Enter to send (Enter for newline)" : "⌘ + Enterで送信（Enterは改行）";
-        if (v === "enter")    o.text = isEn ? "Enter to send (Shift + Enter for newline)" : "Enterで送信（Shift + Enterで改行）";
+        if (v === "cmdEnter") o.text = isEn ? "Send with ⌘ + Enter (Enter for newline)" : "⌘ + Enterで送信（Enterは改行）";
+        if (v === "enter")    o.text = isEn ? "Send with Enter (Shift + Enter for newline)" : "Enterで送信（Shift + Enterで改行）";
       });
     }
 
-    // Data storage dropdown options (cloud/local)
+    // Data storage dropdown options (cloud/local) — legacy
     const ds = document.getElementById("dataStorageSelect");
     if (ds) {
       Array.from(ds.options || []).forEach((o) => {
@@ -924,11 +931,20 @@ const syncAccountUi = () => {
     const delAll = document.getElementById("btnDeleteAllChats");
     if (delAll) delAll.textContent = isEn ? "Delete" : "削除";
 
-        // ===== Search modal (popup) i18n =====
+    // ===== Regulations buttons inside Settings (Account tab) =====
+    // data-legal を使っているボタンは label を強制上書きする（崩れ防止）
+    const regTok = document.querySelector(".settings-modal [data-legal='tokusho']");
+    const regTer = document.querySelector(".settings-modal [data-legal='terms']");
+    const regPri = document.querySelector(".settings-modal [data-legal='privacy']");
+    if (regTok) regTok.textContent = isEn ? "Legal Notice" : "特定商取引法に基づく表記";
+    if (regTer) regTer.textContent = isEn ? "Terms of Service" : "利用規約";
+    if (regPri) regPri.textContent = isEn ? "Privacy Policy" : "プライバシーポリシー";
+
+    // ===== Search modal (popup) i18n =====
     const smInput = document.getElementById("aureaSearchModalInput");
     if (smInput) {
-      smInput.placeholder = tr("search");
-      smInput.setAttribute("aria-label", tr("search"));
+      smInput.placeholder = tt("search", "検索", "Search");
+      smInput.setAttribute("aria-label", tt("search", "検索", "Search"));
     }
 
     // data-i18n / data-i18n-aria 全反映（HTML属性ベース）
