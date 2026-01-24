@@ -7567,7 +7567,49 @@ if (authResult === "ok") {
     ].join("\n");
 
     const TOKUSHO_EN = [
-      "Product: AUREA",
+  "■ Product: AUREA",
+  "",
+  "■ Business Operator:",
+  "Hiroyuki Sugiura",
+  "",
+  "■ Address:",
+  "Higashi-Azabu, Minato-ku, Tokyo",
+  "(Disclosed upon legitimate request)",
+  "",
+  "■ Contact:",
+  "Email: contact@aurea-ai.app",
+  "* Inquiries are handled primarily by email.",
+  "",
+  "■ Sales URL:",
+  "https://aurea-2026.web.app/",
+  "",
+  "■ Pricing:",
+  "• Pro Plan: JPY 30,000 / month (tax included)",
+  "• Team Plan: JPY 69,000 / month (tax included)",
+  "• Enterprise Plan: From JPY 200,000 / month (tax included)",
+  "",
+  "■ Additional fees:",
+  "Internet connection fees are borne by the user.",
+  "",
+  "■ Payment method:",
+  "Credit card (Stripe)",
+  "",
+  "■ Payment timing:",
+  "The first payment is processed at the time of purchase.",
+  "Recurring charges will apply after service availability begins.",
+  "",
+  "■ Service delivery:",
+  "The service will be provided after payment is completed.",
+  "",
+  "■ Cancellation:",
+  "This is a monthly digital service.",
+  "You may cancel at any time (effective at the end of the billing period).",
+  "No prorated refunds.",
+  "",
+  "■ Refund policy:",
+  "No refunds after purchase due to the nature of digital services, except as required by law."
+].join("\n");
+
   };
 
   ensureActiveThread();
@@ -7769,4 +7811,6 @@ if (authResult === "ok") {
   (async () => {
     try { await detectApiPrefix(); } catch {}
   })();
+
 })();
+
