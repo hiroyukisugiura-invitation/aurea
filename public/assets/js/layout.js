@@ -578,6 +578,10 @@ const clearAiRunIndicator = () => {
     e.preventDefault();
     closeDetails(userMenuDetails);
     openSettings();
+
+    // Settings表示後にi18nを再適用（DOM生成/描画遅延でも確実に反映）
+    try { applyI18n(); } catch {}
+    try { syncSettingsUi(); } catch {}
   }, true);
 
   /* ================= settings (embedded modal) ================= */
@@ -5616,6 +5620,10 @@ btnNewChat?.addEventListener("click", (e) => {
 
     closeDetails(userMenuDetails);
     openSettings();
+
+    // Settings表示後にi18nを再適用（DOM生成/描画遅延でも確実に反映）
+    try { applyI18n(); } catch {}
+    try { syncSettingsUi(); } catch {}
   };
 
   document.addEventListener("pointerdown", openSettingsIfTriggered, true);
