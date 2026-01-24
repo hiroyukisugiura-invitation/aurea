@@ -6217,6 +6217,9 @@ linkLogout?.addEventListener("click", async (e) => {
   const btnAuthPersonal = document.getElementById("btnAuthPersonal");
   const btnAuthCompany = document.getElementById("btnAuthCompany");
 
+  // authGate UI は廃止（login.html に一本化）
+  try { authGate?.remove(); } catch {}
+
   const ensureGateMessage = () => {
     if (!authGate) return null;
     let msg = document.getElementById("authGateMsg");
@@ -6244,14 +6247,23 @@ linkLogout?.addEventListener("click", async (e) => {
   };
 
   const showAuthGate = () => {
-    if (authGate) {
-      authGate.style.display = "flex";
+    // authGate UI は使わない：未ログインは login.html に一本化
+    try {
+      const p = new URLSearchParams(window.location.search);
+      const inv = String(p.get("invite") || "").trim();
 
-      // クリック不能の原因になりがちな「上に被さる透明要素」対策として最前面固定
-      authGate.style.zIndex = "100000";
-      authGate.style.pointerEvents = "auto";
+      const url = new URL("/login.html", window.location.origin);
+      if (inv) {
+        url.searchParams.set("mode", "company");
+        url.searchParams.set("invite", inv);
+      } else {
+        url.searchParams.set("mode", "personal");
+      }
+
+      window.location.replace(url.toString());
+    } catch {
+      window.location.replace("/login.html?mode=personal");
     }
-    if (appRoot) appRoot.setAttribute("aria-hidden", "true");
   };
 
     const hideAuthGate = () => {
@@ -6317,8 +6329,26 @@ linkLogout?.addEventListener("click", async (e) => {
     }
   } catch {}
 
-  // 初期は必ず Gate 表示（未ログインは本体に入れない）
-  showAuthGate();
+  // 既にログイン済みなら Gate を閉じる（認証は最終的にサーバ/APIでも必須化する）
+  const stGate = getAuthState();
+  if (stGate?.loggedIn) {
+    setGateMessage("");
+    hideAuthGate();
+  } else {
+    // 未ログインは常に login.html（このUIに一本化）
+    const p = new URLSearchParams(window.location.search);
+    const inv = String(p.get("invite") || "").trim();
+
+    const url = new URL("/login.html", window.location.origin);
+    if (inv) {
+      url.searchParams.set("mode", "company");
+      url.searchParams.set("invite", inv);
+    } else {
+      url.searchParams.set("mode", "personal");
+    }
+
+    window.location.replace(url.toString());
+  }
 
   // URL params（招待 / auth戻り）
   const params = new URLSearchParams(window.location.search);
@@ -6422,8 +6452,8 @@ if (authResult === "ok") {
   }
 
   // 既にログイン済みなら Gate を閉じる（認証は最終的にサーバ/APIでも必須化する）
-  const st = getAuthState();
-  if (st?.loggedIn) {
+  const stAuth = getAuthState();
+  if (stAuth?.loggedIn) {
     setGateMessage("");
     hideAuthGate();
 } else {
