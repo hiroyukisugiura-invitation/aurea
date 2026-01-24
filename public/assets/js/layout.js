@@ -4751,7 +4751,7 @@ const closeSettings = () => {
 
         let r = null;
         try {
-          r = await apiFetchJson("/api/chat", {
+          r = await apiFetchJson("/chat", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
@@ -4923,7 +4923,7 @@ const closeSettings = () => {
       try { apiChatAbortCtrl?.abort(); } catch {}
       apiChatAbortCtrl = new AbortController();
 
-      const r = await apiFetchJson("/api/chat", {
+      const r = await apiFetchJson("/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
