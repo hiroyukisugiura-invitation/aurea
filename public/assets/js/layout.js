@@ -7455,47 +7455,57 @@ if (authResult === "ok") {
     const legalModalTitle = document.getElementById("legalModalTitle");
     const legalModalBody = document.getElementById("legalModalBody");
 
+    // 改行を潰さない（login.html と同じ読みやすさへ）
+    try {
+      if (legalModalBody) {
+        legalModalBody.style.whiteSpace = "pre-wrap";
+        legalModalBody.style.wordBreak = "break-word";
+        legalModalBody.style.lineHeight = "1.75";
+      }
+    } catch {}
+
+    // ===== JA (login.html と同じ「箇条書き + 空行」) =====
     const TOKUSHO_JA = [
-      "【事業製品名】AUREA（オーリア）",
+      "■ 製品名：AUREA（オーリア）",
       "",
-      "【事業代表者名】杉浦 広之",
+      "■ 事業代表者名：杉浦 広之",
       "",
-      "【所在地】",
+      "■ 所在地：",
       "〒106-0044",
-      "東京都港区東麻布3(※開示請求があった際は開示致します)",
+      "東京都港区東麻布3（※開示請求があった際は開示致します）",
       "",
-      "【お問い合わせ】",
-      "メールアドレス：contact@aurea-ai.app",
+      "■ お問い合わせ：",
+      "・メールアドレス：contact@aurea-ai.app",
       "※お問い合わせは原則「メール」での対応になります",
       "",
-      "【販売 URL】https://aurea-2026.web.app/",
+      "■ 販売 URL：https://aurea-2026.web.app/",
       "",
-      "【販売価格】",
-      "Proプラン：月額 30,000円（税込）",
-      "Teamプラン：月額 69,000円（税込）",
-      "Enterpriseプラン：月額 200,000円〜（税込）",
+      "■ 販売価格：",
+      "・Proプラン：月額 30,000円（税込）",
+      "・Teamプラン：月額 69,000円（税込）",
+      "・Enterpriseプラン：月額 200,000円〜（税込）",
       "",
-      "【商品代金以外の必要料金】",
-      "インターネット接続にかかる通信料は利用者の負担となります",
+      "■ 商品代金以外の必要料金：",
+      "・インターネット接続にかかる通信料は利用者の負担となります",
       "",
-      "【支払方法】",
-      "クレジットカード決済（Stripe）",
+      "■ 支払方法：",
+      "・クレジットカード決済（Stripe）",
       "",
-      "【支払時期】",
+      "■ 支払時期：",
       "お申込み時に初回決済が行われます。",
       "但し、継続的な課金はサービス提供開始後に適用されます",
       "",
-      "【提供時期】",
-      "決済完了後にサービスの受け渡し、提供されます",
+      "■ 提供時期：",
+      "・決済完了後にサービスの受け渡し、提供されます",
       "",
-      "【解約について】",
-      "本サービスは月額課金制のデジタルサービスです",
-      "ユーザーはいつでも解約することができます",
+      "■ 解約について：",
+      "・本サービスは月額課金制のデジタルサービスです",
+      "・ユーザーはいつでも解約することができます",
       "（プラン解約処理は解約設定時の月末になります）",
-      "解約後も、次回更新日まではサービスをご利用いただけます",
-      "日割りによる返金は行っておりません",
+      "・解約後も、次回更新日まではサービスをご利用いただけます",
+      "・日割りによる返金は行っておりません",
       "",
-      "【返品・返金について】",
+      "■ 返品・返金について：",
       "デジタルサービスの性質上、購入後の返品・返金には対応しておりません",
       "但し、法令に基づく場合はこの限りではありません"
     ].join("\n");
@@ -7504,34 +7514,185 @@ if (authResult === "ok") {
       "この利用規約（以下、「本規約」）は、AUREA（以下、「当サービス」）が提供するSaaS型サービスの利用条件を定めるものです。",
       "ユーザーは、本規約に同意した上で当サービスを利用するものとします。",
       "",
-      "【第1条（適用）】本規約は、ユーザーと当サービスとの間の一切の関係に適用されます。",
-      "【第2条（利用登録）】ユーザーは正確な情報を登録するものとし、虚偽が判明した場合、利用停止等の措置を取ることがあります。",
-      "【第3条（利用料金および支払方法）】当サービスは月額課金制で、決済は Stripe（Stripe, Inc.）を通じて行われます。",
-      "【第4条（解約）】ユーザーはいつでも解約できます。解約後も次回更新日までは利用できます。日割り返金は行いません。",
-      "【第5条（禁止事項）】法令違反、不正アクセス、運営妨害、第三者の権利侵害、その他不適切な行為を禁止します。",
-      "【第6条（サービスの停止・変更）】必要に応じて、事前通知なく変更または停止することがあります。",
-      "【第7条（免責事項）】情報の正確性・完全性を保証せず、利用により生じた損害について責任を負いません。",
-      "【第8条（規約の変更）】変更後の規約は掲載時点で効力を生じます。",
-      "【第9条（準拠法・管轄）】日本法準拠、東京地方裁判所を専属的合意管轄裁判所とします。",
-      "【第10条（お問い合わせ先）】contact@aurea-ai.app"
+      "■ 第1条（適用）",
+      "・本規約は、ユーザーと当サービスとの間の一切の関係に適用されます",
+      "",
+      "■ 第2条（利用登録）",
+      "・ユーザーは正確な情報を登録するものとします",
+      "・虚偽が判明した場合、当サービスは利用停止等の措置を取ることがあります",
+      "",
+      "■ 第3条（利用料金および支払方法）",
+      "・当サービスは月額課金制です",
+      "・決済は Stripe（Stripe, Inc.）を通じて行われます",
+      "",
+      "■ 第4条（解約）",
+      "・ユーザーはいつでも解約することができます",
+      "・解約後も次回更新日までは利用できます",
+      "・日割りによる返金は行いません",
+      "",
+      "■ 第5条（禁止事項）",
+      "・法令違反、不正アクセス、運営妨害、第三者の権利侵害、その他不適切な行為を禁止します",
+      "",
+      "■ 第6条（サービスの停止・変更）",
+      "・必要に応じて、事前通知なく変更または停止することがあります",
+      "",
+      "■ 第7条（免責事項）",
+      "・情報の正確性・完全性を保証せず、利用により生じた損害について責任を負いません",
+      "",
+      "■ 第8条（規約の変更）",
+      "・変更後の規約は掲載時点で効力を生じます",
+      "",
+      "■ 第9条（準拠法・管轄）",
+      "・日本法準拠、東京地方裁判所を専属的合意管轄裁判所とします",
+      "",
+      "■ 第10条（お問い合わせ先）",
+      "・メールアドレス：contact@aurea-ai.app"
     ].join("\n");
 
     const PRIVACY_JA = [
       "AUREA（以下、「当サービス」）は、ユーザーの個人情報の保護を重要な責務と考え、以下のとおりプライバシーポリシーを定めます。",
       "",
-      "【1. 取得する情報】氏名・メールアドレス等の登録情報、ログイン情報、利用履歴、操作ログ、決済関連情報（カード情報は保持せずStripeが管理）、お問い合わせ内容。",
-      "【2. 利用目的】サービス提供・運営・改善、認証、セキュリティ確保、分析・機能改善、お問い合わせ対応、規約違反・不正行為対応。",
-      "【3. 外部サービス】決済処理のため Stripe（Stripe, Inc.）を利用します。決済関連情報はStripeの方針に基づき管理されます。",
-      "【4. 第三者提供】法令に基づく場合を除き、本人の同意なく第三者提供しません。",
-      "【5. 安全管理】漏洩・滅失・改ざん等を防止するため適切な安全管理措置を講じます。",
-      "【6. 開示・訂正・削除】ユーザーは自己の個人情報について開示、訂正、削除を求めることができます。",
+      "■ 1. 取得する情報",
+      "当サービスでは、以下の情報を取得する場合があります。",
+      "・氏名、メールアドレスなどの登録情報",
+      "・ログイン情報、利用履歴、操作ログ",
+      "・決済に関連する情報（※クレジットカード情報は当サービスでは保持せず、Stripeが管理します）",
+      "・お問い合わせ時に提供される情報",
       "",
-      "【7. 変更】本ポリシーは必要に応じて変更されます。",
-      "【8. お問い合わせ先】contact@aurea-ai.app"
+      "■ 2. 利用目的",
+      "取得した情報は、以下の目的で利用します。",
+      "・サービスの提供・運営・改善のため",
+      "・認証、セキュリティ確保のため",
+      "・利用状況の分析および機能改善のため",
+      "・お問い合わせへの対応のため",
+      "・利用規約違反や不正行為への対応のため",
+      "",
+      "■ 3. 外部サービスの利用",
+      "当サービスでは、決済処理のために Stripe（Stripe, Inc.）を利用しています。",
+      "決済に関連する個人情報は、Stripeのプライバシーポリシーに基づき管理されます。",
+      "",
+      "■ 4. 個人情報の第三者提供",
+      "法令に基づく場合を除き、本人の同意なく第三者に個人情報を提供することはありません。",
+      "",
+      "■ 5. 個人情報の管理",
+      "当サービスは、個人情報の漏洩、滅失、改ざん等を防止するため、適切な安全管理措置を講じます。",
+      "",
+      "■ 6. 開示・訂正・削除",
+      "ユーザーは、当サービスが保有する自己の個人情報について、開示、訂正、削除を求めることができます。",
+      "ご希望の場合は、下記お問い合わせ先までご連絡ください。",
+      "",
+      "■ 7. プライバシーポリシーの変更",
+      "本ポリシーの内容は、必要に応じて変更されることがあります。",
+      "変更後の内容は、本ページにて公表します。",
+      "",
+      "■ 8. お問い合わせ先",
+      "・メールアドレス：contact@aurea-ai.app"
+    ].join("\n");
+
+    // ===== EN =====
+    const TOKUSHO_EN = [
+      "■ Product: AUREA",
+      "",
+      "■ Business Operator: Hiroyuki Sugiura",
+      "",
+      "■ Address:",
+      "Tokyo, Japan (disclosed upon legitimate request)",
+      "",
+      "■ Contact:",
+      "Email: contact@aurea-ai.app",
+      "",
+      "■ Sales URL: https://aurea-2026.web.app/",
+      "",
+      "■ Pricing:",
+      "• Pro: JPY 30,000 / month (tax incl.)",
+      "• Team: JPY 69,000 / month (tax incl.)",
+      "• Enterprise: From JPY 200,000 / month (tax incl.)",
+      "",
+      "■ Additional fees:",
+      "Internet connection fees are borne by the user.",
+      "",
+      "■ Payment method:",
+      "Credit card (Stripe)",
+      "",
+      "■ Payment timing:",
+      "The first payment is processed at the time of purchase.",
+      "Recurring charges will apply after service availability begins.",
+      "",
+      "■ Delivery:",
+      "Service is provided after payment is completed.",
+      "",
+      "■ Cancellation:",
+      "You may cancel at any time (effective at the end of the billing period).",
+      "No prorated refunds.",
+      "",
+      "■ Refund policy:",
+      "No refunds after purchase due to the nature of digital services, except as required by law."
+    ].join("\n");
+
+    const TERMS_EN = [
+      "These Terms of Service (\"Terms\") govern your use of AUREA (the \"Service\").",
+      "By using the Service, you agree to these Terms.",
+      "",
+      "■ 1. Applicability",
+      "These Terms apply to all relationships between you and the Service.",
+      "",
+      "■ 2. Registration",
+      "You must provide accurate information. We may suspend access if false information is found.",
+      "",
+      "■ 3. Fees & Payment",
+      "The Service is subscription-based. Payments are processed via Stripe (Stripe, Inc.).",
+      "",
+      "■ 4. Cancellation",
+      "You may cancel at any time. Access remains available until the next renewal date. No prorated refunds.",
+      "",
+      "■ 5. Prohibited conduct",
+      "Illegal acts, unauthorized access, interference, infringement of third-party rights, and other improper acts are prohibited.",
+      "",
+      "■ 6. Changes / Suspension",
+      "We may change or suspend features without prior notice when necessary.",
+      "",
+      "■ 7. Disclaimer",
+      "We do not guarantee accuracy or completeness and are not liable for damages arising from use.",
+      "",
+      "■ 8. Changes to Terms",
+      "Updated Terms become effective when posted.",
+      "",
+      "■ 9. Governing law / jurisdiction",
+      "Governed by Japanese law. Exclusive jurisdiction: Tokyo District Court.",
+      "",
+      "■ 10. Contact",
+      "Email: contact@aurea-ai.app"
+    ].join("\n");
+
+    const PRIVACY_EN = [
+      "AUREA (the \"Service\") values the protection of personal information and sets this Privacy Policy.",
+      "",
+      "■ 1. Information we collect",
+      "We may collect: registration details (e.g., name, email), login data, usage history, operation logs, payment-related info (card data is not stored by us and is handled by Stripe), and inquiry contents.",
+      "",
+      "■ 2. Purposes",
+      "Service operation/improvement, authentication, security, analytics, customer support, and prevention of fraud/violations.",
+      "",
+      "■ 3. Third-party services",
+      "We use Stripe for payment processing. Payment-related personal data is handled under Stripe’s policies.",
+      "",
+      "■ 4. Sharing",
+      "We do not share personal information with third parties without consent except where required by law.",
+      "",
+      "■ 5. Security",
+      "We take reasonable measures to prevent leakage, loss, or alteration.",
+      "",
+      "■ 6. Requests",
+      "You may request disclosure, correction, or deletion. Contact us if needed.",
+      "",
+      "■ 7. Updates",
+      "This policy may be updated as necessary and will be published on this page.",
+      "",
+      "■ 8. Contact",
+      "Email: contact@aurea-ai.app"
     ].join("\n");
 
     // ===== Regulations open handler (data-legal) =====
-    // .settings-modal 内の [data-legal] を押したら legalOverlay を開いて本文を差し替える
     const openLegal = (kind) => {
       const k = String(kind || "").trim();
       if (!legalOverlay || !legalModalTitle || !legalModalBody) return;
@@ -7546,13 +7707,20 @@ if (authResult === "ok") {
         body  = isEn ? TOKUSHO_EN : TOKUSHO_JA;
       } else if (k === "terms") {
         title = isEn ? "Terms of Service" : "利用規約";
-        body  = TERMS_JA; // 英文が未定義のため現状は固定（ボタン無反応をまず解消）
+        body  = isEn ? TERMS_EN : TERMS_JA;
       } else if (k === "privacy") {
         title = isEn ? "Privacy Policy" : "プライバシーポリシー";
-        body  = PRIVACY_JA; // 英文が未定義のため現状は固定（ボタン無反応をまず解消）
+        body  = isEn ? PRIVACY_EN : PRIVACY_JA;
       } else {
         return;
       }
+
+      // 改行崩れ防止（毎回保険）
+      try {
+        legalModalBody.style.whiteSpace = "pre-wrap";
+        legalModalBody.style.wordBreak = "break-word";
+        legalModalBody.style.lineHeight = "1.75";
+      } catch {}
 
       legalModalTitle.textContent = title;
       legalModalBody.textContent = body;
@@ -7562,6 +7730,7 @@ if (authResult === "ok") {
       legalOverlay.setAttribute("aria-hidden", "false");
     };
 
+    // Settings 内の data-legal ボタンで開く（capture）
     document.addEventListener("click", (e) => {
       const t = e.target;
       const btn = (t instanceof Element) ? t.closest(".settings-modal [data-legal]") : null;
@@ -7570,7 +7739,7 @@ if (authResult === "ok") {
       e.preventDefault();
       e.stopPropagation();
 
-      const kind = btn.getAttribute("data-legal");
+      const kind = String(btn.getAttribute("data-legal") || "").trim();
       openLegal(kind);
     }, true);
 
@@ -7580,8 +7749,7 @@ if (authResult === "ok") {
       legalOverlay.style.display = "none";
       legalOverlay.classList.remove("is-open");
       legalOverlay.setAttribute("aria-hidden", "true");
-    });
-
+    }, true);
   };
 
   ensureActiveThread();
