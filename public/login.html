@@ -154,6 +154,80 @@
     @media (max-width: 420px){
       .btnPrimary{width:calc(50% - 6px)}
     }
+
+        /* ===== Legal popup (login) ===== */
+    #legalOverlay{
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      background:rgba(0,0,0,.45);
+      z-index:99999;
+      padding:18px;
+    }
+
+    .legal-modal{
+      width:min(520px, calc(100% - 24px));
+      max-height:calc(100vh - 64px);
+      background:rgba(20,21,22,.96);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:18px;
+      box-shadow:0 10px 30px rgba(0,0,0,.45);
+      overflow:hidden;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      display:flex;
+      flex-direction:column;
+      min-width:0;
+      color:rgba(255,255,255,.92);
+    }
+
+    .legal-head{
+      padding:14px 16px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+    }
+
+    .legal-title{
+      font-size:13px;
+      font-weight:700;
+      min-width:0;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .legal-close{
+      width:36px;
+      height:36px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.06);
+      color:rgba(255,255,255,.92);
+      cursor:pointer;
+      font-size:18px;
+      line-height:34px;
+      flex:0 0 auto;
+    }
+
+    .legal-body{
+      padding:14px 16px;
+      overflow:auto;
+      min-height:0;
+      flex:1 1 auto;
+    }
+
+    .legal-body .reg-text{
+      font-size:12px;
+      line-height:1.7;
+      color:rgba(255,255,255,.86);
+      white-space:pre-wrap;
+      word-break:break-word;
+    }
   </style>
 </head>
 
@@ -177,12 +251,23 @@
       <div class="note">※ 未ログイン状態では AUREA 本体は利用できません</div>
 
       <div class="legalRow" aria-label="Legal links">
-        <a class="btnGhost" href="/legal.html">特定商取引法に基づく表記</a>
-        <a class="btnGhost" href="/terms.html">利用規約</a>
-        <a class="btnGhost" href="/privacy.html">プライバシーポリシー</a>
+        <button class="btnGhost" type="button" data-legal="tokusho">特定商取引法に基づく表記</button>
+        <button class="btnGhost" type="button" data-legal="terms">利用規約</button>
+        <button class="btnGhost" type="button" data-legal="privacy">プライバシーポリシー</button>
       </div>
     </section>
   </main>
+
+    <!-- Legal popup (same as Settings style) -->
+  <div id="legalOverlay" aria-hidden="true" style="display:none;">
+    <div class="legal-modal" role="dialog" aria-modal="true" aria-label="Legal">
+      <div class="legal-head">
+        <div class="legal-title" id="legalModalTitle">Legal</div>
+        <button class="legal-close" id="btnCloseLegalModal" type="button" aria-label="Close">×</button>
+      </div>
+      <div class="legal-body" id="legalModalBody"></div>
+    </div>
+  </div>
 
   <!-- Firebase (compat CDN) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
@@ -202,6 +287,204 @@
       const errorMsg = $("errorMsg");
       const btnPersonal = $("btnPersonal");
       const btnCompany = $("btnCompany");
+
+            // ===== Legal popup (login) =====
+      const legalOverlay = document.getElementById("legalOverlay");
+      const btnCloseLegalModal = document.getElementById("btnCloseLegalModal");
+      const legalModalTitle = document.getElementById("legalModalTitle");
+      const legalModalBody = document.getElementById("legalModalBody");
+
+      const TOKUSHO_POPUP_TEXT = [
+        "■ 製品名：AUREA（オーリア）",
+        "",
+        "■ 事業代表者名：杉浦 広之",
+        "",
+        "■ 所在地：",
+        "〒106-0044",
+        "東京都港区東麻布3丁目5-15 瀬里奈グリーンハイツ903",
+        "",
+        "■ お問い合わせ",
+        "・電話番号：090-3040-4250",
+        "・メールアドレス：contact@aurea-ai.app",
+        "※お問い合わせは原則「メール」での対応になります",
+        "",
+        "■ 販売 URL：https://aurea-2026.web.app/",
+        "",
+        "■ 販売価格：",
+        "・Proプラン：月額 30,000円（税込）",
+        "・Teamプラン：月額 69,000円（税込）",
+        "・Enterpriseプラン：月額 200,000円〜（税込）",
+        "",
+        "■ 商品代金以外の必要料金：",
+        "・インターネット接続にかかる通信料は利用者の負担となります",
+        "",
+        "■ 支払方法：",
+        "・クレジットカード決済（Stripe）",
+        "",
+        "■ 支払時期：",
+        "お申込み時に初回決済が行われます。",
+        "但し、継続的な課金はサービス提供開始後に適用されます",
+        "",
+        "■ 提供時期：",
+        "・決済完了後にサービスの受け渡し、提供されます",
+        "",
+        "■ 解約について：",
+        "・本サービスは月額課金制のデジタルサービスです",
+        "・ユーザーはいつでも解約することができます",
+        "　(プラン解約処理は解約設定時の月末になります)",
+        "・解約後も、次回更新日まではサービスをご利用いただけます",
+        "・日割りによる返金は行っておりません",
+        "",
+        "■ 返品・返金について：",
+        "デジタルサービスの性質上、購入後の返品・返金には対応しておりません",
+        "但し、法令に基づく場合はこの限りではありません"
+      ].join("\n");
+
+      const TERMS_POPUP_TEXT = [
+        "この利用規約（以下、「本規約」）は、",
+        "AUREA（以下、「当サービス」）が提供するSaaS型サービスの利用条件を定めるものです。",
+        "ユーザーは、本規約に同意した上で当サービスを利用するものとします。",
+        "",
+        "■ 第1条（適用）",
+        "・本規約は、ユーザーと当サービスとの間の一切の関係に適用されます",
+        "",
+        "■ 第2条（利用登録）",
+        "・当サービスの利用にあたり、ユーザーは正確な情報を登録するものとします",
+        "・虚偽の情報が判明した場合、当サービスは利用停止等の措置を取ることがあります",
+        "",
+        "■ 第3条（利用料金および支払方法）",
+        "・当サービスは月額課金制の有料サービスです",
+        "・利用料金および支払方法は、当サービス上に表示される内容に従うものとします",
+        "・決済は Stripe（Stripe, Inc.）を通じて行われます",
+        "",
+        "■ 第4条（解約）",
+        "・ユーザーは、いつでも当サービスの利用を解約することができます",
+        "・解約後も、次回更新日まではサービスを利用することができます",
+        "・日割りによる返金は行いません",
+        "",
+        "■ 第5条（禁止事項）",
+        "・ユーザーは、以下の行為を行ってはなりません",
+        "",
+        "■ 法令または公序良俗に違反する行為",
+        "・不正アクセス、サービス運営を妨害する行為",
+        "・第三者の権利や利益を侵害する行為",
+        "・当サービスが不適切と判断する行為",
+        "",
+        "■ 第6条（サービスの停止・変更）",
+        "・当サービスは、必要に応じて、事前の通知なくサービス内容を変更または停止することがあります",
+        "",
+        "■ 第7条（免責事項）",
+        "・当サービスは、提供する情報の正確性や完全性について保証するものではありません",
+        "・当サービスの利用により生じた損害について、一切の責任を負わないものとします",
+        "",
+        "■ 第8条（規約の変更）",
+        "・当サービスは、本規約を必要に応じて変更することがあります",
+        "・変更後の規約は、本ページに掲載された時点で効力を生じるものとします",
+        "",
+        "■ 第9条（準拠法・管轄）",
+        "・本規約は日本法に準拠します",
+        "・本サービスに関して生じた紛争については、東京地方裁判所を専属的合意管轄とします",
+        "",
+        "■ 第10条（お問い合わせ先）",
+        "・事業代表者名：杉浦 広之",
+        "・メールアドレス：contact@aurea-ai.app"
+      ].join("\n");
+
+      const PRIVACY_POPUP_TEXT = [
+        "AUREA（以下、「当サービス」）は、ユーザーの個人情報の保護を重要な責務と考え、",
+        "以下のとおりプライバシーポリシーを定め、適切に取り扱います。",
+        "",
+        "■ 1. 取得する情報",
+        "当サービスでは、以下の情報を取得する場合があります。",
+        "・氏名、メールアドレスなどの登録情報",
+        "・ログイン情報、利用履歴、操作ログ",
+        "・決済に関連する情報（※クレジットカード情報は当サービスでは保持せず、Stripeが管理します）",
+        "・お問い合わせ時に提供される情報",
+        "",
+        "■ 2. 利用目的",
+        "取得した情報は、以下の目的で利用します。",
+        "・サービスの提供・運営・改善のため",
+        "・本人確認、認証、セキュリティ確保のため",
+        "・利用状況の分析および機能改善のため",
+        "・お問い合わせへの対応のため",
+        "・利用規約違反や不正行為への対応のため",
+        "",
+        "■ 3. 外部サービスの利用",
+        "・当サービスでは、決済処理のために Stripe（Stripe, Inc.）を利用しています。",
+        "・決済に関する個人情報は、Stripeのプライバシーポリシーに基づき管理されます。",
+        "",
+        "■ 4. 個人情報の第三者提供",
+        "・法令に基づく場合を除き、本人の同意なく第三者に個人情報を提供することはありません。",
+        "",
+        "■ 5. 個人情報の管理",
+        "・当サービスは、個人情報の漏洩、滅失、改ざん等を防止するため、",
+        "・適切な安全管理措置を講じます。",
+        "",
+        "■ 6. 開示・訂正・削除",
+        "・ユーザーは、自身の個人情報について、開示・訂正・削除を求めることができます。",
+        "・ご希望の場合は、下記お問い合わせ先までご連絡ください。",
+        "",
+        "■ 7. プライバシーポリシーの変更",
+        "・本ポリシーの内容は、必要に応じて変更されることがあります。",
+        "・変更後の内容は、本ページにて公表します。",
+        "",
+        "■ 8. お問い合わせ先",
+        "・事業担当者名：杉浦 広之",
+        "・メールアドレス：contact@aurea-ai.app"
+      ].join("\n");
+
+      const openLegalModal = (key) => {
+        if (!legalOverlay || !legalModalTitle || !legalModalBody) return;
+
+        const k = (key === "terms" || key === "privacy" || key === "tokusho") ? key : "tokusho";
+
+        const title =
+          (k === "tokusho") ? "特定商取引法に基づく表記"
+          : (k === "terms") ? "利用規約"
+          : "プライバシーポリシー";
+
+        const txt =
+          (k === "tokusho") ? TOKUSHO_POPUP_TEXT
+          : (k === "terms") ? TERMS_POPUP_TEXT
+          : PRIVACY_POPUP_TEXT;
+
+        legalModalTitle.textContent = title;
+        legalModalBody.innerHTML = `<div class="reg-text">${String(txt || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>")}</div>`;
+
+        legalOverlay.style.display = "flex";
+        legalOverlay.setAttribute("aria-hidden", "false");
+      };
+
+      const closeLegalModal = () => {
+        if (!legalOverlay) return;
+        legalOverlay.style.display = "none";
+        legalOverlay.setAttribute("aria-hidden", "true");
+      };
+
+      if (btnCloseLegalModal) {
+        btnCloseLegalModal.addEventListener("click", (e) => {
+          e.preventDefault();
+          closeLegalModal();
+        });
+      }
+
+      if (legalOverlay) {
+        legalOverlay.addEventListener("click", (e) => {
+          if (e.target === legalOverlay) closeLegalModal();
+        });
+      }
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key !== "Escape") return;
+        if (legalOverlay && legalOverlay.style.display !== "none") closeLegalModal();
+      }, true);
+
+      document.querySelectorAll("[data-legal]").forEach((b) => {
+        b.addEventListener("click", (e) => {
+          e.preventDefault();
+          openLegalModal(String(b.getAttribute("data-legal") || "tokusho"));
+        });
+      });
 
       const params = new URLSearchParams(location.search);
       const modeParam = (params.get("mode") || "").trim();

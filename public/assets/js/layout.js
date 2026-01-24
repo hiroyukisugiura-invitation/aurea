@@ -6298,6 +6298,25 @@ linkLogout?.addEventListener("click", async (e) => {
     window.location.href = url.toString();
   };
 
+  // 未ログイン時は Gate UI を出さず、常に login.html に送る（UIの一貫性）
+  // invite が URL にあれば company として引き継ぐ
+  try {
+    const st0 = getAuthState();
+    if (!(st0 && st0.loggedIn)) {
+      const p0 = new URLSearchParams(window.location.search);
+      const inv0 = String(p0.get("invite") || "").trim();
+
+      const url0 = new URL("/login.html", window.location.origin);
+      if (inv0) {
+        url0.searchParams.set("mode", "company");
+        url0.searchParams.set("invite", inv0);
+      }
+
+      window.location.replace(url0.toString());
+      return;
+    }
+  } catch {}
+
   // 初期は必ず Gate 表示（未ログインは本体に入れない）
   showAuthGate();
 
@@ -7542,16 +7561,15 @@ if (authResult === "ok") {
 
       // tokusho（設定ポップ）だけ固定文言にする（/legal.html は変更しない）
       const TOKUSHO_POPUP_TEXT = [
-        "■ 製品名：AUREA（オーリア）",
+        "■ 事業製品名：AUREA（オーリア）",
         "",
         "■ 事業代表者名：杉浦 広之",
         "",
         "■ 所在地：",
         "〒106-0044",
-        "東京都港区東麻布3丁目5-15 瀬里奈グリーンハイツ903",
+        "東京都港区東麻布3(※開示請求があった際は開示致します)",
         "",
         "■ お問い合わせ",
-        "・電話番号：090-3040-4250",
         "・メールアドレス：contact@aurea-ai.app",
         "※お問い合わせは原則「メール」での対応になります",
         "",
