@@ -1,0 +1,17 @@
+{
+  "id": "evt_manual_test",
+  "object": "event",
+  "type": "checkout.session.completed",
+  "data": {
+    "object": {
+      "mode": "subscription",
+      "metadata": {
+        "uid": "uid_manual_test",
+        "plan": "Pro",
+        "email": "manual_test@example.com"
+      },
+      "subscription": "sub_manual_test",
+      "customer": "cus_manual_test"
+    }
+  }
+}

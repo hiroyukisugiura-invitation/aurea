@@ -2474,11 +2474,23 @@ const closeSettings = () => {
       else if (isTextLike) route = "text";
 
       try {
-        // v1: image -> base64 (already prepared as dataUrl)
+        // v1: image -> base64 (prefer prepared dataUrl)
         if (route === "image" && a?.dataUrl && String(a.dataUrl).startsWith("data:")) {
           const s = String(a.dataUrl);
           const idx = s.indexOf("base64,");
           if (idx >= 0) data = s.slice(idx + 7);
+        }
+
+        // fallback: image -> read file and pack base64 (size guard)
+        if (!data && route === "image" && a?.file && size > 0) {
+          const MAX_IMG = 8 * 1024 * 1024; // 8MB
+          if (size <= MAX_IMG) {
+            const url = await fileToDataUrl(a.file);
+            const idx = String(url || "").indexOf("base64,");
+            if (idx >= 0) data = String(url).slice(idx + 7);
+          } else {
+            fallback = fallback || "image_too_large";
+          }
         }
 
         // v1: text files (txt/md/csv) -> base64 (already prepared as dataUrl)
@@ -2517,7 +2529,10 @@ const closeSettings = () => {
       if (!data && !fallback) fallback = "no_data";
 
       out.push({
-        type: (route === "image") ? "image" : "file",
+        type:
+          (route === "image") ? "image" :
+          (route === "pdf")   ? "pdf"   :
+          "file",
         route,
         mime,
         name,
@@ -5065,8 +5080,23 @@ const closeSettings = () => {
         }
       }
 
-    } catch {
+    } catch (e) {
       apiMap = null;
+
+      const msg = ((state.settings?.language || "ja") === "en")
+        ? "API error: /api/chat did not return JSON.\n\n- Check Network > /api/chat response is JSON.\n- If it is HTML, Hosting rewrite is not reaching Functions."
+        : "APIエラー：/api/chat が JSON を返していない。\n\n- Network > /api/chat の Response が JSON か確認。\n- HTMLなら Functions に到達していない（rewrite不整合）。";
+
+      updateMessage(m.id, msg);
+
+      try { clearAiRunIndicator(); } catch {}
+      try { window.__AUREA_STREAMING_MID__ = ""; } catch {}
+
+      renderChat();
+      setStreaming(false);
+      unlockAndClearAttachments();
+      renderSidebar();
+      return;
     }
 
     // ===== AI activity fade (active AIs only) =====
