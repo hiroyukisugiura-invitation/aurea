@@ -228,6 +228,45 @@
       white-space:pre-wrap;
       word-break:break-word;
     }
+
+        /* ===== Language switch (login) ===== */
+    .langRow{
+      width:100%;
+      display:flex;
+      justify-content:flex-end; /* プライバシーポリシー右側の下に寄せる */
+      margin-top:6px;
+    }
+    .langSelect{
+      border:0;
+      outline:0;
+      background:transparent;
+      color:rgba(255,255,255,.78);
+      font-size:12px;
+      cursor:pointer;
+      padding:2px 18px 2px 0;
+      appearance:none;
+      -webkit-appearance:none;
+      -moz-appearance:none;
+      text-decoration:underline;
+      text-underline-offset:3px;
+      line-height:1;
+    }
+    .langWrap{
+      position:relative;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+    }
+    .langCaret{
+      position:absolute;
+      right:0;
+      top:50%;
+      transform:translateY(-50%);
+      width:12px;
+      height:12px;
+      pointer-events:none;
+      opacity:.75;
+    }
   </style>
 </head>
 
@@ -254,6 +293,18 @@
         <button class="btnGhost" type="button" data-legal="tokusho">特定商取引法に基づく表記</button>
         <button class="btnGhost" type="button" data-legal="terms">利用規約</button>
         <button class="btnGhost" type="button" data-legal="privacy">プライバシーポリシー</button>
+      </div>
+
+      <div class="langRow" aria-label="Language">
+        <span class="langWrap">
+          <select id="langSelect" class="langSelect" aria-label="Language">
+            <option value="ja">Japan</option>
+            <option value="en">English</option>
+          </select>
+          <svg class="langCaret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M6 9l6 6 6-6"></path>
+          </svg>
+        </span>
       </div>
     </section>
   </main>
@@ -288,7 +339,80 @@
       const btnPersonal = $("btnPersonal");
       const btnCompany = $("btnCompany");
 
-            // ===== Legal popup (login) =====
+      // ===== i18n (login) =====
+      const LANG_KEY = "aurea_login_lang_v1";
+
+      const langSelect = document.getElementById("langSelect");
+
+      const getLang = () => {
+        try {
+          const v = localStorage.getItem(LANG_KEY);
+          return (v === "en") ? "en" : "ja";
+        } catch { return "ja"; }
+      };
+
+      const setLang = (v) => {
+        try { localStorage.setItem(LANG_KEY, (v === "en") ? "en" : "ja"); } catch {}
+      };
+
+      let lang = getLang();
+
+      const I18N = {
+        ja: {
+          status: "初回利用にはログイン登録が必要です。\nGoogle アカウントと連携して続行してください。",
+          note: "※ 未ログイン状態では AUREA 本体は利用できません",
+          personal: "Personal",
+          company: "Company",
+          tokusho: "特定商取引法に基づく表記",
+          terms: "利用規約",
+          privacy: "プライバシーポリシー"
+        },
+        en: {
+          status: "Login is required for first-time use.\nContinue by connecting your Google account.",
+          note: "* You can’t use AUREA until you are logged in.",
+          personal: "Personal",
+          company: "Company",
+          tokusho: "Legal Notice (Specified Commercial Transaction Act)",
+          terms: "Terms of Service",
+          privacy: "Privacy Policy"
+        }
+      };
+
+      const applyLang = () => {
+        const t = I18N[lang] || I18N.ja;
+
+        // main texts
+        if (statusMsg) statusMsg.textContent = t.status;
+
+        const noteEl = document.querySelector(".note");
+        if (noteEl) noteEl.textContent = t.note;
+
+        if (btnPersonal) btnPersonal.textContent = t.personal;
+        if (btnCompany) btnCompany.textContent = t.company;
+
+        // legal buttons
+        const bTok = document.querySelector("[data-legal='tokusho']");
+        const bTer = document.querySelector("[data-legal='terms']");
+        const bPri = document.querySelector("[data-legal='privacy']");
+        if (bTok) bTok.textContent = t.tokusho;
+        if (bTer) bTer.textContent = t.terms;
+        if (bPri) bPri.textContent = t.privacy;
+
+        // lang select
+        if (langSelect) langSelect.value = (lang === "en") ? "en" : "ja";
+      };
+
+      if (langSelect) {
+        langSelect.addEventListener("change", () => {
+          lang = (langSelect.value === "en") ? "en" : "ja";
+          setLang(lang);
+          applyLang();
+        });
+      }
+
+      applyLang();
+
+      // ===== Legal popup (login) =====
       const legalOverlay = document.getElementById("legalOverlay");
       const btnCloseLegalModal = document.getElementById("btnCloseLegalModal");
       const legalModalTitle = document.getElementById("legalModalTitle");
@@ -301,10 +425,9 @@
         "",
         "■ 所在地：",
         "〒106-0044",
-        "東京都港区東麻布3丁目5-15 瀬里奈グリーンハイツ903",
+        "東京都港区東麻布3",
         "",
         "■ お問い合わせ",
-        "・電話番号：090-3040-4250",
         "・メールアドレス：contact@aurea-ai.app",
         "※お問い合わせは原則「メール」での対応になります",
         "",
@@ -433,20 +556,133 @@
         "・メールアドレス：contact@aurea-ai.app"
       ].join("\n");
 
+      const TOKUSHO_POPUP_TEXT_EN = [
+        "Product: AUREA",
+        "",
+        "Representative: Hiroyuki Sugiura",
+        "",
+        "Address:",
+        "903, Serina Green Heights, 3-5-15 Higashiazabu, Minato-ku, Tokyo 106-0044, Japan",
+        "",
+        "Contact:",
+        "Phone: +81-90-3040-4250",
+        "Email: contact@aurea-ai.app",
+        "* Inquiries are handled primarily by email.",
+        "",
+        "Sales URL: https://aurea-2026.web.app/",
+        "",
+        "Pricing:",
+        "Pro: JPY 30,000 / month (tax included)",
+        "Team: JPY 69,000 / month (tax included)",
+        "Enterprise: JPY 200,000+ / month (tax included)",
+        "",
+        "Additional fees:",
+        "Internet connection fees are borne by the user.",
+        "",
+        "Payment method:",
+        "Credit card (Stripe)",
+        "",
+        "Payment timing:",
+        "The first payment is processed at the time of purchase.",
+        "Recurring charges will apply after service availability begins.",
+        "",
+        "Service delivery:",
+        "The service will be provided after payment is completed.",
+        "",
+        "Cancellation:",
+        "This is a monthly digital service.",
+        "You may cancel at any time (effective at the end of the billing period).",
+        "No prorated refunds.",
+        "",
+        "Refund policy:",
+        "No refunds after purchase due to the nature of digital services, except as required by law."
+      ].join("\n");
+
+      const TERMS_POPUP_TEXT_EN = [
+        "These Terms of Service govern your use of AUREA (the “Service”).",
+        "By using the Service, you agree to these terms.",
+        "",
+        "1. Registration",
+        "- You must provide accurate information when registering.",
+        "- We may suspend access if false information is found.",
+        "",
+        "2. Fees and payments",
+        "- The Service is a paid monthly subscription.",
+        "- Payments are processed by Stripe.",
+        "",
+        "3. Cancellation",
+        "- You can cancel at any time.",
+        "- You can continue to use the Service until the next renewal date.",
+        "- No prorated refunds.",
+        "",
+        "4. Prohibited conduct",
+        "- Illegal activities or actions against public order and morals",
+        "- Unauthorized access or disruption of the Service",
+        "- Infringement of third-party rights",
+        "",
+        "5. Service changes",
+        "- We may change or suspend the Service without prior notice when necessary.",
+        "",
+        "6. Disclaimer",
+        "- We do not guarantee accuracy or completeness of provided information.",
+        "- We are not liable for damages arising from use of the Service.",
+        "",
+        "7. Governing law and jurisdiction",
+        "- Japanese law applies.",
+        "- Tokyo District Court has exclusive jurisdiction.",
+        "",
+        "Contact: contact@aurea-ai.app"
+      ].join("\n");
+
+      const PRIVACY_POPUP_TEXT_EN = [
+        "AUREA values your privacy and handles personal information appropriately.",
+        "",
+        "1. Information we may collect",
+        "- Registration info such as name and email",
+        "- Login information, usage history, and operation logs",
+        "- Payment-related information (credit card data is not stored by us; Stripe handles it)",
+        "- Information provided when contacting support",
+        "",
+        "2. Purposes of use",
+        "- Provide, operate, and improve the Service",
+        "- Authentication and security",
+        "- Analyze usage to improve features",
+        "- Respond to inquiries",
+        "- Handle violations and fraud prevention",
+        "",
+        "3. External services",
+        "- Stripe is used for payment processing.",
+        "",
+        "4. Sharing with third parties",
+        "- We do not share personal data without consent except where required by law.",
+        "",
+        "5. Security",
+        "- We take reasonable measures to protect personal information.",
+        "",
+        "6. Requests",
+        "- You may request disclosure/correction/deletion by contacting us.",
+        "",
+        "7. Changes",
+        "- This policy may be updated as needed and will be posted here.",
+        "",
+        "Contact: contact@aurea-ai.app"
+      ].join("\n");
+
       const openLegalModal = (key) => {
         if (!legalOverlay || !legalModalTitle || !legalModalBody) return;
 
         const k = (key === "terms" || key === "privacy" || key === "tokusho") ? key : "tokusho";
+        const t = I18N[lang] || I18N.ja;
 
         const title =
-          (k === "tokusho") ? "特定商取引法に基づく表記"
-          : (k === "terms") ? "利用規約"
-          : "プライバシーポリシー";
+          (k === "tokusho") ? t.tokusho
+          : (k === "terms") ? t.terms
+          : t.privacy;
 
         const txt =
-          (k === "tokusho") ? TOKUSHO_POPUP_TEXT
-          : (k === "terms") ? TERMS_POPUP_TEXT
-          : PRIVACY_POPUP_TEXT;
+          (lang === "en")
+            ? ((k === "tokusho") ? TOKUSHO_POPUP_TEXT_EN : (k === "terms") ? TERMS_POPUP_TEXT_EN : PRIVACY_POPUP_TEXT_EN)
+            : ((k === "tokusho") ? TOKUSHO_POPUP_TEXT : (k === "terms") ? TERMS_POPUP_TEXT : PRIVACY_POPUP_TEXT);
 
         legalModalTitle.textContent = title;
         legalModalBody.innerHTML = `<div class="reg-text">${String(txt || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>")}</div>`;
@@ -648,7 +884,8 @@
 
         // 未ログイン：UIは待機（ボタン押下で開始）
         if (statusMsg) {
-          statusMsg.textContent = "初回利用にはログイン登録が必要です。\nGoogle アカウントと連携して続行してください。";
+          const t = I18N[lang] || I18N.ja;
+          statusMsg.textContent = t.status;
         }
       };
 
