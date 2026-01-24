@@ -5,10 +5,16 @@ const admin = require("firebase-admin");
 const { defineSecret } = require("firebase-functions/params");
 
 const STRIPE_SECRET_KEY = defineSecret("STRIPE_SECRET_KEY");
+const STRIPE_SECRET_KEY_TEST = defineSecret("STRIPE_SECRET_KEY_TEST");
+
 const STRIPE_WEBHOOK_SECRET = defineSecret("STRIPE_WEBHOOK_SECRET");
+const STRIPE_WEBHOOK_SECRET_TEST = defineSecret("STRIPE_WEBHOOK_SECRET_TEST");
+
 const STRIPE_PRICE_PRO = defineSecret("STRIPE_PRICE_PRO");
 const STRIPE_PRICE_TEAM = defineSecret("STRIPE_PRICE_TEAM");
 const STRIPE_PRICE_ENTERPRISE = defineSecret("STRIPE_PRICE_ENTERPRISE");
+
+const STRIPE_PRICE_PRO_TEST = defineSecret("STRIPE_PRICE_PRO_TEST");
 
 const GOOGLE_OAUTH_CLIENT_ID = defineSecret("GOOGLE_OAUTH_CLIENT_ID");
 const GOOGLE_OAUTH_REDIRECT_URI = defineSecret("GOOGLE_OAUTH_REDIRECT_URI");
@@ -37,9 +43,34 @@ const GOOGLE_OAUTH_REDIRECT_URI = defineSecret("GOOGLE_OAUTH_REDIRECT_URI");
  * - set AUREA_DEBUG=1 to enable server debug logs (dbg)
  */
 
-const getStripeKey = () => {
-  const k = String(STRIPE_SECRET_KEY.value() || "").trim();
+const isTruthy = (v) => {
+  const s = String(v ?? "").trim().toLowerCase();
+  return s === "1" || s === "true" || s === "yes" || s === "on";
+};
+
+const getStripeKey = (opts) => {
+  const testMode = !!(opts && opts.testMode);
+  const secret = testMode ? STRIPE_SECRET_KEY_TEST : STRIPE_SECRET_KEY;
+  const k = String(secret.value() || "").trim();
   return k ? k : null;
+};
+
+const getStripePriceMap = (opts) => {
+  const testMode = !!(opts && opts.testMode);
+
+  if (testMode) {
+    return {
+      Pro: String(STRIPE_PRICE_PRO_TEST.value() || "").trim(),
+      Team: "",
+      Enterprise: ""
+    };
+  }
+
+  return {
+    Pro: String(STRIPE_PRICE_PRO.value() || "").trim(),
+    Team: String(STRIPE_PRICE_TEAM.value() || "").trim(),
+    Enterprise: String(STRIPE_PRICE_ENTERPRISE.value() || "").trim()
+  };
 };
 
 const normalizePlanLabel = (p) => {
@@ -68,6 +99,11 @@ const getPlanFromPriceId = (priceId) => {
 const app = express();
 const getStripeWebhookSecret = () => {
   const s = String(STRIPE_WEBHOOK_SECRET.value() || "").trim();
+  return s ? s : null;
+};
+
+const getStripeWebhookSecretTest = () => {
+  const s = String(STRIPE_WEBHOOK_SECRET_TEST.value() || "").trim();
   return s ? s : null;
 };
 
@@ -124,8 +160,10 @@ const verifyStripeSignature = ({ rawBody, sigHeader, secret }) => {
 // Stripe Webhook (must be BEFORE express.json middleware)
 app.post("/api/stripe/webhook", express.raw({ type: "application/json", limit: "2mb" }), async (req, res) => {
   try {
-    const secret = getStripeWebhookSecret();
-    if (!secret) {
+    const secretLive = getStripeWebhookSecret();
+    const secretTest = getStripeWebhookSecretTest();
+
+    if (!secretLive && !secretTest) {
       res.status(500).send("webhook_secret_missing");
       return;
     }
@@ -148,8 +186,10 @@ app.post("/api/stripe/webhook", express.raw({ type: "application/json", limit: "
       return;
     }
 
-    const ok = verifyStripeSignature({ rawBody: bodyBuf, sigHeader: sig, secret });
-    if (!ok) {
+    const okLive = secretLive ? verifyStripeSignature({ rawBody: bodyBuf, sigHeader: sig, secret: secretLive }) : false;
+    const okTest = secretTest ? verifyStripeSignature({ rawBody: bodyBuf, sigHeader: sig, secret: secretTest }) : false;
+
+    if (!okLive && !okTest) {
       res.status(400).send("invalid_signature");
       return;
     }
@@ -535,7 +575,9 @@ const consumeInvite = async (req, res) => {
 
 /* ================= Billing (Paddle) ================= */
 app.post("/api/billing/checkout", async (req, res) => {
-  const key = getStripeKey();
+  const testMode = isTruthy(req.body?.testMode);
+
+  const key = getStripeKey({ testMode });
   if (!key) {
     res.status(500).json({ ok: false, reason: "stripe_key_missing" });
     return;
@@ -554,11 +596,7 @@ app.post("/api/billing/checkout", async (req, res) => {
       return;
     }
 
-    const priceMap = {
-      Pro: String(STRIPE_PRICE_PRO.value() || "").trim(),
-      Team: String(STRIPE_PRICE_TEAM.value() || "").trim(),
-      Enterprise: String(STRIPE_PRICE_ENTERPRISE.value() || "").trim()
-    };
+    const priceMap = getStripePriceMap({ testMode });
 
     const priceId = String(priceMap[p] || "").trim();
     if (!priceId) {
@@ -2132,10 +2170,20 @@ exports.api = onRequest(
     region: "us-central1",
     secrets: [
       STRIPE_SECRET_KEY,
+      STRIPE_SECRET_KEY_TEST,
+
       STRIPE_WEBHOOK_SECRET,
+      STRIPE_WEBHOOK_SECRET_TEST,
+
       STRIPE_PRICE_PRO,
       STRIPE_PRICE_TEAM,
       STRIPE_PRICE_ENTERPRISE,
+
+      STRIPE_PRICE_PRO_TEST,
+git add functions/index.js
+git commit -m "Add Stripe testMode checkout + dual webhook secrets + price map"
+git push
+firebase deploy --only functions
 
       OPENAI_API_KEY,
 
