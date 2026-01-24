@@ -6329,28 +6329,30 @@ linkLogout?.addEventListener("click", async (e) => {
     }
   } catch {}
 
-  // 既にログイン済みなら Gate を閉じる（認証は最終的にサーバ/APIでも必須化する）
+  // URL params（先に読む）
+  const params = new URLSearchParams(window.location.search);
+  const authResult = params.get("auth"); // "ok" | "error"
+  const inviteToken = params.get("invite");
+
   const stGate = getAuthState();
-  if (stGate?.loggedIn) {
+
+  // login.html からの戻りはここでは絶対に弾かない
+  if (authResult === "ok" || authResult === "error") {
+    // 何もしない（下の authResult ハンドラに処理を委譲）
+  } else if (stGate?.loggedIn) {
     setGateMessage("");
     hideAuthGate();
-  } else if (authResult === "ok" || authResult === "error") {
-    // login.html からの戻り（/?auth=ok|error）は、ここで飛ばさない
-    // 下の authResult ハンドラで setAuthState / エラー表示を処理する
   } else {
-    // 未ログインは常に login.html（このUIに一本化）
-    const p = new URLSearchParams(window.location.search);
-    const inv = String(p.get("invite") || "").trim();
-
+    // 未ログインかつ auth 戻りでない場合のみ login.html
     const url = new URL("/login.html", window.location.origin);
-    if (inv) {
+    if (inviteToken) {
       url.searchParams.set("mode", "company");
-      url.searchParams.set("invite", inv);
+      url.searchParams.set("invite", inviteToken);
     } else {
       url.searchParams.set("mode", "personal");
     }
-
     window.location.replace(url.toString());
+    return;
   }
 
   // URL params（招待 / auth戻り）
@@ -6453,16 +6455,6 @@ if (authResult === "ok") {
     // クエリ掃除
     history.replaceState({}, document.title, "/");
   }
-
-  // 既にログイン済みなら Gate を閉じる（認証は最終的にサーバ/APIでも必須化する）
-  const stAuth = getAuthState();
-  if (stAuth?.loggedIn) {
-    setGateMessage("");
-    hideAuthGate();
-} else {
-  // 未ログイン時は Welcome Gate に留める（自動遷移しない）
-  showAuthGate();
-}
 
     // auth gate buttons: capture fallback (clickが拾われない環境対策)
   document.addEventListener("pointerdown", (e) => {
