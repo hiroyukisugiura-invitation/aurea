@@ -5617,12 +5617,20 @@ btnNewChat?.addEventListener("click", (e) => {
     }
   });
 
-  linkLogout?.addEventListener("click", async (e) => {
+linkLogout?.addEventListener("click", async (e) => {
     e.preventDefault();
     const ok1 = await confirmModal(tr("confirmLogout"));
     if (!ok1) return;
+
+    try {
+      // auth / mode / invite を完全初期化
+      localStorage.removeItem("aurea_auth_state_v1");
+      localStorage.removeItem("aurea_auth_mode");
+      localStorage.removeItem("aurea_company_invite_v1");
+    } catch {}
+
     window.location.href = "/login.html";
-  });
+});
 
   // project modal close buttons
   $$(".project-modal [aria-label='閉じる']").forEach(btn => {
@@ -6246,30 +6254,37 @@ btnNewChat?.addEventListener("click", (e) => {
     if (appRoot) appRoot.setAttribute("aria-hidden", "true");
   };
 
-const hideAuthGate = () => {
-  try {
-    if (authGate) {
-      authGate.style.display = "none";
-      authGate.setAttribute("aria-hidden", "true");
+    const hideAuthGate = () => {
+    try {
+      if (authGate) {
+        authGate.style.display = "none";
+        authGate.setAttribute("aria-hidden", "true");
+      }
+      if (appRoot) {
+        appRoot.removeAttribute("aria-hidden");
+      }
+      document.body.classList.remove("data-auth-required");
+    } catch (e) {
+      dbg("hideAuthGate failed", e);
     }
-    if (appRoot) {
-      appRoot.removeAttribute("aria-hidden");
-    }
-    document.body.classList.remove("data-auth-required");
-  } catch (e) {
-    dbg("hideAuthGate failed", e);
-  }
-};
+  };
 
-  const startGoogleLogin = (mode) => {
+    const startGoogleLogin = (mode) => {
     // Googleログインは login.html で実行（Email/Password導線は作らない）
     const m = (mode === "company") ? "company" : "personal";
     const invite = getInvite();
+    const st = getAuthState();
 
-    // Company は invite 必須（無ければ遷移させず、その場でメッセージ）
-    if (m === "company" && !(invite?.token)) {
-      setGateMessage("この招待URLは無効です。管理者に再招待を依頼してください。");
-      return;
+    // Company は invite 必須（authState 残留でも通さない）
+    if (m === "company") {
+      if (!invite?.token) {
+        setGateMessage("この招待URLは無効です。管理者に再招待を依頼してください。");
+        return;
+      }
+      if (st?.loggedIn) {
+        setGateMessage("一度ログアウトしてください。招待URL経由でのみログイン可能です。");
+        return;
+      }
     }
 
     const url = new URL("/login.html", window.location.origin);

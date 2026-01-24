@@ -259,11 +259,29 @@
 
       // mode 決定: URL > 保存値 > personal
       let mode = (modeParam === "company") ? "company" : (modeParam === "personal" ? "personal" : null);
-      if (!mode) mode = getSavedMode() || "personal";
+
+      // 保存値 company は信用しない（invite URL が無い限り無効）
+      if (!mode) {
+        const saved = getSavedMode();
+        if (saved === "company" && !inviteParam) {
+          mode = "personal";
+        } else {
+          mode = saved || "personal";
+        }
+      }
 
       // company invite の保存（URLにあれば保存）
       if (inviteParam) {
         setInvite({ token: inviteParam, receivedAt: new Date().toISOString() });
+      }
+      // ===== Company login hard guard =====
+      // Company は「招待URL経由のみ」許可する
+      if (mode === "company") {
+        // URL に invite が無い Company 遷移は即エラー
+        if (!inviteParam) {
+          redirectToIndexError("invite_invalid");
+          return;
+        }
       }
 
       // company アカウントを personal で使わせない（既に company loggedIn がある場合）
