@@ -903,7 +903,7 @@ const syncAccountUi = () => {
       Array.from(selLang.options || []).forEach((o) => {
         const v = String(o.value || "").trim();
         if (v === "ja") o.text = isEn ? "Japanese" : "日本語";
-        if (v === "en") o.text = isEn ? "English" : "英語";
+        if (v === "en") o.text = isEn ? "English (US)" : "英語";
       });
     }
 
@@ -7762,6 +7762,31 @@ if (authResult === "ok") {
   syncSettingsUi();
   bindSettings();
 
+    // ===== i18n late-load guard =====
+  // i18n.js がネットワーク/順序で遅れてロードされた場合でも、表示を即座に翻訳へ同期する
+  (() => {
+    let tries = 0;
+    const tick = () => {
+      tries += 1;
+
+      const ready =
+        !!(window.AUREA_I18N && typeof window.AUREA_I18N.tr === "function");
+
+      if (ready) {
+        try { applyI18n(); } catch {}
+        try { syncSettingsUi(); } catch {}
+        try { renderSidebar(); } catch {}
+        try { renderView(); } catch {}
+        return;
+      }
+
+      if (tries >= 80) return; // 約 8秒で打ち切り（無限ループ防止）
+      setTimeout(tick, 100);
+    };
+
+    setTimeout(tick, 0);
+  })();
+
   // Firestore(users/{uid}.plan) 追従（auth確定前に1回で終わるのを防ぐ）
   (async () => {
     try {
@@ -7813,4 +7838,3 @@ if (authResult === "ok") {
   })();
 
 })();
-
