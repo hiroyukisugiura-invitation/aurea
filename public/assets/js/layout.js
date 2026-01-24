@@ -7197,6 +7197,7 @@ if (authResult === "ok") {
 
       const L_TITLE = tr("planListTitle");
       const L_NOTE = tr("planPaidNote");
+      const isEnPlan = String(state.settings?.language || "ja").toLowerCase().startsWith("en");
 
       const PRICE = {
         Free: "¥0",
@@ -7313,9 +7314,9 @@ if (authResult === "ok") {
               line-height:1.6;
               color:rgba(255,255,255,.75);
             ">
-              ※ 本サービスは現在、段階的な提供を行っています。<br>
-              プラン選択後、直ちにサービス提供や継続的な課金が開始されることはありません。<br>
-              提供開始時期については、準備が整い次第、登録されたメールアドレス宛にご案内します。
+              ${isEnPlan
+                ? "This service is currently being rolled out in phases.<br>After selecting a plan, service delivery and recurring charges will not start immediately.<br>We will notify you by email once the service becomes available."
+                : "※ 本サービスは現在、段階的な提供を行っています。<br>プラン選択後、直ちにサービス提供や継続的な課金が開始されることはありません。<br>提供開始時期については、準備が整い次第、登録されたメールアドレス宛にご案内します。"}
             </div>
             </div>
             <button id="aureaPlanClose" type="button" style="
@@ -7635,6 +7636,58 @@ if (authResult === "ok") {
   "■ Refund policy:",
   "No refunds after purchase due to the nature of digital services, except as required by law."
 ].join("\n");
+
+    // ===== Regulations open handler (data-legal) =====
+    // .settings-modal 内の [data-legal] を押したら legalOverlay を開いて本文を差し替える
+    const openLegal = (kind) => {
+      const k = String(kind || "").trim();
+      if (!legalOverlay || !legalModalTitle || !legalModalBody) return;
+
+      const isEn = String(state.settings?.language || "ja").toLowerCase().startsWith("en");
+
+      let title = "";
+      let body = "";
+
+      if (k === "tokusho") {
+        title = isEn ? "Legal Notice" : "特定商取引法に基づく表記";
+        body  = isEn ? TOKUSHO_EN : TOKUSHO_JA;
+      } else if (k === "terms") {
+        title = isEn ? "Terms of Service" : "利用規約";
+        body  = TERMS_JA; // 英文が未定義のため現状は固定（ボタン無反応をまず解消）
+      } else if (k === "privacy") {
+        title = isEn ? "Privacy Policy" : "プライバシーポリシー";
+        body  = PRIVACY_JA; // 英文が未定義のため現状は固定（ボタン無反応をまず解消）
+      } else {
+        return;
+      }
+
+      legalModalTitle.textContent = title;
+      legalModalBody.textContent = body;
+
+      legalOverlay.style.display = "flex";
+      legalOverlay.classList.add("is-open");
+      legalOverlay.setAttribute("aria-hidden", "false");
+    };
+
+    document.addEventListener("click", (e) => {
+      const t = e.target;
+      const btn = (t instanceof Element) ? t.closest(".settings-modal [data-legal]") : null;
+      if (!btn) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      const kind = btn.getAttribute("data-legal");
+      openLegal(kind);
+    }, true);
+
+    btnCloseLegalModal?.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (!legalOverlay) return;
+      legalOverlay.style.display = "none";
+      legalOverlay.classList.remove("is-open");
+      legalOverlay.setAttribute("aria-hidden", "true");
+    });
 
   };
 
