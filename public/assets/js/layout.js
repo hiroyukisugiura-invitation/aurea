@@ -970,9 +970,12 @@ const openSettings = async () => {
   } catch {}
 
   syncAccountUi();
-  syncSettingsUi();
+
+  // i18n を先に反映してから、select幅の自動計算を走らせる
   applyI18n();
+  syncSettingsUi();
 };
+
     const chkAi = document.getElementById("settingsShowAiReports");
     if (chkAi) {
       chkAi.checked = state.settings?.showAiReports !== false;
@@ -7948,8 +7951,8 @@ if (authResult === "ok") {
 
   // reflect immediately
   syncAccountUi();
-  syncSettingsUi();
   applyI18n();
+  syncSettingsUi();
   bindSettings();
 
   // Firestore(users/{uid}.plan) 追従（auth確定前に1回で終わるのを防ぐ）
