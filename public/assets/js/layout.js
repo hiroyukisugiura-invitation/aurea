@@ -6958,9 +6958,9 @@ if (authResult === "ok") {
         if (tm) tm.remove();
 
         // Trainer: 辞書ポップも破棄（見出しが固定化されるため、リロード不要で更新）
-        if (trainerDictWrap) {
-          trainerDictWrap.remove();
-          trainerDictWrap = null;
+        if (window.trainerDictWrap) {
+          window.trainerDictWrap.remove();
+          window.trainerDictWrap = null;
         }
         trainerSelectedId = null;
 
