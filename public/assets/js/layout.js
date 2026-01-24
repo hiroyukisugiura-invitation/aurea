@@ -669,9 +669,27 @@ const clearAiRunIndicator = () => {
     }
 
     // Language
-    const selLang = document.querySelector(".settings-modal #settingsLang");
+  const selLang = document.querySelector(".settings-modal #settingsLang");
     if (selLang) {
-      selLang.value = (state.settings?.language || "ja");
+      const cur = String(state.settings?.language || "ja").trim();
+
+      // option value が "en" / "en-US" どちらでも確実に追従
+      const hasValue = (v) => Array.from(selLang.options || []).some((o) => String(o.value || "").trim() === v);
+
+      if (String(cur).toLowerCase().startsWith("en")) {
+        if (hasValue(cur)) {
+          selLang.value = cur;
+        } else if (hasValue("en")) {
+          selLang.value = "en";
+        } else if (hasValue("en-US")) {
+          selLang.value = "en-US";
+        } else {
+          selLang.value = cur;
+        }
+      } else {
+        selLang.value = (hasValue(cur) ? cur : "ja");
+      }
+
       autoSizeSelect(selLang);
     }
 
@@ -821,9 +839,9 @@ const syncAccountUi = () => {
   }
 };
 
-  const applyI18n = () => {
+const applyI18n = () => {
     const lang = state.settings?.language || "ja";
-    const isEn = (lang === "en");
+    const isEn = String(lang).toLowerCase().startsWith("en");
 
     // html lang も同期
     try { document.documentElement.lang = isEn ? "en" : "ja"; } catch {}
@@ -6922,7 +6940,7 @@ if (authResult === "ok") {
     if (selLang) {
       selLang.addEventListener("change", () => {
         const v = (selLang.value || "ja").trim();
-        state.settings.language = (v === "en") ? "en" : "ja";
+        state.settings.language = String(v).toLowerCase().startsWith("en") ? "en" : "ja";
 
         // 既に生成済みのポップアップは文言が固定化されるため、破棄して作り直す
         const cm = document.getElementById("aureaConfirmModal");
