@@ -217,8 +217,8 @@
           obj.output ??
           obj.content ??
           obj.message ??
-          obj.result?.GPT ??      // functions/index.js の現行形式に対応
-          obj.result?.text ??     // 予備（将来用）
+          obj.result?.GPT ??
+          obj.result?.text ??
           ""
         );
       };
