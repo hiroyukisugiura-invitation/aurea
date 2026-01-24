@@ -6310,51 +6310,6 @@ linkLogout?.addEventListener("click", async (e) => {
     window.location.href = url.toString();
   };
 
-  // 未ログイン時は Gate UI を出さず、常に login.html に送る（UIの一貫性）
-  // invite が URL にあれば company として引き継ぐ
-  try {
-    const st0 = getAuthState();
-    if (!(st0 && st0.loggedIn)) {
-      const p0 = new URLSearchParams(window.location.search);
-      const inv0 = String(p0.get("invite") || "").trim();
-
-      const url0 = new URL("/login.html", window.location.origin);
-      if (inv0) {
-        url0.searchParams.set("mode", "company");
-        url0.searchParams.set("invite", inv0);
-      }
-
-      window.location.replace(url0.toString());
-      return;
-    }
-  } catch {}
-
-  // URL params（先に読む）
-  const params = new URLSearchParams(window.location.search);
-  const authResult = params.get("auth"); // "ok" | "error"
-  const inviteToken = params.get("invite");
-
-  const stGate = getAuthState();
-
-  // login.html からの戻りはここでは絶対に弾かない
-  if (authResult === "ok" || authResult === "error") {
-    // 何もしない（下の authResult ハンドラに処理を委譲）
-  } else if (stGate?.loggedIn) {
-    setGateMessage("");
-    hideAuthGate();
-  } else {
-    // 未ログインかつ auth 戻りでない場合のみ login.html
-    const url = new URL("/login.html", window.location.origin);
-    if (inviteToken) {
-      url.searchParams.set("mode", "company");
-      url.searchParams.set("invite", inviteToken);
-    } else {
-      url.searchParams.set("mode", "personal");
-    }
-    window.location.replace(url.toString());
-    return;
-  }
-
   // URL params（招待 / auth戻り）
   const params = new URLSearchParams(window.location.search);
   const inviteToken = params.get("invite");
