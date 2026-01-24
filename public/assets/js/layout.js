@@ -6962,7 +6962,7 @@ if (authResult === "ok") {
           window.trainerDictWrap.remove();
           window.trainerDictWrap = null;
         }
-        trainerSelectedId = null;
+        try { window.trainerSelectedId = null; } catch {}
 
         saveSettings();
         applyI18n();
