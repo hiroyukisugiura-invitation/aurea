@@ -4944,6 +4944,15 @@ const closeSettings = () => {
         body: JSON.stringify(payload),
         signal: apiChatAbortCtrl.signal
       });
+      // ===== non-stream final answer (required) =====
+      if (r && r.result && typeof r.result.GPT === "string") {
+        updateMessage(m.id, r.result.GPT);
+        renderChat();
+        setStreaming(false);
+        unlockAndClearAttachments();
+        renderSidebar();
+        return;
+      }
 
       if (!r) throw new Error("api_chat_unreachable");
 
