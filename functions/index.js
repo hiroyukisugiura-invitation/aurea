@@ -133,12 +133,18 @@ app.post("/api/stripe/webhook", express.raw({ type: "application/json", limit: "
     const sig = String(req.headers["stripe-signature"] || "").trim();
     const rawBody = req.body;
 
-    if (!sig || !rawBody || !Buffer.isBuffer(rawBody)) {
+    // accept Buffer OR string (Cloud Run / proxy may convert)
+    const bodyBuf =
+      Buffer.isBuffer(rawBody)
+        ? rawBody
+        : (typeof rawBody === "string" ? Buffer.from(rawBody, "utf8") : null);
+
+    if (!sig || !bodyBuf) {
       res.status(400).send("invalid_payload");
       return;
     }
 
-    const ok = verifyStripeSignature({ rawBody, sigHeader: sig, secret });
+    const ok = verifyStripeSignature({ rawBody: bodyBuf, sigHeader: sig, secret });
     if (!ok) {
       res.status(400).send("invalid_signature");
       return;
@@ -555,7 +561,7 @@ app.post("/api/billing/checkout", async (req, res) => {
       res.status(400).json({ ok: false, reason: "invalid_plan" });
       return;
     }
-    
+
     const success = su || `${req.protocol}://${req.get("host")}/?billing=success`;
     const cancel  = cu || `${req.protocol}://${req.get("host")}/?billing=cancel`;
 
