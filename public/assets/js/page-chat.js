@@ -18,6 +18,68 @@
 
   console.log("[page-chat] init ok");
 
+    // ===== UI append helpers（最低限） =====
+  const esc = (s) =>
+    String(s ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
+
+  const appendBubble = (role, html) => {
+    if (!chatRoot) return;
+
+    const wrap = document.createElement("div");
+    wrap.className = `msg ${role}`;
+
+    const inner = document.createElement("div");
+    inner.className = "bubble";
+    inner.innerHTML = html;
+
+    wrap.appendChild(inner);
+    chatRoot.appendChild(wrap);
+
+    try { chatRoot.scrollTop = chatRoot.scrollHeight; } catch {}
+  };
+
+  const appendUserMessage = (text, attachments) => {
+    const parts = [];
+
+    const t = String(text || "").trim();
+    if (t) parts.push(`<div class="t">${esc(t)}</div>`);
+
+    const att = Array.isArray(attachments) ? attachments : [];
+    if (att.length) {
+      const imgs = att.filter(a => a && a.route === "image" && a.data);
+      const files = att.filter(a => a && a.route !== "image");
+
+      if (imgs.length) {
+        const thumbs = imgs.map(a => {
+          const mime = String(a.mime || "image/png");
+          return `<img class="thumb" alt="${esc(a.name || "image")}" src="data:${esc(mime)};base64,${esc(a.data)}">`;
+        }).join("");
+        parts.push(`<div class="att imgs">${thumbs}</div>`);
+      }
+
+      if (files.length) {
+        const list = files.map(a =>
+          `<div class="file">📎 ${esc(a.name || "file")} <span class="meta">(${esc(a.mime || "")})</span></div>`
+        ).join("");
+        parts.push(`<div class="att files">${list}</div>`);
+      }
+    }
+
+    appendBubble("user", parts.join(""));
+  };
+
+  const appendAssistantMessage = (text) => {
+    const t = String(text || "").trim();
+    if (!t) return;
+    const html = `<div class="t">${esc(t).replaceAll("\n", "<br>")}</div>`;
+    appendBubble("assistant", html);
+  };
+
   let pendingAttachments = [];
   let busy = false;
   let aborter = null;
@@ -115,16 +177,70 @@
           : []
       });
 
-      pendingAttachments = [];
+      // UIへユーザー発言＋添付を即反映
+      appendUserMessage(payload.prompt, payload.attachments);
 
-      await fetch("/chat", {
+      // 次送信に残さない
+      pendingAttachments = [];
+      input.value = "";
+
+      const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
         signal: aborter.signal
       });
+
+      const ct = String(res.headers.get("content-type") || "");
+      let data = null;
+
+      if (ct.includes("application/json")) {
+        try { data = await res.json(); } catch {}
+      } else {
+        try { data = { text: await res.text() }; } catch {}
+      }
+
+      console.log("[page-chat] response", {
+        ok: res.ok,
+        status: res.status,
+        hasJson: !!data && ct.includes("application/json"),
+        keys: data ? Object.keys(data) : []
+      });
+
+      // 返答をUIへ反映（サーバの返却形式が違っても拾えるように吸収）
+      const pickText = (obj) => {
+        if (!obj) return "";
+        return String(
+          obj.text ??
+          obj.answer ??
+          obj.reply ??
+          obj.output ??
+          obj.content ??
+          obj.message ??
+          ""
+        );
+      };
+
+      const assistantText = pickText(data);
+      if (assistantText) {
+        appendAssistantMessage(assistantText);
+      } else {
+        // messages配列形式も拾う
+        const msgs = Array.isArray(data?.messages) ? data.messages : null;
+        if (msgs && msgs.length) {
+          const last = msgs[msgs.length - 1];
+          const t = pickText(last);
+          if (t) appendAssistantMessage(t);
+        }
+      }
+
+      if (!res.ok) {
+        appendAssistantMessage("（エラー）サーバ応答に失敗しました。");
+      }
+
     } catch (e) {
-      void e;
+      console.log("[page-chat] send error", e);
+      appendAssistantMessage("（エラー）サーバ応答に失敗しました。");
     } finally {
       setBusy(false);
     }
