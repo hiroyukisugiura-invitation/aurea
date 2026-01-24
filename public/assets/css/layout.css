@@ -2656,3 +2656,12 @@ body.view-project:not(.has-chat) .scroll-down-btn{
   box-shadow: none !important;
   background: none !important;
 }
+
+/* ===== FIX: language select should never ellipsis ===== */
+.settings-modal #settingsLang{
+  overflow:visible !important;
+  text-overflow:clip !important;
+  white-space:nowrap !important;
+  width:auto !important;
+  max-width:none !important;
+}
