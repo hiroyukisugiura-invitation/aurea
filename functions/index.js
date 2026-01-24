@@ -544,13 +544,18 @@ app.post("/api/billing/checkout", async (req, res) => {
       return;
     }
 
-    const priceMap = getStripePriceMap();
+    const priceMap = {
+      Pro: String(STRIPE_PRICE_PRO.value() || "").trim(),
+      Team: String(STRIPE_PRICE_TEAM.value() || "").trim(),
+      Enterprise: String(STRIPE_PRICE_ENTERPRISE.value() || "").trim()
+    };
+
     const priceId = String(priceMap[p] || "").trim();
     if (!priceId) {
       res.status(400).json({ ok: false, reason: "invalid_plan" });
       return;
     }
-
+    
     const success = su || `${req.protocol}://${req.get("host")}/?billing=success`;
     const cancel  = cu || `${req.protocol}://${req.get("host")}/?billing=cancel`;
 
