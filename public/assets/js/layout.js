@@ -7210,13 +7210,10 @@ if (authResult === "ok") {
 
       const L_TITLE = tr("planListTitle");
       const L_NOTE = tr("planPaidNote");
-      const isEnPlan = String(state.settings?.language || "ja").toLowerCase().startsWith("en");
 
       const PRICE = {
         Free: "¥0",
         Pro: "¥30,000",
-        Team: "¥69,000",
-        Enterprise: "¥200,000〜"
       };
 
       const rt = encodeURIComponent(`${window.location.origin}/`);
@@ -7327,9 +7324,7 @@ if (authResult === "ok") {
               line-height:1.6;
               color:rgba(255,255,255,.75);
             ">
-              ${isEnPlan
-                ? "This service is currently being rolled out in phases.<br>After selecting a plan, service delivery and recurring charges will not start immediately.<br>We will notify you by email once the service becomes available."
-                : "※ 本サービスは現在、段階的な提供を行っています。<br>プラン選択後、直ちにサービス提供や継続的な課金が開始されることはありません。<br>提供開始時期については、準備が整い次第、登録されたメールアドレス宛にご案内します。"}
+              ※ 本サービスは現在、段階的な提供を行っています。<br>プラン選択後、直ちにサービス提供や継続的な課金が開始されることはありません。<br>提供開始時期については、準備が整い次第、登録されたメールアドレス宛にご案内します。
             </div>
             </div>
             <button id="aureaPlanClose" type="button" style="
@@ -7366,36 +7361,6 @@ if (authResult === "ok") {
               </div>
               <div style="text-align:right;flex:0 0 auto;">
                 <div style="font-weight:700;font-size:14px;">${escHtml(PRICE.Pro)}</div>
-                <div style="font-size:11px;color:rgba(255,255,255,.65);">${escHtml(tr("perMonth"))}</div>
-              </div>
-            </button>
-
-            <button type="button" class="aurea-plan-row" data-plan="Team" style="
-              width:100%;text-align:left;border-radius:14px;border:1px solid rgba(255,255,255,.10);
-              background:rgba(255,255,255,.03);color:rgba(255,255,255,.92);cursor:pointer;
-              padding:12px 12px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
-            ">
-              <div style="min-width:0;">
-                <div style="font-weight:700;font-size:14px;line-height:1.2;">Team</div>
-                <div style="margin-top:6px;font-size:12px;line-height:1.5;color:rgba(255,255,255,.70);">${escHtml(tr("planTeamDesc"))}</div>
-              </div>
-              <div style="text-align:right;flex:0 0 auto;">
-                <div style="font-weight:700;font-size:14px;">${escHtml(PRICE.Team)}</div>
-                <div style="font-size:11px;color:rgba(255,255,255,.65);">${escHtml(tr("perMonth"))}</div>
-              </div>
-            </button>
-
-            <button type="button" class="aurea-plan-row" data-plan="Enterprise" style="
-              width:100%;text-align:left;border-radius:14px;border:1px solid rgba(255,255,255,.10);
-              background:rgba(255,255,255,.03);color:rgba(255,255,255,.92);cursor:pointer;
-              padding:12px 12px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
-            ">
-              <div style="min-width:0;">
-                <div style="font-weight:700;font-size:14px;line-height:1.2;">Enterprise</div>
-                <div style="margin-top:6px;font-size:12px;line-height:1.5;color:rgba(255,255,255,.70);">${escHtml(tr("planEnterpriseDesc"))}</div>
-              </div>
-              <div style="text-align:right;flex:0 0 auto;">
-                <div style="font-weight:700;font-size:14px;">${escHtml(PRICE.Enterprise)}</div>
                 <div style="font-size:11px;color:rgba(255,255,255,.65);">${escHtml(tr("perMonth"))}</div>
               </div>
             </button>
@@ -7465,8 +7430,6 @@ if (authResult === "ok") {
       "",
       "■ 販売価格：",
       "・Proプラン：月額 30,000円（税込）",
-      "・Teamプラン：月額 69,000円（税込）",
-      "・Enterpriseプラン：月額 200,000円〜（税込）",
       "",
       "■ 商品代金以外の必要料金：",
       "・インターネット接続にかかる通信料は利用者の負担となります",
@@ -7588,8 +7551,6 @@ if (authResult === "ok") {
       "",
       "■ Pricing:",
       "• Pro: JPY 30,000 / month (tax incl.)",
-      "• Team: JPY 69,000 / month (tax incl.)",
-      "• Enterprise: From JPY 200,000 / month (tax incl.)",
       "",
       "■ Additional fees:",
       "Internet connection fees are borne by the user.",
