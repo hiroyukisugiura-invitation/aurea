@@ -2665,3 +2665,35 @@ body.view-project:not(.has-chat) .scroll-down-btn{
   width:auto !important;
   max-width:none !important;
 }
+
+/* ===== Legal / Terms / Privacy modal text normalization ===== */
+.settings-modal .modal .content-bd,
+.settings-modal .modal .content-bd p,
+.settings-modal .modal .content-bd li {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+               "Hiragino Sans", "Noto Sans JP", sans-serif;
+  font-size: 13px;
+  line-height: 1.65;
+  letter-spacing: 0.01em;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* 見出し（■ 第1条 など） */
+.settings-modal .modal .content-bd strong,
+.settings-modal .modal .content-bd h1,
+.settings-modal .modal .content-bd h2,
+.settings-modal .modal .content-bd h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+/* 箇条書きの余白を詰める */
+.settings-modal .modal .content-bd ul {
+  margin: 6px 0 10px;
+  padding-left: 16px;
+}
+
+.settings-modal .modal .content-bd li {
+  margin: 2px 0;
+}
