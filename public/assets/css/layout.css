@@ -2666,34 +2666,40 @@ body.view-project:not(.has-chat) .scroll-down-btn{
   max-width:none !important;
 }
 
-/* ===== Legal / Terms / Privacy modal text normalization ===== */
-.settings-modal .modal .content-bd,
-.settings-modal .modal .content-bd p,
-.settings-modal .modal .content-bd li {
+/* ===== Regulations modal (Account > Legal) text normalization ===== */
+#legalOverlay .modal,
+#legalOverlay .modal *{
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text",
                "Hiragino Sans", "Noto Sans JP", sans-serif;
+}
+
+#legalOverlay #legalModalBody{
   font-size: 13px;
   line-height: 1.65;
   letter-spacing: 0.01em;
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(255,255,255,.85);
 }
 
-/* 見出し（■ 第1条 など） */
-.settings-modal .modal .content-bd strong,
-.settings-modal .modal .content-bd h1,
-.settings-modal .modal .content-bd h2,
-.settings-modal .modal .content-bd h3 {
+/* タイトル */
+#legalOverlay #legalModalTitle{
+  font-size: 14px;
+  font-weight: 700;
+  color: rgba(255,255,255,.92);
+}
+
+/* もし本文側にp/liが混ざっても統一 */
+#legalOverlay #legalModalBody p,
+#legalOverlay #legalModalBody li{
   font-size: 13px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.92);
+  line-height: 1.65;
 }
 
-/* 箇条書きの余白を詰める */
-.settings-modal .modal .content-bd ul {
+/* 箇条書きの詰め */
+#legalOverlay #legalModalBody ul{
   margin: 6px 0 10px;
   padding-left: 16px;
 }
 
-.settings-modal .modal .content-bd li {
+#legalOverlay #legalModalBody li{
   margin: 2px 0;
 }
