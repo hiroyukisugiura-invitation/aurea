@@ -2474,22 +2474,14 @@ const closeSettings = () => {
       else if (isTextLike) route = "text";
 
       try {
-        // v1: image -> base64 (prefer prepared dataUrl)
-        if (route === "image" && a?.dataUrl && String(a.dataUrl).startsWith("data:")) {
-          const s = String(a.dataUrl);
-          const idx = s.indexOf("base64,");
-          if (idx >= 0) data = s.slice(idx + 7);
-        }
-
-        // fallback: image -> read file and pack base64 (size guard)
-        if (!data && route === "image" && a?.file && size > 0) {
+        // image (ANALYSIS MUST USE ORIGINAL FILE BYTES)
+        if (route === "image" && a?.file && size > 0) {
           const MAX_IMG = 8 * 1024 * 1024; // 8MB
           if (size <= MAX_IMG) {
-            const url = await fileToDataUrl(a.file);
-            const idx = String(url || "").indexOf("base64,");
-            if (idx >= 0) data = String(url).slice(idx + 7);
+            const ab = await a.file.arrayBuffer();
+            data = arrayBufferToBase64(ab);
           } else {
-            fallback = fallback || "image_too_large";
+            fallback = "image_too_large";
           }
         }
 
