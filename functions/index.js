@@ -1703,6 +1703,7 @@ app.post("/api/chat", async (req, res) => {
 });
 
 app.post("/chat", async (req, res) => {
+  
       /* ================= AUREA Data Trainer (Embedding Match) ================= */
 
     // 重要：特定ワードの同義語表ではなく、全ケースを「意味」で当てる
@@ -1928,9 +1929,17 @@ app.post("/chat", async (req, res) => {
         continue;
       }
 
-      // image
-      if ((type === "image" || route === "image") && mime.startsWith("image/") && data) {
-        const url = `data:${mime};base64,${data}`;
+      // image（mime が空でも拡張子から推定して必ず渡す）
+      if ((type === "image" || route === "image") && data) {
+        const ext = lower.split(".").pop();
+        const inferred =
+          mime && mime.startsWith("image/")
+            ? mime
+            : (ext === "jpg" || ext === "jpeg") ? "image/jpeg"
+            : (ext === "webp") ? "image/webp"
+            : "image/png";
+
+        const url = `data:${inferred};base64,${data}`;
         userParts.push({ type: "input_image", image_url: { url } });
         continue;
       }
@@ -2173,7 +2182,7 @@ app.post("/chat", async (req, res) => {
     });
 
     // ===== Final text (must not be empty) =====
-    // GPTが空でも、Repo(Claude/Perplexity/Mistral等)を統合して text に出す
+    // layout.js は result.GPT を前提に表示するため、必ず map.GPT を埋める（単一ソース）
     const fallbackText = Object.keys(map || {})
       .filter(k => k && k !== "GPT")
       .map(k => {
@@ -2184,7 +2193,12 @@ app.post("/chat", async (req, res) => {
       .join("\n\n")
       .trim();
 
-    const finalText = String(finalOut || "").trim() || String(map.GPT || "").trim() || fallbackText;
+    const finalText =
+      String(finalOut || "").trim() ||
+      String(map.GPT || "").trim() ||
+      fallbackText;
+
+    map.GPT = finalText;
 
     res.json({
       ok: true,
@@ -2205,6 +2219,7 @@ app.post("/chat", async (req, res) => {
   } catch (e) {
     const msg = String(e && e.message ? e.message : e || "");
     res.status(500).json({ ok: false, reason: "chat_failed", msg });
+    return;
   }
 });
 
