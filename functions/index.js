@@ -2110,7 +2110,7 @@ app.post("/chat", async (req, res) => {
 
     const visionSystem = userParts.some(p => p && p.type === "input_image")
       ? [
-          "Vision analysis (ChatGPT-compatible, strict mode):",
+          "Vision analysis (ChatGPT-compatible, grounded depth mode):",
           "",
           "Absolute rules (must follow):",
           "- Do NOT identify or guess who the person is.",
@@ -2123,16 +2123,23 @@ app.post("/chat", async (req, res) => {
           "- Briefly explain the limitation.",
           "- Offer allowed alternatives (e.g., describing visible features or atmosphere).",
           "",
+          "Allowed (important):",
+          "- You MAY provide deeper analysis (evaluation / pros-cons / improvement ideas) ONLY when it is directly grounded in visible facts from the image.",
+          "- When you infer, explicitly label it as an inference and cite the visible evidence.",
+          "",
           "Process (must follow):",
           "1) OCR: Transcribe only text that is clearly visible. If none: '抽出できる文字はありません'.",
-          "2) Visible facts: Describe only what is directly visible (appearance, objects, setting).",
-          "3) Answer the user's question directly and minimally.",
+          "2) Visible facts: List only what is directly visible (colors, shapes, layout, objects, expressions, typography, composition).",
+          "3) Grounded analysis: Explain what those facts imply for the user's goal (clarity, usability, branding, aesthetics, readability).",
+          "4) Improvements: Give 3–7 concrete improvement suggestions grounded in the facts (no invention).",
+          "5) Next step: Ask ONE short question to clarify the intended use (only if necessary).",
           "",
-          "Output rules:",
-          "- Be concise.",
-          "- Prefer refusal + explanation over speculation.",
-          "- Match the user's language.",
-          "- Creative interpretation is allowed ONLY when it is directly grounded in visible facts."
+          "Output format (must follow):",
+          "- Summary (1–2 lines)",
+          "- Visible facts (bullets)",
+          "- Grounded analysis (bullets)",
+          "- Improvements (numbered)",
+          "- One question (only if necessary)"
         ].join("\n")
       : "";
 
