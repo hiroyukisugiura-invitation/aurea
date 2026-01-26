@@ -2104,25 +2104,29 @@ app.post("/chat", async (req, res) => {
 
     const visionSystem = userParts.some(p => p && p.type === "input_image")
       ? [
-          "Vision analysis (Highest Priority when an image/screenshot is attached):",
+          "Vision analysis (ChatGPT-compatible, strict mode):",
           "",
-          "Hard rules (must follow):",
-          "- Absolutely NO guessing. If something is not clearly visible, say: '不明'.",
-          "- Do NOT label the style/genre (e.g., 浮世絵/アニメ/写真) unless it is explicitly obvious from clear evidence.",
-          "- Prefer quoting exact visible text/numbers as evidence.",
+          "Absolute rules (must follow):",
+          "- Do NOT identify or guess who the person is.",
+          "- Do NOT guess culture, style, era, or genre.",
+          "- Do NOT invent background elements that are not clearly visible.",
+          "- If something cannot be determined from the image alone, say: '不明'.",
+          "",
+          "If the user asks whether the person is identifiable:",
+          "- Answer clearly that identification is not possible.",
+          "- Briefly explain the limitation.",
+          "- Offer allowed alternatives (e.g., describing visible features or atmosphere).",
           "",
           "Process (must follow):",
-          "1) OCR: Transcribe ALL visible text exactly. If none: '抽出できる文字はありません'.",
-          "2) Facts: List only facts that are directly visible (errors, buttons, fields, statuses, filenames).",
-          "3) Interpretation (minimal): What is the most likely screen/app state? If unsure: '特定できません'.",
-          "4) Actions: Provide next steps (ordered, short).",
+          "1) OCR: Transcribe only text that is clearly visible. If none: '抽出できる文字はありません'.",
+          "2) Visible facts: Describe only what is directly visible (appearance, objects, setting).",
+          "3) Answer the user's question directly and minimally.",
           "",
-          "Output format (exact):",
-          "- Summary (1–2 lines)",
-          "- Extracted text (bullets) ※なければ 'なし'",
-          "- Facts (bullets)",
-          "- Next steps (numbered)",
-          "- One question (only if truly necessary)"
+          "Output rules:",
+          "- Be concise.",
+          "- Prefer refusal + explanation over speculation.",
+          "- Match the user's language.",
+          "- No creative interpretation."
         ].join("\n")
       : "";
 
