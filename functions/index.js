@@ -2172,11 +2172,25 @@ app.post("/chat", async (req, res) => {
       model: "gpt-4o"
     });
 
+    // ===== Final text (must not be empty) =====
+    // GPTが空でも、Repo(Claude/Perplexity/Mistral等)を統合して text に出す
+    const fallbackText = Object.keys(map || {})
+      .filter(k => k && k !== "GPT")
+      .map(k => {
+        const v = String(map[k] || "").trim();
+        return v ? `## ${k}\n${v}` : "";
+      })
+      .filter(Boolean)
+      .join("\n\n")
+      .trim();
+
+    const finalText = String(finalOut || "").trim() || String(map.GPT || "").trim() || fallbackText;
+
     res.json({
       ok: true,
 
       // トークに出るのは「統合済み最終回答」のみ
-      text: finalOut || map.GPT || "",
+      text: finalText,
 
       // Repoはログ用途として保持
       result: map,
