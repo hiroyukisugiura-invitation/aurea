@@ -1740,6 +1740,33 @@ app.post("/chat", async (req, res) => {
       return;
     }
 
+    // GPT互換：画像が「添付扱い」でも data が無い場合は、ChatGPT同等に再添付を促す（resultは返さない）
+    const hasImageButNoData = attachments.some((a) => {
+      const route = String(a?.route || "").trim();
+      const type = String(a?.type || "").trim();
+      const mime = String(a?.mime || "").trim();
+      const name = String(a?.name || "").trim().toLowerCase();
+
+      const isImg =
+        route === "image" ||
+        type === "image" ||
+        (mime && mime.startsWith("image/")) ||
+        (/\.(png|jpg|jpeg|webp|gif|bmp|svg)$/i.test(name));
+
+      if (!isImg) return false;
+
+      const d = String(a?.data || "").trim();
+      return !d;
+    });
+
+    if (GPT_COMPAT_MODE && hasImageButNoData) {
+      res.json({
+        ok: true,
+        text: "画像を読み取れませんでした。画像を再添付して送信してください。"
+      });
+      return;
+    }
+
     // ===== Sora image generation (v1) =====
     // GPT互換モードでは画像生成ルートに入らない（ChatGPT互換：単一テキスト応答のみ）
     if (!GPT_COMPAT_MODE && !hasImageAttachment && isImageGenerationRequest(prompt)) {

@@ -2466,22 +2466,52 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
 
       try {
         // image (ANALYSIS MUST USE ORIGINAL FILE BYTES)
-        if (route === "image" && a?.file) {
-          const fileSize = Number(a.file.size || 0) || 0;
+        // - size が取れない/大きすぎる場合でも「縮小サムネ(dataUrl)」を送って解析可能にする
+        if (route === "image") {
           const MAX_IMG = 8 * 1024 * 1024; // 8MB
 
-          if (fileSize <= 0) {
-            fallback = "image_size_unknown";
-          } else if (fileSize <= MAX_IMG) {
-            const ab = await a.file.arrayBuffer();
-            const b64 = arrayBufferToBase64(ab);
-            if (b64) {
+          const tryUseDataUrl = () => {
+            try {
+              const du = String(a?.dataUrl || "");
+              if (!du.startsWith("data:image/")) return false;
+              const idx = du.indexOf("base64,");
+              if (idx < 0) return false;
+              const b64 = du.slice(idx + 7).trim();
+              if (!b64) return false;
               data = b64;
+              return true;
+            } catch {
+              return false;
+            }
+          };
+
+          if (a?.file) {
+            let ab = null;
+            try { ab = await a.file.arrayBuffer(); } catch { ab = null; }
+
+            const fileSize =
+              (ab && typeof ab.byteLength === "number" && ab.byteLength > 0)
+                ? ab.byteLength
+                : (Number(a.file.size || 0) || 0);
+
+            // 1) 本体が8MB以内なら本体を送る
+            if (ab && fileSize > 0 && fileSize <= MAX_IMG) {
+              const b64 = arrayBufferToBase64(ab);
+              if (b64) {
+                data = b64;
+              } else {
+                // 本体encode失敗 → サムネへフォールバック
+                if (!tryUseDataUrl()) fallback = "image_encode_failed";
+              }
             } else {
-              fallback = "image_encode_failed";
+              // 2) 8MB超 or size不明 → サムネへフォールバック（無ければ理由を立てる）
+              if (!tryUseDataUrl()) {
+                fallback = (fileSize > MAX_IMG) ? "image_too_large" : "image_size_unknown";
+              }
             }
           } else {
-            fallback = "image_too_large";
+            // file が無い（履歴由来など）→ サムネがあれば送る
+            if (!tryUseDataUrl()) fallback = "image_file_missing";
           }
         }
 
