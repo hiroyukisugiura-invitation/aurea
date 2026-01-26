@@ -2485,41 +2485,9 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
             }
           };
 
-              if (a?.file) {
-                let ab = null;
-                try { ab = await a.file.arrayBuffer(); } catch { ab = null; }
-
-                const fileSize =
-                  (ab && typeof ab.byteLength === "number" && ab.byteLength > 0)
-                    ? ab.byteLength
-                    : (Number(a.file.size || 0) || 0);
-
-                // 1) 本体が8MB以内なら本体を送る
-                if (ab && fileSize > 0 && fileSize <= MAX_IMG) {
-                  const b64 = arrayBufferToBase64(ab);
-                  if (b64) {
-                    data = b64;
-                  } else {
-                    // 本体encode失敗 → サムネへフォールバック
-                    if (!tryUseDataUrl()) fallback = "image_encode_failed";
-                  }
-                } else {
-                  // 2) 8MB超 or size不明 → サムネへフォールバック（無ければ理由を立てる）
-                  if (!tryUseDataUrl()) {
-                    fallback = (fileSize > MAX_IMG) ? "image_too_large" : "image_size_unknown";
-                  }
-                }
-              } else {
-                // file が無い（履歴由来など）→ サムネがあれば送る
-                if (!tryUseDataUrl()) fallback = "image_file_missing";
-              }
-
-              // === FINAL FALLBACK (GPT互換必須) ===
-              // data を作る処理が全部終わった後、それでも data が無い場合だけ送信を止める
-              if (!data) {
-                console.warn("[AUREA] image has no data, abort sending attachment");
-                continue;
-              }
+          if (a?.file) {
+            let ab = null;
+            try { ab = await a.file.arrayBuffer(); } catch { ab = null; }
 
             const fileSize =
               (ab && typeof ab.byteLength === "number" && ab.byteLength > 0)
@@ -2532,11 +2500,10 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
               if (b64) {
                 data = b64;
               } else {
-                // 本体encode失敗 → サムネへフォールバック
                 if (!tryUseDataUrl()) fallback = "image_encode_failed";
               }
             } else {
-              // 2) 8MB超 or size不明 → サムネへフォールバック（無ければ理由を立てる）
+              // 2) 8MB超 or size不明 → サムネへフォールバック
               if (!tryUseDataUrl()) {
                 fallback = (fileSize > MAX_IMG) ? "image_too_large" : "image_size_unknown";
               }
@@ -2544,6 +2511,13 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
           } else {
             // file が無い（履歴由来など）→ サムネがあれば送る
             if (!tryUseDataUrl()) fallback = "image_file_missing";
+          }
+
+          // === FINAL FALLBACK (GPT互換必須) ===
+          // data を作る処理が全部終わった後、それでも data が無い場合だけ送信を止める
+          if (!data) {
+            console.warn("[AUREA] image has no data, abort sending attachment");
+            continue;
           }
         }
 
