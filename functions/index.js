@@ -1771,8 +1771,13 @@ app.post("/chat", async (req, res) => {
       return;
     }
 
-    // GPT同等：画像添付がある場合は「GPT単独」で解析（他AIの解釈/統合は一切しない）
-    const names = (MULTI_AI_ENABLED && !hasImageAttachment)
+    // Multi-AI orchestration:
+    // - runMultiAi: 6大AIは並走（ログ用）
+    // - integrateMultiAi: GPT最終文に統合するのは「画像なし」の時だけ（画像時はGPT単独）
+    const runMultiAi = !!MULTI_AI_ENABLED;
+    const integrateMultiAi = (!!MULTI_AI_ENABLED && !hasImageAttachment);
+
+    const names = runMultiAi
       ? ["Gemini", "Claude", "Perplexity", "Mistral", "Sora"]
       : [];
 
@@ -2164,7 +2169,8 @@ app.post("/chat", async (req, res) => {
       .map(k => `【${k} analysis】\n${String(map[k] || "").trim()}`)
       .join("\n\n");
 
-    const integratedPrompt = reportsForIntegration
+    // 画像添付時は、他AIの解釈をGPTに渡さない（誤爆の原因）
+    const integratedPrompt = (integrateMultiAi && reportsForIntegration)
       ? `${basePrompt}\n\n---\n\n以下は他AIの分析結果です。これらを統合して、ユーザー向けの最終回答を作成してください。\n\n${reportsForIntegration}`
       : basePrompt;
 
@@ -2190,10 +2196,18 @@ app.post("/chat", async (req, res) => {
       .join("\n\n")
       .trim();
 
-    const finalText =
+    let finalText =
       String(finalOut || "").trim() ||
       String(map.GPT || "").trim() ||
       fallbackText;
+
+    // ★ 必ず非空（GPT同等：空は返さない）
+    if (!finalText) {
+      const lang = String(context?.language || "ja").toLowerCase();
+      finalText = lang.startsWith("en")
+        ? "I couldn't produce a response. Please try again."
+        : "回答を生成できませんでした。もう一度お試しください。";
+    }
 
     map.GPT = finalText;
 
