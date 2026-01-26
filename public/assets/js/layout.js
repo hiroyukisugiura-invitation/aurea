@@ -4681,6 +4681,9 @@ const closeSettings = () => {
       return "";
     })();
 
+    // ===== build attachment payload once (shared) =====
+    const attachmentPayload = await buildAttachmentsPayload(rawAttachments);
+
     // ===== Sora image generation (front complete) =====
     // NOTE: generation is allowed only when NO image attachments (GPT-like: attached images mean "analyze")
     if (!hasImageAttachment && shouldUseSora(promptText)) {
@@ -4701,7 +4704,7 @@ const closeSettings = () => {
       try {
         const payload = {
           prompt: promptText,
-          attachments: await buildAttachmentsPayload(rawAttachments),
+          attachments: attachmentPayload,
           context: {
             view: state.view,
             scope: state.context,
@@ -4879,7 +4882,7 @@ const closeSettings = () => {
     try {
       const payload = {
         prompt: promptText,
-        attachments: await buildAttachmentsPayload(rawAttachments),
+        attachments: attachmentPayload,
         context: {
           view: state.view,
           scope: state.context,
