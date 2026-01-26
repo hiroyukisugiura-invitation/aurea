@@ -2287,6 +2287,49 @@ const closeSettings = () => {
     }
   });
 
+    // thumbnail (for UI + history only; keep tiny to avoid localStorage overflow)
+  const fileToThumbDataUrl = async (file) => {
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      if (!dataUrl || !String(dataUrl).startsWith("data:image/")) return "";
+
+      const img = new Image();
+      img.decoding = "async";
+
+      const loaded = await new Promise((resolve) => {
+        img.onload = () => resolve(true);
+        img.onerror = () => resolve(false);
+        img.src = dataUrl;
+      });
+      if (!loaded) return "";
+
+      const MAX_W = 320;
+      const MAX_H = 320;
+
+      const w0 = Number(img.naturalWidth || img.width || 0) || 0;
+      const h0 = Number(img.naturalHeight || img.height || 0) || 0;
+      if (!w0 || !h0) return "";
+
+      const scale = Math.min(1, MAX_W / w0, MAX_H / h0);
+      const w = Math.max(1, Math.round(w0 * scale));
+      const h = Math.max(1, Math.round(h0 * scale));
+
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return "";
+
+      ctx.drawImage(img, 0, 0, w, h);
+
+      // JPEG to keep it small (preview only)
+      return canvas.toDataURL("image/jpeg", 0.82);
+    } catch {
+      return "";
+    }
+  };
+
   const addFilesAsAttachments = async (files) => {
     const list = Array.from(files || []).filter(f => f && typeof f.size === "number");
     if (!list.length) return;
@@ -2336,12 +2379,12 @@ const closeSettings = () => {
           lower.endsWith(".htm");
 
         if (kind === "image") {
-          // 8MB上限（UI負荷対策）
+          // 8MB上限（送信は元File bytes / 保存はサムネだけ）
           if ((f.size || 0) <= (8 * 1024 * 1024)) {
-            dataUrl = await fileToDataUrl(f);
+            dataUrl = await fileToThumbDataUrl(f);
           }
         } else if (isTextLike) {
-          // 512KB上限（即解析用）
+          // 512KB上限（即解析用：テキストはそのまま）
           if ((f.size || 0) <= (512 * 1024)) {
             dataUrl = await fileToDataUrl(f);
           }
@@ -3109,9 +3152,11 @@ const closeSettings = () => {
         const normalizeAureaAnswer = (src) => {
           const s = String(src || "").replace(/\r/g, "");
 
-          // 1) remove headings
+          // GPT同等：回答本文は圧縮しない（全文をそのまま表示）
+          // ただし「AI Repo/Reportsラベル」だけは表示ノイズになるので除去する
           const rawLines = s.split("\n");
-          const a = [];
+          const out = [];
+
           for (const ln of rawLines) {
             const t = String(ln || "");
             const tt = t.trim();
@@ -3120,95 +3165,10 @@ const closeSettings = () => {
             if (/^\[?\s*AI\s*(Repo|Rep|Reports)\s*\]?$/.test(tt)) continue;
             if (/^AI\s*(Repo|Rep|Reports)\s*[:：]\s*/.test(tt)) continue;
 
-            // remove markdown headings
-            if (/^#{1,6}\s+/.test(tt)) continue;
-
-            // remove "next step" type lines (ja/en)
-            if (/^(次の一手|次は|次に|Next(\s+step)?|What\s+to\s+do\s+next)\b/i.test(tt)) continue;
-
-            a.push(t);
+            out.push(t);
           }
 
-          // 2) limit questions to at most 1 line (keep first question line)
-          let keptQuestion = false;
-          const b = [];
-          for (const ln of a) {
-            const tt = String(ln || "").trim();
-            const isQ = /[？?]\s*$/.test(tt);
-            if (isQ) {
-              if (keptQuestion) continue;
-              keptQuestion = true;
-              b.push(ln);
-              continue;
-            }
-            b.push(ln);
-          }
-
-          // 3) build: conclusion (1-3 lines) + bullets (max 5). Drop the rest.
-          const nonEmpty = b.map(x => String(x || "")).filter(x => x.trim() !== "");
-          if (!nonEmpty.length) return "";
-
-          // conclusion: take first block up to first bullet/numbered line
-          const isBulletLike = (t) => /^[-•*]\s+/.test(t) || /^・\s*/.test(t) || /^\d+\.\s+/.test(t);
-          const conclusion = [];
-          const rest = [];
-
-          for (const ln of b) {
-            const tt = String(ln || "").trim();
-            if (!tt) {
-              if (conclusion.length) break;
-              continue;
-            }
-            if (isBulletLike(tt)) break;
-            conclusion.push(tt);
-            if (conclusion.length >= 3) break;
-          }
-
-          // collect bullets from entire text (after first 1-3 conclusion lines)
-          for (const ln of b) {
-            const tt = String(ln || "").trim();
-            if (!tt) continue;
-            if (isBulletLike(tt)) rest.push(tt);
-          }
-
-          const bullets = rest
-            .map((t) => {
-              const m1 = /^[-•*]\s+(.+)$/.exec(t);
-              if (m1) return `- ${m1[1].trim()}`;
-              const m2 = /^・\s*(.+)$/.exec(t);
-              if (m2) return `- ${m2[1].trim()}`;
-              const m3 = /^\d+\.\s+(.+)$/.exec(t);
-              if (m3) return `- ${m3[1].trim()}`;
-              return "";
-            })
-            .filter(Boolean)
-            .slice(0, 5);
-
-          // fallback bullets: if none exist, derive from remaining sentences (very conservative)
-          if (!bullets.length) {
-            const tail = b.join("\n").trim();
-            const tail2 = tail.replace(/\s+/g, " ").trim();
-
-            // split by "。" / "." / ";" roughly
-            const parts = tail2.split(/(?<=[。．\.])\s+/).map(x => x.trim()).filter(Boolean);
-            const use = parts.slice(1, 6).map(x => `- ${x.replace(/[。．\.]\s*$/, "")}`);
-            for (const u of use) bullets.push(u);
-            while (bullets.length > 5) bullets.pop();
-          }
-
-          // 4) short/empty guard: keep very short answers as-is
-          const compact = b.join("\n").trim();
-          if (compact.length <= 80) {
-            return compact;
-          }
-
-          // 5) enforce block length: keep it short by design (conclusion + <=5 bullets only)
-          const out = [];
-          if (conclusion.length) out.push(conclusion.join("\n"));
-          if (bullets.length) out.push(bullets.join("\n"));
-
-          const result = out.filter(Boolean).join("\n\n").trim();
-          return result || compact;
+          return out.join("\n").trim();
         };
 
         const normalized = normalizeAureaAnswer(s0);
