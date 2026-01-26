@@ -2203,20 +2203,36 @@ app.post("/chat", async (req, res) => {
       .join("\n\n")
       .trim();
 
-    let finalText =
-      String(finalOut || "").trim() ||
-      String(map.GPT || "").trim() ||
-      fallbackText;
+    const lang = String(context?.language || "ja").toLowerCase();
 
-    // ★ 必ず非空（GPT同等：空は返さない）
-    if (!finalText) {
-      const lang = String(context?.language || "ja").toLowerCase();
-      finalText = lang.startsWith("en")
-        ? "I couldn't produce a response. Please try again."
-        : "回答を生成できませんでした。もう一度お試しください。";
+    // 画像添付時：GPTの finalOut が空なら「失敗」扱いにし、他AIのfallbackは絶対に本文に出さない
+    let finalText = "";
+    if (hasImageAttachment) {
+      finalText = String(finalOut || "").trim();
+
+      if (!finalText) {
+        finalText = lang.startsWith("en")
+          ? "Image analysis failed. Please try again or re-attach the image."
+          : "画像解析に失敗しました。もう一度お試しください（画像を再添付して送信）。";
+      }
+
+      map.GPT = finalText;
+    } else {
+      // 画像なし：従来どおり（GPT→map.GPT→fallbackText）
+      finalText =
+        String(finalOut || "").trim() ||
+        String(map.GPT || "").trim() ||
+        fallbackText;
+
+      // ★ 必ず非空
+      if (!finalText) {
+        finalText = lang.startsWith("en")
+          ? "I couldn't produce a response. Please try again."
+          : "回答を生成できませんでした。もう一度お試しください。";
+      }
+
+      map.GPT = finalText;
     }
-
-    map.GPT = finalText;
 
     res.json({
       ok: true,
