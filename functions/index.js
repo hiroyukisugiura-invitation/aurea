@@ -1782,8 +1782,8 @@ app.post("/chat", async (req, res) => {
     const promptForModel = isImplicitAttachmentOnly
       ? (
           hasImageAttachment
-            ? "Analyze the attached image(s). Describe what you see and extract any relevant information."
-            : "User uploaded file(s) without any message."
+            ? "この画像（スクショ）を分析して。まず画像内の文字をすべて抽出し、その後に状況/要点/次の手順を整理して。もしイラストや写真でUI文脈が無い場合は、被写体/スタイル/特徴を説明し、ユーザーが何をしたいかを1つだけ質問して。"
+            : "添付ファイルが送られました。内容を最小限で把握し、目的確認の質問を1つだけしてください。"
         )
       : prompt;
 
@@ -2099,25 +2099,29 @@ app.post("/chat", async (req, res) => {
           "Vision analysis (Highest Priority when an image/screenshot is attached):",
           "",
           "Process (must follow):",
-          "1) OCR: Read and transcribe ALL visible text exactly (labels, numbers, dates, warnings). If unreadable, state so.",
-          "2) Context: Identify the app/site/page and current state (view, modal, error, success, loading).",
+          "1) OCR: Read and transcribe ALL visible text exactly (labels, numbers, dates, warnings). If none, say: '抽出できる文字はありません'.",
+          "2) Context: Identify the app/site/page and current state (view, modal, error, success, loading). If unknown, say: '特定できません'.",
           "3) Structure: List key UI regions and elements (navigation, panels, cards, buttons, inputs).",
           "4) Facts: Extract actionable facts only from what is visible (names, amounts, statuses, errors).",
-          "5) Diagnosis (if applicable): Rank likely causes with evidence from the image.",
+          "5) Diagnosis (only if the user intent is troubleshooting): Rank likely causes with evidence from the image.",
           "6) Actions: Provide concrete next steps (short, ordered).",
+          "",
+          "Special handling (important):",
+          "- If the image is an illustration/photo and there is no UI context: describe subject + style + notable details, then ask ONE intent question (e.g., '何をしたい？ ①説明 ②改善案 ③用途提案').",
+          "- If the user prompt is empty and an image is attached: do minimal analysis + ask ONE concise intent question with options.",
           "",
           "Rules:",
           "- Do NOT guess hidden information.",
-          "- Cite evidence by quoting visible labels/values.",
+          "- Cite evidence by quoting visible labels/values when present.",
           "- Match the user's language.",
           "",
           "Output format:",
-          "- Summary (1-2 lines)",
-          "- Extracted text (bullets)",
+          "- Summary (1–2 lines)",
+          "- Extracted text (bullets) ※なければ 'なし'",
           "- Observations (bullets)",
           "- Issues / Risks (bullets, if any)",
           "- Next steps (numbered)",
-          "- Questions (only if required)"
+          "- Question (choose one option) ※必要な場合のみ"
         ].join("\n")
       : "";
 
