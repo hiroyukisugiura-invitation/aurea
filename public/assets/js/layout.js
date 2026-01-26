@@ -5464,14 +5464,7 @@ board?.addEventListener("drop", async (e) => {
   try { renderAttachTray(); } catch {}
   try { updateSendButtonVisibility(); } catch {}
 
-  // GPT準拠：画像（スクショ）だけドロップされた場合は自動で解析送信
-  try {
-    const t = String(askInput?.value || "").trim();
-    const hasImg = Array.isArray(pendingAttachments) && pendingAttachments.some(a => a && (a.kind === "image" || a.route === "image"));
-    if (!t && hasImg) {
-      await send();
-    }
-  } catch {}
+  // GPT準拠：ドロップ後はプレビューに載せるだけ（自動送信しない）
 }, true);
 
     /* ================= drag & drop (Ask bar attach) ================= */
