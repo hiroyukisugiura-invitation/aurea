@@ -2132,7 +2132,7 @@ app.post("/chat", async (req, res) => {
           "- Be concise.",
           "- Prefer refusal + explanation over speculation.",
           "- Match the user's language.",
-          "- No creative interpretation."
+          "- Creative interpretation is allowed ONLY when it is directly grounded in visible facts."
         ].join("\n")
       : "";
 
