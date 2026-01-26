@@ -18,6 +18,11 @@
 
   console.log("[page-chat] init ok");
 
+  // layout.js が動作している場合は page-chat.js を無効化（競合防止）
+  if (window.AUREA_LAYOUT_BUILD) {
+    console.log("[page-chat] layout.js detected; page-chat disabled");
+    return;
+  }
     // ===== UI append helpers（最低限） =====
   const esc = (s) =>
     String(s ?? "")
@@ -74,9 +79,81 @@
   };
 
   const appendAssistantMessage = (text) => {
-    const t = String(text || "").trim();
-    if (!t) return;
-    const html = `<div class="t">${esc(t).replaceAll("\n", "<br>")}</div>`;
+    const t0 = String(text || "").replace(/\r/g, "").trim();
+    if (!t0) return;
+
+    const render = (src) => {
+      const s = String(src || "");
+
+      // code fence ``` ... ```
+      const chunks = s.split("```");
+      const out = [];
+
+      for (let i = 0; i < chunks.length; i++) {
+        const part = chunks[i];
+
+        // code block
+        if (i % 2 === 1) {
+          const code = esc(part.trim());
+          out.push(
+            `<pre style="margin:10px 0 12px;padding:12px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.10);overflow:auto;">` +
+              `<code style="font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,'Liberation Mono','Courier New',monospace;font-size:12px;line-height:1.55;white-space:pre;">` +
+                `${code}` +
+              `</code>` +
+            `</pre>`
+          );
+          continue;
+        }
+
+        // normal text block
+        const lines = part.split("\n");
+        let html = "";
+        let inUl = false;
+        let inOl = false;
+
+        const closeLists = () => {
+          if (inUl) { html += "</ul>"; inUl = false; }
+          if (inOl) { html += "</ol>"; inOl = false; }
+        };
+
+        for (const ln of lines) {
+          const raw = String(ln || "");
+          const t = raw.trim();
+
+          if (!t) {
+            closeLists();
+            html += `<div style="height:10px;"></div>`;
+            continue;
+          }
+
+          const mBullet = /^[-•*]\s+(.+)$/.exec(t) || /^・\s*(.+)$/.exec(t);
+          if (mBullet) {
+            if (inOl) { html += "</ol>"; inOl = false; }
+            if (!inUl) { html += `<ul style="margin:8px 0 12px 18px;padding:0;">`; inUl = true; }
+            html += `<li style="margin:0 0 6px;line-height:1.65;">${esc(mBullet[1])}</li>`;
+            continue;
+          }
+
+          const mNum = /^(\d+)\.\s+(.+)$/.exec(t);
+          if (mNum) {
+            if (inUl) { html += "</ul>"; inUl = false; }
+            if (!inOl) { html += `<ol style="margin:8px 0 12px 18px;padding:0;">`; inOl = true; }
+            html += `<li style="margin:0 0 6px;line-height:1.65;">${esc(mNum[2])}</li>`;
+            continue;
+          }
+
+          closeLists();
+          html += `<div style="margin:0 0 10px;line-height:1.7;">${esc(t)}</div>`;
+        }
+
+        closeLists();
+        out.push(html);
+      }
+
+      return out.join("");
+    };
+
+    const html = `<div class="t">${render(t0)}</div>`;
     appendBubble("assistant", html);
   };
 
@@ -86,6 +163,18 @@
 
   const setBusy = (v) => {
     busy = !!v;
+
+    try {
+      if (sendBtn) {
+        sendBtn.disabled = busy;
+        sendBtn.style.opacity = busy ? ".45" : "";
+        sendBtn.style.cursor = busy ? "not-allowed" : "";
+      }
+    } catch {}
+
+    try {
+      if (stopBtn) stopBtn.style.display = busy ? "" : "none";
+    } catch {}
   };
 
   const fileToB64 = (file) => new Promise((resolve) => {
@@ -112,6 +201,12 @@
 
   const pushFiles = async (files) => {
     const arr = Array.from(files || []);
+
+    // size guards（layout.js と同等）
+    const MAX_IMG = 8 * 1024 * 1024;   // 8MB
+    const MAX_PDF = 8 * 1024 * 1024;   // 8MB
+    const MAX_TEXT = 2 * 1024 * 1024;  // 2MB
+
     for (const f0 of arr) {
       // Safari/Clipboard で name/type が空のケースを正規化
       const name = String(f0 && f0.name ? f0.name : "").trim() || `screenshot_${Date.now()}.png`;
@@ -122,13 +217,31 @@
         ? f0
         : new File([f0], name, { type: mime });
 
+      const route = detectRoute({ name, type: mime });
+
+      // reject huge files (prevent UI freeze / payload blowup)
+      if (route === "image" && size > MAX_IMG) {
+        console.log("[page-chat] skip large image", { name, mime, size });
+        appendAssistantMessage(`（スキップ）画像が大きすぎます: ${name} (${Math.round(size / 1024 / 1024)}MB)`);
+        continue;
+      }
+      if (route === "pdf" && size > MAX_PDF) {
+        console.log("[page-chat] skip large pdf", { name, mime, size });
+        appendAssistantMessage(`（スキップ）PDFが大きすぎます: ${name} (${Math.round(size / 1024 / 1024)}MB)`);
+        continue;
+      }
+      if (route === "text" && size > MAX_TEXT) {
+        console.log("[page-chat] skip large text", { name, mime, size });
+        appendAssistantMessage(`（スキップ）テキストが大きすぎます: ${name} (${Math.round(size / 1024 / 1024)}MB)`);
+        continue;
+      }
+
       const b64 = await fileToB64(f);
       if (!b64) {
         console.log("[page-chat] skip empty b64", { name, mime, size });
         continue;
       }
 
-      const route = detectRoute({ name, type: mime });
       const type = (route === "image") ? "image" : "file";
 
       pendingAttachments.push({
