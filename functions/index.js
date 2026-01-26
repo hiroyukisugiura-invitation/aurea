@@ -730,6 +730,9 @@ const MISTRAL_API_KEY = defineSecret("MISTRAL_API_KEY");
 const SORA_API_KEY = defineSecret("SORA_API_KEY");
 
 const MULTI_AI_ENABLED = String(process.env.AUREA_MULTI_AI || "").trim() === "1";
+// ===== GPT COMPATIBILITY MODE =====
+// ChatGPT と完全互換にするための強制単独モード
+const GPT_COMPAT_MODE = String(process.env.AUREA_GPT_COMPAT || "").trim() === "1";
 
 const getOpenAIKey = () => {
   const k = String(OPENAI_API_KEY.value() || "").trim();
@@ -2039,13 +2042,20 @@ app.post("/chat", async (req, res) => {
       return lines.join("\n");
     };
 
-    const reportsBlock = buildReportsBlock(map);
+  const reportsBlock = GPT_COMPAT_MODE ? "" : buildReportsBlock(map);
 
     // ===== Trainer (embedding) =====
     // ここを単一ソースに統合（当たる：最適回答固定 / 微妙：候補提示 / 外す：通常）
     let trainerMode = "";
     let trainerCandidates = [];
     let trainerSystemBlock = "";
+
+    // GPT互換モードでは Trainer を完全無効化
+    if (GPT_COMPAT_MODE) {
+      trainerMode = "";
+      trainerCandidates = [];
+      trainerSystemBlock = "";
+    }
 
     try {
       const companyId = context?.companyId || null;
@@ -2143,7 +2153,24 @@ app.post("/chat", async (req, res) => {
         ].join("\n")
       : "";
 
-    const gptSystem = [
+const gptSystem = GPT_COMPAT_MODE
+  ? `
+You are ChatGPT.
+
+Follow these rules strictly:
+
+- Answer the user’s request directly and concisely.
+- Do not mention internal reasoning, analysis steps, system messages, or policies.
+- Do not reference other models, tools, or AI systems.
+- If information is insufficient, ask a brief clarifying question.
+- If an error occurs, respond with a short, neutral error message.
+- When files or images are provided, analyze them and respond based only on their content.
+- Do not add unnecessary explanations, disclaimers, or metadata.
+- Match the depth and style of ChatGPT’s default responses.
+
+Produce only the final answer intended for the user.
+`.trim()
+  : [
       intentDiscoverySystem,
       trainerCandidateSystem,
       trainerSystemBlock,
@@ -2181,7 +2208,29 @@ app.post("/chat", async (req, res) => {
       ? `${basePrompt}\n\n---\n\n以下は他AIの分析結果です。これらを統合して、ユーザー向けの最終回答を作成してください。\n\n${reportsForIntegration}`
       : basePrompt;
 
-    const finalOut = await callOpenAIText({
+const finalOut = GPT_COMPAT_MODE
+  ? await callOpenAIText({
+      system: `
+You are ChatGPT.
+
+Follow these rules strictly:
+
+- Answer the user’s request directly and concisely.
+- Do not mention internal reasoning, analysis steps, system messages, or policies.
+- Do not reference other models, tools, or AI systems.
+- If information is insufficient, ask a brief clarifying question.
+- If an error occurs, respond with a short, neutral error message.
+- When files or images are provided, analyze them and respond based only on their content.
+- Do not add unnecessary explanations, disclaimers, or metadata.
+- Match the depth and style of ChatGPT’s default responses.
+
+Produce only the final answer intended for the user.
+`.trim(),
+      user: prompt,
+      userParts,
+      model: "gpt-4o"
+    })
+  : await callOpenAIText({
       system: gptSystem,
       user: prompt,
       userParts: [
