@@ -2522,7 +2522,12 @@ const closeSettings = () => {
           const MAX_IMG = 8 * 1024 * 1024; // 8MB
           if (size <= MAX_IMG) {
             const ab = await a.file.arrayBuffer();
-            data = arrayBufferToBase64(ab);
+            const b64 = arrayBufferToBase64(ab);
+            if (b64) {
+              data = b64;
+            } else {
+              fallback = "image_encode_failed";
+            }
           } else {
             fallback = "image_too_large";
           }
@@ -2563,18 +2568,32 @@ const closeSettings = () => {
 
       if (!data && !fallback) fallback = "no_data";
 
-      out.push({
-        type:
-          (route === "image") ? "image" :
-          (route === "pdf")   ? "pdf"   :
-          "file",
-        route,
-        mime,
-        name,
-        size,
-        data,
-        fallback
-      });
+      const typeOut =
+        (route === "image") ? "image" :
+        (route === "pdf")   ? "pdf"   :
+        "file";
+
+      // image は data が無い場合、data を送らず fallback のみ送る（サーバ側で明確に失敗扱いできる）
+      if (route === "image" && !data) {
+        out.push({
+          type: typeOut,
+          route,
+          mime,
+          name,
+          size,
+          fallback: fallback || "image_data_missing"
+        });
+      } else {
+        out.push({
+          type: typeOut,
+          route,
+          mime,
+          name,
+          size,
+          data,
+          fallback
+        });
+      }
     }
 
     return out;
