@@ -2097,18 +2097,29 @@ app.post("/chat", async (req, res) => {
     const visionSystem = userParts.some(p => p && p.type === "input_image")
       ? [
           "Vision analysis (Highest Priority when an image/screenshot is attached):",
-          "- You MUST use the attached image(s) as the primary evidence.",
-          "- Perform OCR mentally: read all visible text (UI labels, buttons, numbers, warnings).",
-          "- If it is a UI screenshot:",
-          "  - Identify what app/page it is and what state it is in.",
-          "  - Point out the key UI elements (sidebar, panels, modals, buttons, inputs).",
-          "  - Answer using concrete references to what is visible (exact labels/sections).",
-          "- If it is an illustration/photo:",
-          "  - Describe the subject, style, and any notable issues (composition, readability, artifacts).",
-          "  - If the user asks to 'evaluate', provide a short, structured evaluation (strengths / issues / next fix).",
-          "- Never say you cannot see the image. Never ask the user to re-upload unless the payload is empty."
-        ].join("\n")
-      : "";
+          "",
+          "Process (must follow):",
+          "1) OCR: Read and transcribe ALL visible text exactly (labels, numbers, dates, warnings). If unreadable, state so.",
+          "2) Context: Identify the app/site/page and current state (view, modal, error, success, loading).",
+          "3) Structure: List key UI regions and elements (navigation, panels, cards, buttons, inputs).",
+          "4) Facts: Extract actionable facts only from what is visible (names, amounts, statuses, errors).",
+          "5) Diagnosis (if applicable): Rank likely causes with evidence from the image.",
+          "6) Actions: Provide concrete next steps (short, ordered).",
+          "",
+          "Rules:",
+          "- Do NOT guess hidden information.",
+          "- Cite evidence by quoting visible labels/values.",
+          "- Match the user's language.",
+          "",
+          "Output format:",
+          "- Summary (1–2 lines)",
+          "- Extracted text (bullets)",
+          "- Observations (bullets)",
+          "- Issues / Risks (bullets, if any)",
+          "- Next steps (numbered)",
+          "- Questions (only if required)"
+        ].join(\"\\n\")
+      : \"\";
 
     const gptSystem = [
       intentDiscoverySystem,
