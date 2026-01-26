@@ -2112,14 +2112,14 @@ app.post("/chat", async (req, res) => {
           "- Match the user's language.",
           "",
           "Output format:",
-          "- Summary (1–2 lines)",
+          "- Summary (1-2 lines)",
           "- Extracted text (bullets)",
           "- Observations (bullets)",
           "- Issues / Risks (bullets, if any)",
           "- Next steps (numbered)",
           "- Questions (only if required)"
-        ].join(\"\\n\")
-      : \"\";
+        ].join("\n")
+      : "";
 
     const gptSystem = [
       intentDiscoverySystem,
