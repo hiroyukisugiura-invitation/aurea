@@ -1192,8 +1192,6 @@ const runMistral = async ({ prompt, parts }) => {
 };
 
 const runSoraImage = async ({ prompt }) => {
-  if (!MULTI_AI_ENABLED) return null;
-
   const key = getSoraKey() || getOpenAIKey();
   if (!key) return null;
 
@@ -1203,9 +1201,11 @@ const runSoraImage = async ({ prompt }) => {
   const enhancedPrompt = [
     p0,
     "",
-    "Constraints:",
-    "- No watermark, no logos, no text unless explicitly requested.",
-    "- High quality, clean composition.",
+    "Output requirements:",
+    "- High quality, realistic lighting (unless user specifies illustration).",
+    "- No watermark, no logos, no embedded text unless explicitly requested.",
+    "- Clean composition, centered subject, no clutter.",
+    "- If the prompt is vague, choose the most reasonable interpretation and keep it simple."
   ].join("\n");
 
   try {
@@ -1232,7 +1232,6 @@ const runSoraImage = async ({ prompt }) => {
 
     if (!r.ok || !b64) return null;
 
-    // 既存の /api/chat と同じ形式（dataURL）で返す
     return {
       url: `data:image/png;base64,${b64}`,
       prompt: p0
@@ -1783,7 +1782,7 @@ app.post("/chat", async (req, res) => {
     const promptForModel = isImplicitAttachmentOnly
       ? (
           hasImageAttachment
-            ? "この画像（スクショ）を分析して。まず画像内の文字をすべて抽出し、その後に状況/要点/次の手順を整理して。もしイラストや写真でUI文脈が無い場合は、被写体/スタイル/特徴を説明し、ユーザーが何をしたいかを1つだけ質問して。"
+            ? "この画像（スクショ）を分析して。必ず次の順で出力：1) 画像内の文字を可能な限り正確に抽出（無ければ「抽出できる文字はありません」） 2) 画像から確実に言える事実のみ列挙（推測禁止） 3) 次の手順を番号付きで提示。"
             : "添付ファイルが送られました。内容を最小限で把握し、目的確認の質問を1つだけしてください。"
         )
       : prompt;
@@ -2107,30 +2106,23 @@ app.post("/chat", async (req, res) => {
       ? [
           "Vision analysis (Highest Priority when an image/screenshot is attached):",
           "",
+          "Hard rules (must follow):",
+          "- Absolutely NO guessing. If something is not clearly visible, say: '不明'.",
+          "- Do NOT label the style/genre (e.g., 浮世絵/アニメ/写真) unless it is explicitly obvious from clear evidence.",
+          "- Prefer quoting exact visible text/numbers as evidence.",
+          "",
           "Process (must follow):",
-          "1) OCR: Read and transcribe ALL visible text exactly (labels, numbers, dates, warnings). If none, say: '抽出できる文字はありません'.",
-          "2) Context: Identify the app/site/page and current state (view, modal, error, success, loading). If unknown, say: '特定できません'.",
-          "3) Structure: List key UI regions and elements (navigation, panels, cards, buttons, inputs).",
-          "4) Facts: Extract actionable facts only from what is visible (names, amounts, statuses, errors).",
-          "5) Diagnosis (only if the user intent is troubleshooting): Rank likely causes with evidence from the image.",
-          "6) Actions: Provide concrete next steps (short, ordered).",
+          "1) OCR: Transcribe ALL visible text exactly. If none: '抽出できる文字はありません'.",
+          "2) Facts: List only facts that are directly visible (errors, buttons, fields, statuses, filenames).",
+          "3) Interpretation (minimal): What is the most likely screen/app state? If unsure: '特定できません'.",
+          "4) Actions: Provide next steps (ordered, short).",
           "",
-          "Special handling (important):",
-          "- If the image is an illustration/photo and there is no UI context: describe subject + style + notable details, then ask ONE intent question (e.g., '何をしたい？ ①説明 ②改善案 ③用途提案').",
-          "- If the user prompt is empty and an image is attached: do minimal analysis + ask ONE concise intent question with options.",
-          "",
-          "Rules:",
-          "- Do NOT guess hidden information.",
-          "- Cite evidence by quoting visible labels/values when present.",
-          "- Match the user's language.",
-          "",
-          "Output format:",
+          "Output format (exact):",
           "- Summary (1–2 lines)",
           "- Extracted text (bullets) ※なければ 'なし'",
-          "- Observations (bullets)",
-          "- Issues / Risks (bullets, if any)",
+          "- Facts (bullets)",
           "- Next steps (numbered)",
-          "- Question (choose one option) ※必要な場合のみ"
+          "- One question (only if truly necessary)"
         ].join("\n")
       : "";
 
