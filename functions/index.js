@@ -1771,7 +1771,8 @@ app.post("/chat", async (req, res) => {
       return;
     }
 
-    const names = MULTI_AI_ENABLED
+    // GPT同等：画像添付がある場合は「GPT単独」で解析（他AIの解釈/統合は一切しない）
+    const names = (MULTI_AI_ENABLED && !hasImageAttachment)
       ? ["Gemini", "Claude", "Perplexity", "Mistral", "Sora"]
       : [];
 
