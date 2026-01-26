@@ -1717,13 +1717,6 @@ app.post("/chat", async (req, res) => {
     const attachments = Array.isArray(req.body?.attachments) ? req.body.attachments : [];
     const context = req.body?.context || {};
 
-    // prompt が空でも、画像/ファイル添付があれば解析として通す
-    if (!prompt && attachments.length === 0) {
-      res.status(400).json({ ok: false, reason: "empty_input" });
-      return;
-    }
-
-    // ===== Sora image generation (v1) =====
     // 重要：画像添付がある場合は「解析」扱い（生成ルートに入らない）
     const hasImageAttachment = attachments.some((a) => {
       const type = String(a?.type || "").trim();
@@ -1738,6 +1731,13 @@ app.post("/chat", async (req, res) => {
       return false;
     });
 
+    // prompt が空でも、画像/ファイル添付があれば解析として通す（GPT準拠）
+    if (!prompt && attachments.length === 0 && !hasImageAttachment) {
+      res.status(400).json({ ok: false, reason: "empty_input" });
+      return;
+    }
+
+    // ===== Sora image generation (v1) =====
     // 画像生成要求は、画像添付が無い時だけ image を返す
     // 画像生成：テキストで明示的に要求された場合のみ
     if (!hasImageAttachment && isImageGenerationRequest(prompt)) {

@@ -2703,7 +2703,6 @@ const closeSettings = () => {
 
 /* ================= threads ================= */
   const createThread = () => {
-    clearPendingAttachments();
     const threads = getThreadsForContext();
     const t = { id: uid(), title: tr("threadNew"), updatedAt: nowISO(), messages: [] };
     threads.unshift(t);
@@ -2719,7 +2718,6 @@ const closeSettings = () => {
   };
 
   const createProjectThread = (projectId) => {
-    clearPendingAttachments();
     const pid = projectId;
     if (!pid) return;
 
@@ -5633,6 +5631,7 @@ btnNewChat?.addEventListener("click", (e) => {
     // PJの展開状態（activeProjectId）は変更しない
     state.context = { type: "global" };
 
+    clearPendingAttachments();
     createThread();
   });
 
