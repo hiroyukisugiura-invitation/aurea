@@ -1841,7 +1841,8 @@ app.post("/chat", async (req, res) => {
         lower.endsWith(".htm");
 
       // PDF: upload -> file_id -> input_file
-      if (type === "file" && isPdf && data) {
+      // client側が type:"pdf" を送るため、file/pdf 両方を許可
+      if ((type === "file" || type === "pdf") && isPdf && data) {
         const fid = await uploadOpenAIFile({
           base64: data,
           filename: name || "file.pdf",
@@ -1935,7 +1936,7 @@ app.post("/chat", async (req, res) => {
       }
 
       // other / fallback (metadata + reason)
-      if (type === "file" || type === "image") {
+      if (type === "file" || type === "image" || type === "pdf") {
         const reason = fallback ? `\nReason: ${fallback}` : (!data ? `\nReason: no_data` : "");
         userParts.push({
           type: "input_text",
