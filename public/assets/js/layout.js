@@ -2518,9 +2518,13 @@ const closeSettings = () => {
 
       try {
         // image (ANALYSIS MUST USE ORIGINAL FILE BYTES)
-        if (route === "image" && a?.file && size > 0) {
+        if (route === "image" && a?.file) {
+          const fileSize = Number(a.file.size || 0) || 0;
           const MAX_IMG = 8 * 1024 * 1024; // 8MB
-          if (size <= MAX_IMG) {
+
+          if (fileSize <= 0) {
+            fallback = "image_size_unknown";
+          } else if (fileSize <= MAX_IMG) {
             const ab = await a.file.arrayBuffer();
             const b64 = arrayBufferToBase64(ab);
             if (b64) {
@@ -4683,6 +4687,26 @@ const closeSettings = () => {
 
     // ===== build attachment payload once (shared) =====
     const attachmentPayload = await buildAttachmentsPayload(rawAttachments);
+
+    // ===== guard: image must include base64 data (otherwise stop before calling API) =====
+    const badImg = Array.isArray(attachmentPayload) && attachmentPayload.some((x) => {
+      if (!x) return false;
+      if (String(x.route || "") !== "image") return false;
+      const d = String(x.data || "").trim();
+      return !d;
+    });
+
+    if (badImg) {
+      updateMessage(m.id, ((state.settings?.language || "ja") === "en")
+        ? "Image could not be read. Please re-attach the image and send again."
+        : "画像を読み取れませんでした。画像を再添付して送信してください。"
+      );
+      renderChat();
+      setStreaming(false);
+      unlockAndClearAttachments();
+      renderSidebar();
+      return;
+    }
 
     // ===== Sora image generation (front complete) =====
     // NOTE: generation is allowed only when NO image attachments (GPT-like: attached images mean "analyze")
