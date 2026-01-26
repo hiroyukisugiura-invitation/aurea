@@ -94,24 +94,9 @@ const ensureAiActivityRoot = () => {
 };
 
 const showAiActivity = (name) => {
-  const root = ensureAiActivityRoot();
-
-  const pill = document.createElement("div");
-  pill.className = "ai-pill";
-  pill.textContent = name;
-
-  root.appendChild(pill);
-
-  // fade in
-  requestAnimationFrame(() => pill.classList.add("show"));
-
-  // fade out
-  setTimeout(() => {
-    pill.classList.remove("show");
-    setTimeout(() => {
-      try { root.removeChild(pill); } catch {}
-    }, 260);
-  }, 1200);
+  // GPT完全互換UI：AIアクティビティは表示しない
+  void name;
+  return;
 };
 
 /* ================= streaming meteor label (GPT-like) ================= */
@@ -292,48 +277,10 @@ const noteAiBecameRunning = (name) => {
 };
 
 const setAiRunIndicator = ({ phase, statuses }) => {
-  aiRunLastStatuses = statuses || {};
-
-  const el = ensureAiRunIndicator();
-  if (!el) return;
-
-  const l1 = el.querySelector(".ai-run__l1");
-  const l2 = el.querySelector(".ai-run__l2");
-  const list = el.querySelector(".ai-run__list");
-
-  const s = statuses || {};
-
-  // active 判定：queued/running が1つでもあれば表示（done/skipだけになったら非表示）
-  const anyActive = Object.keys(s).some(k => (s[k] === "queued" || s[k] === "running"));
-  const anyRunning = Object.keys(s).some(k => s[k] === "running");
-  const gptRunning = (s.GPT === "running");
-
-  // 1) 上段2行（表示しない：解析中は別UIで出す）
-  if (l1) l1.textContent = "";
-  if (l2) l2.textContent = "";
-
-  // 2) 稼働AI名（running優先 / 0件なら queued を表示）
-  const running = aiRunOrder.filter(n => s[n] === "running");
-
-  // 初回（order未確定）でも表示できるようフォールバック
-  if (anyActive && !running.length) {
-    const fallbackRunning = Object.keys(s).filter(k => s[k] === "running");
-    for (const k of fallbackRunning) noteAiBecameRunning(k);
-  }
-
-  const running2 = aiRunOrder.filter(n => s[n] === "running");
-
-  const queuedList = Object.keys(s).filter(k => s[k] === "queued" && k !== "GPT");
-  const showList = (running2.length ? running2 : queuedList);
-
-  if (list) {
-    const max = 3;
-    const items = showList.slice(0, max).map(n => `<div class="ai-run__ai"><span class="ai-run__ai-txt">${escHtml(n)}</span></div>`);
-    list.innerHTML = items.join("");
-  }
-
-  // 3) 表示ON/OFF（activeがある時だけ）
-  el.classList.toggle("on", anyActive);
+  // GPT完全互換UI：AI実行インジケータは表示しない
+  void phase;
+  void statuses;
+  return;
 };
 
 const clearAiRunIndicator = () => {
@@ -1147,10 +1094,11 @@ const closeSettings = () => {
     if (aiStackOverlay) aiStackOverlay.style.display = "none";
   };
 
-  btnOpenAiStackPopup?.addEventListener("click", (e) => {
-    e.preventDefault();
-    openAiStackPopup();
-  });
+btnOpenAiStackPopup?.addEventListener("click", (e) => {
+  // GPT完全互換UI：AI Stackは無効
+  e.preventDefault();
+  return;
+});
 
   btnCloseAiStackPopup?.addEventListener("click", (e) => {
     e.preventDefault();
@@ -3827,9 +3775,7 @@ const closeSettings = () => {
         `;
         actions.appendChild(act);
 
-        const showReportsIcon =
-          (state.settings?.showAiReports !== false)
-          && !!(m?.meta && typeof m.meta === "object" && String(m.meta.reportsRaw || "").trim());
+        const showReportsIcon = false;
 
         if (showReportsIcon) {
           const rep = document.createElement("div");
