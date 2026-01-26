@@ -2150,22 +2150,35 @@ app.post("/chat", async (req, res) => {
       gptParts.unshift({ type: "input_text", text: mergedText });
     }
 
-    const gptOut = await callOpenAIText({
+    // ===== Final Answer Integration (GPT-like) =====
+    // Repoの内容をGPTが統合した「1つの最終回答」として返す
+
+    const reportsForIntegration = Object.keys(map)
+      .filter(k => k && k !== "GPT")
+      .map(k => `【${k} analysis】\n${String(map[k] || "").trim()}`)
+      .join("\n\n");
+
+    const integratedPrompt = reportsForIntegration
+      ? `${basePrompt}\n\n---\n\n以下は他AIの分析結果です。これらを統合して、ユーザー向けの最終回答を作成してください。\n\n${reportsForIntegration}`
+      : basePrompt;
+
+    const finalOut = await callOpenAIText({
       system: gptSystem,
       user: prompt,
-      userParts: gptParts,
+      userParts: [
+        { type: "input_text", text: integratedPrompt },
+        ...gptParts.filter(p => p.type !== "input_text")
+      ],
       model: "gpt-4o"
     });
-
-    if (gptOut) map.GPT = gptOut;
 
     res.json({
       ok: true,
 
-      // ===== GPT UI compatibility =====
-      // page-chat.js が拾えるように text を直下に出す
-      text: map.GPT || "",
+      // トークに出るのは「統合済み最終回答」のみ
+      text: finalOut || map.GPT || "",
 
+      // Repoはログ用途として保持
       result: map,
       debug: DEBUG
         ? {
