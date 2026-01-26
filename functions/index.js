@@ -1741,9 +1741,8 @@ app.post("/chat", async (req, res) => {
     }
 
     // ===== Sora image generation (v1) =====
-    // 画像生成要求は、画像添付が無い時だけ image を返す
-    // 画像生成：テキストで明示的に要求された場合のみ
-    if (!hasImageAttachment && isImageGenerationRequest(prompt)) {
+    // GPT互換モードでは画像生成ルートに入らない（ChatGPT互換：単一テキスト応答のみ）
+    if (!GPT_COMPAT_MODE && !hasImageAttachment && isImageGenerationRequest(prompt)) {
       const img = await runSoraImage({ prompt });
 
       if (!img || !img.url) {
@@ -1777,8 +1776,8 @@ app.post("/chat", async (req, res) => {
     // Multi-AI orchestration:
     // - runMultiAi: 6大AIは並走（ログ用）
     // - integrateMultiAi: GPT最終文に統合するのは「画像なし」の時だけ（画像時はGPT単独）
-    const runMultiAi = !!MULTI_AI_ENABLED;
-    const integrateMultiAi = (!!MULTI_AI_ENABLED && !hasImageAttachment);
+    const runMultiAi = (!GPT_COMPAT_MODE && !!MULTI_AI_ENABLED);
+    const integrateMultiAi = (!GPT_COMPAT_MODE && !!MULTI_AI_ENABLED && !hasImageAttachment);
 
     const names = runMultiAi
       ? ["Gemini", "Claude", "Perplexity", "Mistral", "Sora"]
@@ -2281,6 +2280,14 @@ Produce only the final answer intended for the user.
       }
 
       map.GPT = finalText;
+    }
+
+    if (GPT_COMPAT_MODE) {
+      res.json({
+        ok: true,
+        text: finalText
+      });
+      return;
     }
 
     res.json({
