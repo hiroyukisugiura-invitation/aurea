@@ -18,11 +18,6 @@
 
   console.log("[page-chat] init ok");
 
-  // layout.js が動作している場合は page-chat.js を無効化（競合防止）
-  if (window.AUREA_LAYOUT_BUILD) {
-    console.log("[page-chat] layout.js detected; page-chat disabled");
-    return;
-  }
     // ===== UI append helpers（最低限） =====
   const esc = (s) =>
     String(s ?? "")
