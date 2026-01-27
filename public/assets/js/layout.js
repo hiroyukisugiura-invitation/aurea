@@ -5035,6 +5035,15 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
           if (e === "delta") {
             const d = String(data || "");
             if (!d) return;
+
+            // GPT同等：解析→回答生成へ表示を切替
+            try {
+              if (String(window.__AUREA_STREAMING_LABEL_MODE__ || "analyzing") !== "generating") {
+                setStreamingLabelMode("generating");
+                startStreamProgressPill();
+              }
+            } catch {}
+
             streamed += d;
             updateMessage(m.id, streamed);
             renderChat();
@@ -5046,10 +5055,14 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
             streamDone = true;
 
             updateMessage(m.id, full);
-            renderChat();
 
+            // 終了処理を先に（行左の丸＝streaming状態を確実に消す）
+            try { window.__AUREA_STREAMING_MID__ = ""; } catch {}
+            try { clearAiRunIndicator(); } catch {}
             setStreaming(false);
+
             unlockAndClearAttachments();
+            renderChat();
             renderSidebar();
             return;
           }
@@ -5057,10 +5070,14 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
           if (e === "error") {
             const msg = String(data || "").trim() || "stream_failed";
             updateMessage(m.id, msg);
-            renderChat();
 
+            // 終了処理を先に（残留ゼロ）
+            try { window.__AUREA_STREAMING_MID__ = ""; } catch {}
+            try { clearAiRunIndicator(); } catch {}
             setStreaming(false);
+
             unlockAndClearAttachments();
+            renderChat();
             renderSidebar();
             return;
           }
