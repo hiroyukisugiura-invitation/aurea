@@ -190,6 +190,15 @@ const ensureAiMeteorFx = () => {
       100% { transform: translateX(96px); opacity: 0; }
     }
 
+    /* 行左の丸（インジケータ）は role に関係なく消す（ChatGPT同等） */
+    .msg::before,
+    .msg::after,
+    .bubble::before,
+    .bubble::after{
+      display:none !important;
+      content:none !important;
+    }
+
     /* assistant msg内の「丸」系は常時消す（ゲージ表示に一本化） */
     .msg.assistant::before,
     .msg.assistant::after,
@@ -202,18 +211,12 @@ const ensureAiMeteorFx = () => {
       content:none !important;
     }
 
-    /* ::before以外で丸が出ているケースもまとめて消す（UI乱立防止）
-       - bubbleの疑似要素(::before/::after) は状態に依存せず常時OFF（残留復活を根絶）
-       - 既存avatar系(.avatar/.dot)
-       - 想定外の「丸専用」要素（.msg-icon / .assistant-icon / .circle）も保険で潰す
-    */
+    /* 想定外の丸要素も保険で潰す */
     .msg.assistant .dot,
     .msg.assistant .avatar,
     .msg.assistant .msg-icon,
     .msg.assistant .assistant-icon,
-    .msg.assistant .circle,
-    .msg.assistant .bubble::before,
-    .msg.assistant .bubble::after{
+    .msg.assistant .circle{
       display:none !important;
       content:none !important;
     }
