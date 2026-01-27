@@ -220,24 +220,19 @@ const ensureAiMeteorFx = () => {
       content:none !important;
     }
 
-    /* assistant msg内の「丸」系は常時消す（ゲージ表示に一本化） */
-    .msg.assistant::before,
-    .msg.assistant::after,
-    .msg.assistant .avatar,
-    .msg.assistant .dot,
-    .msg.assistant .circle,
-    .msg.assistant .msg-icon,
-    .msg.assistant .assistant-icon{
+    /* 画面に出てくる「丸」系DOMを role 問わず潰す（スクショ2対策） */
+    .msg .avatar,
+    .msg .dot,
+    .msg .circle,
+    .msg .msg-icon,
+    .msg .assistant-icon{
       display:none !important;
       content:none !important;
     }
 
-    /* 想定外の丸要素も保険で潰す */
-    .msg.assistant .dot,
-    .msg.assistant .avatar,
-    .msg.assistant .msg-icon,
-    .msg.assistant .assistant-icon,
-    .msg.assistant .circle{
+    /* assistant msg内の「丸」系は常時消す（保険） */
+    .msg.assistant::before,
+    .msg.assistant::after{
       display:none !important;
       content:none !important;
     }
@@ -282,6 +277,16 @@ const ensureAiMeteorFx = () => {
 
     .msg.assistant .aurea-streammark[hidden]{
       display:none !important;
+    }
+
+    /* 画像/添付プレビュー枠を消す（スクショ4対策：UI側の枠だけ） */
+    .aurea-attach-chip img,
+    .msg img,
+    .ai-image-card img{
+      border:0 !important;
+      box-shadow:none !important;
+      background:transparent !important;
+      outline:0 !important;
     }
   `.trim();
 
@@ -2040,7 +2045,7 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
     if (bodyEl) {
       const isImg = String(att?.kind || "") === "image";
       const preview = isImg && att?.dataUrl
-        ? `<img src="${escHtml(att.dataUrl)}" alt="image" style="max-width:100%;border-radius:14px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.03);" />`
+        ? `<img src="${escHtml(att.dataUrl)}" alt="image" style="max-width:100%;border-radius:14px;border:0;background:transparent;box-shadow:none;" />`
         : `<div style="opacity:.72;">${escHtml(isEn ? "Preview not available." : "プレビューは利用できません。")}</div>`;
 
       bodyEl.innerHTML = `
@@ -2178,7 +2183,10 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
           text-overflow:ellipsis;
           max-width:300px;
           letter-spacing:-.1px;
-          opacity:.86;
+          opacity:.92;
+          text-shadow:
+            0 0 10px rgba(159,180,255,.22),
+            0 0 22px rgba(159,180,255,.14);
         }
 
         #aureaStreamProgressPill .aurea-streamtxt::after{
@@ -2186,7 +2194,7 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
           position:absolute;
           top:50%;
           left:-120%;
-          width:88px;
+          width:92px;
           height:2px;
           transform:translateY(-50%);
           background:linear-gradient(90deg,
@@ -2212,12 +2220,12 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
 
       display:none;
       align-items:center;
-      padding:6px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(20,21,22,.72);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      padding:0;
+      border-radius:0;
+      border:0;
+      background:transparent;
+      backdrop-filter:none;
+      -webkit-backdrop-filter:none;
       color:rgba(255,255,255,.92);
       font-size:12px;
       font-family: -apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Hiragino Sans','Noto Sans JP',sans-serif;
@@ -5133,10 +5141,29 @@ if (e === "start") {
           }
 
           if (e === "done") {
-            const full = String(data || "").trim() || streamed.trim();
+            const full0 = String(data || "").trim() || streamed.trim();
             streamDone = true;
 
-            updateMessage(m.id, full);
+            // Reports: ブロックを meta に退避（Repoアイコン表示用）
+            try {
+              const parsed = parseReportsBlocks(full0);
+              const head = String(parsed?.head || "").trim();
+              const blocks = Array.isArray(parsed?.blocks) ? parsed.blocks : [];
+
+              if (blocks.length) {
+                const lines = [];
+                lines.push("Reports:");
+                for (const b of blocks) {
+                  lines.push(`--- ${String(b.name || "").trim()} ---`);
+                  lines.push(String(b.body || "").trim());
+                }
+                setMessageMeta(m.id, { reportsRaw: lines.join("\n").trim() });
+              }
+
+              updateMessage(m.id, head || full0);
+            } catch {
+              updateMessage(m.id, full0);
+            }
 
             // 先に終了（残留ゼロ）
             try { window.__AUREA_STREAMING_MID__ = ""; } catch {}
@@ -5905,13 +5932,15 @@ linkLogout?.addEventListener("click", async (e) => {
     });
 
 askInput.addEventListener("keydown", (e) => {
-  const mode = localStorage.getItem("aurea_send_mode") || "cmdEnter";
+  const mode = (state?.settings?.sendMode || localStorage.getItem("aurea_send_mode") || "cmdEnter");
   const isEnter = (e.key === "Enter");
   const hasAttachments = pendingAttachments.length > 0;
   const hasText = askInput.value.trim().length > 0;
 
+  if (!isEnter) return;
+
   if (mode === "cmdEnter") {
-    if (isEnter && (e.metaKey || e.ctrlKey)) {
+    if (e.metaKey || e.ctrlKey) {
       if (!hasText && !hasAttachments) return;
       e.preventDefault();
       send();
@@ -5920,7 +5949,7 @@ askInput.addEventListener("keydown", (e) => {
   }
 
   if (mode === "enter") {
-    if (isEnter && !e.shiftKey) {
+    if (!e.shiftKey) {
       if (!hasText && !hasAttachments) return;
       e.preventDefault();
       send();
