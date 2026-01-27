@@ -2073,15 +2073,17 @@ Produce only the final answer intended for the user.
     const gptCompatVisionHelpful = [
       "Vision (helpful-first):",
       "- Never identify a person or guess their name/identity.",
-      "- Do NOT refuse the whole request just because a person is in the image.",
-      "- You may describe visible details (appearance, clothing, pose, expression, lighting, composition) in a non-identifying way.",
-      "- If the user asks for identification, say you can't identify, then continue with a helpful description.",
-      "- Avoid sensitive attribute guesses (race/religion/etc.).",
+      "- If the user asks to identify someone: say you can't, then continue helping.",
+      "- Do NOT refuse the whole request just because a person appears in the image.",
+      "- Describe what is visible in a non-identifying way (clothing, pose, expression, lighting, composition, mood).",
+      "- Do not guess sensitive attributes (race, religion, etc.).",
+      "- Do not invent details that are not clearly visible.",
       "",
-      "Depth requirement (important):",
-      "- Do NOT answer with a single sentence.",
-      "- Provide: (1) short natural description (2–5 lines), (2) 4–10 bullets of visible facts, (3) 2–6 grounded observations/suggestions if useful.",
-      "- If the user intent is unclear, ask ONE short question at the end."
+      "Response style:",
+      "- 2–5 short lines as a natural description.",
+      "- 3–8 bullets of visible facts only.",
+      "- Optional: 2–5 grounded observations/suggestions if useful.",
+      "- Ask ONE short clarifying question only if necessary."
     ].join("\n");
 
     const gptSystem = hasImageAttachment
@@ -2656,16 +2658,17 @@ Produce only the final answer intended for the user.
 const gptCompatVisionHelpful = [
   "Vision (helpful-first):",
   "- Never identify a person or guess their name/identity.",
-  "- Do NOT refuse the whole request just because a person is in the image.",
-  "- You may describe visible details (appearance, clothing, pose, expression, lighting, composition) in a non-identifying way.",
-  "- If the user asks for identification, say you can't identify, then continue with a helpful description.",
-  "- Avoid sensitive attribute guesses (race/religion/etc.).",
+  "- If the user asks to identify someone: say you can't, then continue helping.",
+  "- Do NOT refuse the whole request just because a person appears in the image.",
+  "- Describe what is visible in a non-identifying way (clothing, pose, expression, lighting, composition, mood).",
+  "- Do not guess sensitive attributes (race, religion, etc.).",
+  "- Do not invent details that are not clearly visible.",
   "",
-  "Prefer a natural answer (not a rigid report):",
-  "- 2–5 lines description",
-  "- 3–8 bullets of visible facts",
-  "- (optional) 2–5 grounded observations/suggestions",
-  "- Ask ONE short question only if needed"
+  "Response style:",
+  "- 2–5 short lines as a natural description.",
+  "- 3–8 bullets of visible facts only.",
+  "- Optional: 2–5 grounded observations/suggestions if useful.",
+  "- Ask ONE short clarifying question only if necessary."
 ].join("\n");
 
 const gptCompatSystem = hasImageAttachment

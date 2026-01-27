@@ -203,24 +203,17 @@ const ensureAiMeteorFx = () => {
     }
 
     /* ::before以外で丸が出ているケースもまとめて消す（UI乱立防止）
-       - bubbleの疑似要素(::before/::after)
+       - bubbleの疑似要素(::before/::after) は状態に依存せず常時OFF（残留復活を根絶）
        - 既存avatar系(.avatar/.dot)
        - 想定外の「丸専用」要素（.msg-icon / .assistant-icon / .circle）も保険で潰す
     */
-    .msg.assistant.is-streaming .dot,
-    .msg.assistant.has-streammark .dot,
-    .msg.assistant.is-streaming .avatar,
-    .msg.assistant.has-streammark .avatar,
-    .msg.assistant.is-streaming .msg-icon,
-    .msg.assistant.has-streammark .msg-icon,
-    .msg.assistant.is-streaming .assistant-icon,
-    .msg.assistant.has-streammark .assistant-icon,
-    .msg.assistant.is-streaming .circle,
-    .msg.assistant.has-streammark .circle,
-    .msg.assistant.is-streaming .bubble::before,
-    .msg.assistant.has-streammark .bubble::before,
-    .msg.assistant.is-streaming .bubble::after,
-    .msg.assistant.has-streammark .bubble::after{
+    .msg.assistant .dot,
+    .msg.assistant .avatar,
+    .msg.assistant .msg-icon,
+    .msg.assistant .assistant-icon,
+    .msg.assistant .circle,
+    .msg.assistant .bubble::before,
+    .msg.assistant .bubble::after{
       display:none !important;
       content:none !important;
     }
@@ -1851,10 +1844,10 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
       const imgR = isSingle ? 12 : 10;
 
       const thumb = (isImg && a.dataUrl)
-        ? `<img src="${escHtml(a.dataUrl)}" alt="" style="width:${imgW}px;height:${imgH}px;border-radius:${imgR}px;object-fit:cover;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.03);" />`
+        ? `<img src="${escHtml(a.dataUrl)}" alt="" style="width:${imgW}px;height:${imgH}px;border-radius:${imgR}px;object-fit:cover;border:0;background:transparent;" />`
         : isPdf
-          ? `<span aria-hidden="true" style="width:${isSingle ? 72 : 44}px;height:${isSingle ? 44 : 44}px;border-radius:${imgR}px;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.12);background:rgba(255,60,60,.16);color:rgba(255,255,255,.92);font-size:10px;font-weight:700;letter-spacing:.04em;">PDF</span>`
-          : `<span aria-hidden="true" style="width:${imgW}px;height:${imgH}px;border-radius:${imgR}px;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.03);opacity:.85;">📄</span>`;
+          ? `<span aria-hidden="true" style="width:${isSingle ? 72 : 44}px;height:${isSingle ? 44 : 44}px;border-radius:${imgR}px;display:inline-flex;align-items:center;justify-content:center;border:0;background:transparent;color:rgba(255,255,255,.92);font-size:10px;font-weight:700;letter-spacing:.04em;">PDF</span>`
+          : `<span aria-hidden="true" style="width:${imgW}px;height:${imgH}px;border-radius:${imgR}px;display:inline-flex;align-items:center;justify-content:center;border:0;background:transparent;opacity:.85;">📄</span>`;
 
       // GPT-like: preview only (no filename / no meta)
       chip.innerHTML = `
@@ -3443,12 +3436,12 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
               const isText = (route === "text");
 
               const thumb = (isImg && a?.dataUrl && String(a.dataUrl).startsWith("data:"))
-                ? `<img src="${escHtml(String(a.dataUrl))}" alt="" style="width:150px;height:96px;border-radius:14px;object-fit:cover;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.03);" />`
+                ? `<img src="${escHtml(String(a.dataUrl))}" alt="" style="width:150px;height:96px;border-radius:14px;object-fit:cover;border:0;background:transparent;" />`
                 : isPdf
-                  ? `<div style="width:150px;height:96px;border-radius:14px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.12);background:rgba(255,60,60,.16);color:rgba(255,255,255,.92);font-size:11px;font-weight:800;letter-spacing:.06em;">PDF</div>`
+                  ? `<div style="width:150px;height:96px;border-radius:14px;display:flex;align-items:center;justify-content:center;border:0;background:transparent;color:rgba(255,255,255,.92);font-size:11px;font-weight:800;letter-spacing:.06em;">PDF</div>`
                   : isText
-                    ? `<div style="width:150px;height:96px;border-radius:14px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);color:rgba(255,255,255,.86);font-size:12px;font-weight:700;">TXT</div>`
-                    : `<div style="width:150px;height:96px;border-radius:14px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.03);opacity:.9;">📄</div>`;
+                    ? `<div style="width:150px;height:96px;border-radius:14px;display:flex;align-items:center;justify-content:center;border:0;background:transparent;color:rgba(255,255,255,.86);font-size:12px;font-weight:700;">TXT</div>`
+                    : `<div style="width:150px;height:96px;border-radius:14px;display:flex;align-items:center;justify-content:center;border:0;background:transparent;opacity:.9;">📄</div>`;
 
               return `<div style="flex:0 0 auto;">${thumb}</div>`;
             }).join("");
@@ -5038,9 +5031,14 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
           if (e === "start") {
             updateMessage(m.id, "");
 
-            // Ask上の「解析中...」を開始（GPT準拠）
+            // 行単位streaming状態は使わない（丸残留の根を潰す）
+            try { window.__AUREA_STREAMING_MID__ = ""; } catch {}
+
+            // Ask上shimmerのみで表現
             try { setStreamingLabelMode("analyzing"); } catch {}
             try { startStreamProgressPill(); } catch {}
+
+            // setStreaming(true/false) はボタン制御寄せ（表示はshimmerが担当）
             try { setStreaming(true); } catch {}
 
             renderChat();
