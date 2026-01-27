@@ -1974,7 +1974,7 @@ app.post("/chat", async (req, res) => {
             : "image/png";
 
         const url = `data:${inferred};base64,${data}`;
-        userParts.push({ type: "input_image", image_url: { url } });
+        userParts.push({ type: "input_image", image_url: url });
         continue;
       }
 
