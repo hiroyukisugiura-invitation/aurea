@@ -8001,3 +8001,20 @@ if (authResult === "ok") {
   })();
 
 })();
+
+// ===== AUREA: hide askbar pending indicator while streaming =====
+(() => {
+  const style = document.createElement("style");
+  style.textContent = `
+    /* 解析中は Askバー周辺の疑似要素（赤丸）を完全に無効化 */
+    body.aurea-streaming .ask::before,
+    body.aurea-streaming .ask::after,
+    body.aurea-streaming .ask-wrap::before,
+    body.aurea-streaming .ask-wrap::after{
+      display: none !important;
+      content: none !important;
+      opacity: 0 !important;
+    }
+  `;
+  document.head.appendChild(style);
+})();
