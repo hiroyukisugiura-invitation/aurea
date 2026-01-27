@@ -2466,7 +2466,8 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
 
       try {
         // image (ANALYSIS MUST USE ORIGINAL FILE BYTES)
-        // - size が取れない/大きすぎる場合でも「縮小サムネ(dataUrl)」を送って解析可能にする
+        // - data が空になる事故を防ぐため、fileToDataUrl(FileReader) を正にして base64 を作る
+        // - 失敗時は a.dataUrl(thumb) にフォールバック
         if (route === "image") {
           const MAX_IMG = 8 * 1024 * 1024; // 8MB
 
@@ -2485,36 +2486,39 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
             }
           };
 
-          if (a?.file) {
-            let ab = null;
-            try { ab = await a.file.arrayBuffer(); } catch { ab = null; }
+          const takeBase64FromDataUrl = (url) => {
+            try {
+              const s = String(url || "");
+              const idx = s.indexOf("base64,");
+              if (idx < 0) return "";
+              return s.slice(idx + 7).trim();
+            } catch {
+              return "";
+            }
+          };
 
-            const fileSize =
-              (ab && typeof ab.byteLength === "number" && ab.byteLength > 0)
-                ? ab.byteLength
-                : (Number(a.file.size || 0) || 0);
+          const fileSize = Number(a?.file?.size || 0) || 0;
 
-            // 1) 本体が8MB以内なら本体を送る
-            if (ab && fileSize > 0 && fileSize <= MAX_IMG) {
-              const b64 = arrayBufferToBase64(ab);
-              if (b64) {
-                data = b64;
-              } else {
-                if (!tryUseDataUrl()) fallback = "image_encode_failed";
-              }
+          // 1) File があり、8MB以内なら fileToDataUrl で base64 化（確実ルート）
+          if (a?.file && fileSize > 0 && fileSize <= MAX_IMG) {
+            const url = await fileToDataUrl(a.file);
+            const b64 = takeBase64FromDataUrl(url);
+            if (b64) {
+              data = b64;
             } else {
-              // 2) 8MB超 or size不明 → サムネへフォールバック
-              if (!tryUseDataUrl()) {
-                fallback = (fileSize > MAX_IMG) ? "image_too_large" : "image_size_unknown";
-              }
+              // FileReader が空の場合に備えて thumb にフォールバック
+              if (!tryUseDataUrl()) fallback = "image_encode_failed";
             }
           } else {
-            // file が無い（履歴由来など）→ サムネがあれば送る
-            if (!tryUseDataUrl()) fallback = "image_file_missing";
+            // 2) 8MB超 / size不明 / file無し：thumb にフォールバック
+            if (!tryUseDataUrl()) {
+              if (!a?.file) fallback = "image_file_missing";
+              else fallback = (fileSize > MAX_IMG) ? "image_too_large" : "image_size_unknown";
+            }
           }
 
           // === FINAL FALLBACK (GPT互換必須) ===
-          // data を作る処理が全部終わった後、それでも data が無い場合だけ送信を止める
+          // data が無ければ送信しない（サーバ側で再添付誘導へ）
           if (!data) {
             console.warn("[AUREA] image has no data, abort sending attachment");
             continue;
