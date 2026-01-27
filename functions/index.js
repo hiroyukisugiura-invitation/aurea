@@ -2078,11 +2078,10 @@ Produce only the final answer intended for the user.
       "- If the user asks for identification, say you can't identify, then continue with a helpful description.",
       "- Avoid sensitive attribute guesses (race/religion/etc.).",
       "",
-      "Prefer a natural answer (not a rigid report):",
-      "- 2–5 lines description",
-      "- 3–8 bullets of visible facts",
-      "- (optional) 2–5 grounded observations/suggestions",
-      "- Ask ONE short question only if needed"
+      "Depth requirement (important):",
+      "- Do NOT answer with a single sentence.",
+      "- Provide: (1) short natural description (2–5 lines), (2) 4–10 bullets of visible facts, (3) 2–6 grounded observations/suggestions if useful.",
+      "- If the user intent is unclear, ask ONE short question at the end."
     ].join("\n");
 
     const gptSystem = hasImageAttachment
