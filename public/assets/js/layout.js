@@ -71,6 +71,81 @@
     return null;
   };
 
+  // ===== POST SSE reader (ChatGPT-like streaming) =====
+  // Server: /api/chat/stream returns text/event-stream
+  const apiFetchSse = async ({ path, payload, signal, onEvent }) => {
+    const url = `/api${String(path || "").startsWith("/") ? String(path) : `/${String(path || "")}`}`;
+
+    const r = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload || {}),
+      signal
+    });
+
+    const ct = String(r?.headers?.get("content-type") || "").toLowerCase();
+    const isSse = ct.includes("text/event-stream");
+
+    if (!r || !r.ok || !r.body || !isSse) {
+      return { ok: false, status: r ? r.status : 0, isSse };
+    }
+
+    const reader = r.body.getReader();
+    const dec = new TextDecoder("utf-8");
+    let buf = "";
+
+    let curEvent = "";
+    let curData = "";
+
+    const flush = () => {
+      const ev = String(curEvent || "message").trim() || "message";
+      const data = String(curData || "");
+      curEvent = "";
+      curData = "";
+      try { if (typeof onEvent === "function") onEvent(ev, data); } catch {}
+    };
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+
+      buf += dec.decode(value, { stream: true });
+
+      // SSE frames separated by \n\n
+      while (true) {
+        const idx = buf.indexOf("\n\n");
+        if (idx < 0) break;
+
+        const frame = buf.slice(0, idx);
+        buf = buf.slice(idx + 2);
+
+        const lines = frame.split("\n");
+        for (const ln of lines) {
+          const line = String(ln || "");
+
+          if (line.startsWith("event:")) {
+            curEvent = line.slice(6).trim();
+            continue;
+          }
+
+          if (line.startsWith("data:")) {
+            const d = line.slice(5);
+            // data may be multi-line; keep as-is (no trim)
+            curData += (curData ? "\n" : "") + d;
+            continue;
+          }
+        }
+
+        flush();
+      }
+    }
+
+    // flush tail (best-effort)
+    if (curEvent || curData) flush();
+
+    return { ok: true, status: r.status, isSse: true };
+  };
+
   const detectApiPrefix = async () => {
     // 本番は /api 固定（ping 成功だけ確認）
     try {
@@ -4887,7 +4962,7 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
 
     const targets = MULTI_AI.filter((a) => a.name !== "GPT" && (a.name !== "Sora" || usedSora));
 
-    // ===== /api/chat (Unified Request Schema v1) =====
+    // ===== /api/chat/stream (SSE) -> fallback /api/chat (JSON) =====
     let apiMap = null;
     try {
       const payload = {
@@ -4917,15 +4992,84 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
         }
       };
 
+      // ---- STREAM FIRST (POST SSE) ----
       try { apiChatAbortCtrl?.abort(); } catch {}
       apiChatAbortCtrl = new AbortController();
 
+      let streamed = "";
+      let streamDone = false;
+
+      const startOk = await apiFetchSse({
+        path: "/chat/stream",
+        payload,
+        signal: apiChatAbortCtrl.signal,
+        onEvent: (ev, data) => {
+          if (multiAiAbort || streamAbort || runId !== multiAiRunId) return;
+
+          const e = String(ev || "").trim();
+
+          if (e === "start") {
+            updateMessage(m.id, "");
+            renderChat();
+            return;
+          }
+
+          if (e === "delta") {
+            const d = String(data || "");
+            if (!d) return;
+            streamed += d;
+            updateMessage(m.id, streamed);
+            renderChat();
+            return;
+          }
+
+          if (e === "done") {
+            const full = String(data || "").trim() || streamed.trim();
+            streamDone = true;
+
+            updateMessage(m.id, full);
+            renderChat();
+
+            setStreaming(false);
+            unlockAndClearAttachments();
+            renderSidebar();
+            return;
+          }
+
+          if (e === "error") {
+            const msg = String(data || "").trim() || "stream_failed";
+            updateMessage(m.id, msg);
+            renderChat();
+
+            setStreaming(false);
+            unlockAndClearAttachments();
+            renderSidebar();
+            return;
+          }
+        }
+      });
+
+      // stream 成功（doneイベントで終了）ならここで終了
+      if (startOk && startOk.ok) {
+        // done が来ないまま終わった場合もあるので、最後に確定
+        if (!streamDone && streamed.trim()) {
+          updateMessage(m.id, streamed.trim());
+          renderChat();
+          setStreaming(false);
+          unlockAndClearAttachments();
+          renderSidebar();
+        }
+        return;
+      }
+
+      // ---- FALLBACK JSON ----
       const r = await apiFetchJson("/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
         signal: apiChatAbortCtrl.signal
       });
+
       // ===== non-stream final answer (required) =====
       if (r && r.result && typeof r.result.GPT === "string") {
         updateMessage(m.id, r.result.GPT);
@@ -4938,19 +5082,12 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
 
       if (!r) throw new Error("api_chat_unreachable");
 
-      // non-ok: do not surface internal error text; show user-safe message
       if (!r.ok) {
-        try { statuses.GPT = "running"; } catch {}
-        try { setAiRunIndicator({ phase: "run", statuses }); } catch {}
-
         const safe = ((state.settings?.language || "ja") === "en")
           ? "I can’t continue this action yet.\n\n- A required connection or configuration is not ready.\n- Please try again later.\n- If this keeps happening, open Settings and check connections."
           : "この操作はまだ続行できない。\n\n- 必要な接続/設定が未完了\n- しばらくして再試行\n- 続く場合は設定で接続状況を確認";
 
         updateMessage(m.id, safe);
-        try { statuses.GPT = "done"; } catch {}
-        try { clearAiRunIndicator(); } catch {}
-        try { window.__AUREA_STREAMING_MID__ = ""; } catch {}
         renderChat();
         setStreaming(false);
         unlockAndClearAttachments();
@@ -4960,39 +5097,11 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
 
       const j = await r.json().catch(() => null);
 
-      // ===== Sora image response (v1) =====
       if (r.ok && j && j.ok && j.image && j.image.url) {
         const url = String(j.image.url || "").trim();
         const p = String(j.image.prompt || userText || "").trim();
-
-        // show activity
-        try { showAiActivity("Sora"); } catch {}
-
-        // save to images library (real image)
-        try {
-          addImageToLibrary({
-            prompt: p,
-            src: url,
-            from: {
-              threadId: getActiveThreadId(),
-              context: state.context
-            }
-          });
-        } catch {}
-
-        // render as special image message
         const imgMsg = `AUREA_IMAGE\n${url}\n${p}`;
         updateMessage(m.id, imgMsg);
-
-        // 生成画像を必ずライブラリへ保存
-        try {
-          addImageToLibrary({
-            prompt: p,
-            src: url,
-            from: { threadId: getActiveThreadId(), context: state.context }
-          });
-        } catch {}
-
         renderChat();
         setStreaming(false);
         unlockAndClearAttachments();
@@ -5001,74 +5110,14 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
       }
 
       if (r.ok && j && j.ok && j.result && typeof j.result === "object") {
-
         apiMap = j.result;
-
-        // server-sync mode: still stream GPT text (GPT-like)
-        if (apiMap && typeof apiMap === "object") {
-          const gpt = String(apiMap.GPT || "").trim();
-
-          const keys = Object.keys(apiMap || {}).filter(k => k && k !== "GPT");
-          const lines = [];
-
-          if (keys.length) {
-            lines.push("Reports:");
-            for (const k of keys) {
-              const v = String(apiMap[k] || "").trim();
-              lines.push(`--- ${k} ---`);
-              lines.push(v);
-            }
-          }
-
-          setMessageMeta(m.id, { reportsRaw: lines.join("\n").trim() });
-
-          // indicator: show generating while GPT streams
-          statuses.GPT = "running";
-          try { noteAiBecameRunning("GPT"); } catch {}
-          try { setAiRunIndicator({ phase: "run", statuses }); } catch {}
-
-          updateMessage(m.id, "");
-          renderChat();
-
-          // stream final text
-          const final = gpt || "";
-          let i = 0;
-          const step = Math.max(1, Math.floor(final.length / 180));
-          streamTimer = setInterval(() => {
-            if (multiAiAbort || streamAbort || runId !== multiAiRunId) {
-              if (streamTimer) { clearInterval(streamTimer); streamTimer = null; }
-              setStreaming(false);
-              return;
-            }
-
-            i += step;
-            const chunk = final.slice(0, i);
-            updateMessage(m.id, chunk);
-            renderChat();
-
-            if (i >= final.length) {
-              clearInterval(streamTimer);
-              streamTimer = null;
-
-              statuses.GPT = "done";
-              try { setAiRunIndicator({ phase: "run", statuses }); } catch {}
-
-              setStreaming(false);
-              try { clearAiRunIndicator(); } catch {}
-              try { window.__AUREA_STREAMING_MID__ = ""; } catch {}
-
-              // 添付解析エフェクト解除＋クリア
-              unlockAndClearAttachments();
-
-              // actions（コピー/Repo）を「完了瞬間」に必ず表示
-              renderChat();
-
-              renderSidebar();
-            }
-          }, 18);
-
-          return;
-        }
+        const gpt = String(apiMap.GPT || "").trim();
+        updateMessage(m.id, gpt);
+        renderChat();
+        setStreaming(false);
+        unlockAndClearAttachments();
+        renderSidebar();
+        return;
       }
 
     } catch (e) {
@@ -5079,10 +5128,6 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
         : "APIエラー：/api/chat が JSON を返していない。\n\n- Network > /api/chat の Response が JSON か確認。\n- HTMLなら Functions に到達していない（rewrite不整合）。";
 
       updateMessage(m.id, msg);
-
-      try { clearAiRunIndicator(); } catch {}
-      try { window.__AUREA_STREAMING_MID__ = ""; } catch {}
-
       renderChat();
       setStreaming(false);
       unlockAndClearAttachments();
