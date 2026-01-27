@@ -1819,15 +1819,14 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
 
       chip.style.cssText = `
         flex:0 0 auto;
-        border-radius:14px;
-        border:1px solid rgba(255,255,255,.12);
-        background:rgba(255,255,255,.06);
+        border:0;
+        background:transparent;
         color:rgba(255,255,255,.92);
         cursor:pointer;
-        padding:${isSingle ? "8px 10px" : "6px 8px"};
+        padding:0;
         display:flex;
         align-items:center;
-        gap:10px;
+        gap:0;
         font-size:12px;
         line-height:1;
         font-family:var(--font);
@@ -5056,7 +5055,7 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
 
             updateMessage(m.id, full);
 
-            // 終了処理を先に（行左の丸＝streaming状態を確実に消す）
+            // ★ 完了を先に確定（丸マーク＝streaming状態を必ず消す）
             try { window.__AUREA_STREAMING_MID__ = ""; } catch {}
             try { clearAiRunIndicator(); } catch {}
             setStreaming(false);
@@ -5071,7 +5070,7 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
             const msg = String(data || "").trim() || "stream_failed";
             updateMessage(m.id, msg);
 
-            // 終了処理を先に（残留ゼロ）
+            // ★ 終了を先に確定（残留ゼロ）
             try { window.__AUREA_STREAMING_MID__ = ""; } catch {}
             try { clearAiRunIndicator(); } catch {}
             setStreaming(false);
