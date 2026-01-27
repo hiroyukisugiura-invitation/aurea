@@ -1868,14 +1868,6 @@ app.post("/chat/stream", async (req, res) => {
       return;
     }
 
-    // GPT互換ストリーム（いまは GPT_COMPAT_MODE の時だけ streaming を有効化）
-    if (!GPT_COMPAT_MODE) {
-      // 互換モード以外は単発で返す（UIは後工程）
-      sendEvent("error", "stream_not_enabled");
-      res.end();
-      return;
-    }
-
     // build user parts (multimodal) — /chat と同等の最小構成（画像/PDF/TXT/CSV）
     const hasImageAttachment = attachments.some((a) => {
       const type = String(a?.type || "").trim();
