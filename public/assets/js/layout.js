@@ -6017,21 +6017,22 @@ askInput.addEventListener("keydown", (e) => {
   });
 
   /* ================= delegate clicks ================= */
-  // Assistant attachment preview
-const btn = e.target.closest(".aurea-assistant-attach");
-if (btn) {
-  e.preventDefault();
-  const mid = String(btn.getAttribute("data-mid") || "");
-  const idx = Number(btn.getAttribute("data-idx"));
-  const th = getThreadByIdInScope(getActiveThreadId());
-  const msg = th?.messages?.find(m => m.id === mid);
-  const att = msg?.meta?.attachments?.[idx];
-  if (att) openAttachModal(att);
-  return;
-}
 
   document.addEventListener("click", async (e) => {
     const t = e.target;
+
+    // Assistant attachment preview
+    const btn = t.closest(".aurea-assistant-attach");
+    if (btn) {
+      e.preventDefault();
+      const mid = String(btn.getAttribute("data-mid") || "");
+      const idx = Number(btn.getAttribute("data-idx"));
+      const th = getThreadByIdInScope(getActiveThreadId());
+      const msg = th?.messages?.find(m => m.id === mid);
+      const att = msg?.meta?.attachments?.[idx];
+      if (att) openAttachModal(att);
+      return;
+    }
 
     /* ===== Apps: SaaS card click → connect (same tab) ===== */
     const saasCard = t.closest(".panel-apps .apps-grid .saas");
@@ -6683,16 +6684,6 @@ if (authResult === "ok") {
   btnAuthCompany?.addEventListener("click", (e) => {
     e.preventDefault();
 
-      // ===== auth startup guard =====
-  (() => {
-    const st = getAuthState();
-    if (!st || !st.loggedIn) {
-      showAuthGate();
-      return;
-    }
-    hideAuthGate();
-  })();
-
     // Company は invite 必須（無ければ遷移させない）
     const inv = getInvite();
     if (!(inv?.token)) {
@@ -6704,6 +6695,16 @@ if (authResult === "ok") {
     window.__AUREA_AUTH_MODE__ = "company";
     startGoogleLogin("company");
   });
+
+    // ===== auth startup guard =====
+  (() => {
+    const st = getAuthState();
+    if (!st || !st.loggedIn) {
+      showAuthGate();
+      return;
+    }
+    hideAuthGate();
+  })();
 
   /* ================= boot ================= */
   if (!state.plan) state.plan = "Free";
