@@ -4636,10 +4636,11 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
     }
 
     // ★ 解析中UIの残留を確実に消す（丸アイコン/流星ラベル/AIインジケータ）
+    // ★ 解析中UIの残留を確実に消す（丸アイコン/流星ラベル/AIインジケータ）
+    // renderChat() はここで呼ばない（丸が残留する原因になる）
     if (!on) {
       try { window.__AUREA_STREAMING_MID__ = ""; } catch {}
       try { clearAiRunIndicator(); } catch {}
-      try { renderChat(); } catch {}
     }
   };
 
@@ -4731,11 +4732,20 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
     const m = appendMessage("assistant", "");
     if (!m) return;
 
-    try { window.__AUREA_STREAMING_MID__ = String(m.id || ""); } catch {}
+    // SSEでは行左の生成中マーク（__AUREA_STREAMING_MID__）を使わない（GPT互換）
+    try { window.__AUREA_STREAMING_MID__ = ""; } catch {}
 
     streamAbort = false;
     multiAiAbort = false;
-    setStreaming(true);
+    // GPT互換：Ask上の「解析中...」だけ開始（行左の丸などは出さない）
+    try { setStreamingLabelMode("analyzing"); } catch {}
+    try { startStreamProgressPill(); } catch {}
+    if (stopBtn) stopBtn.style.display = "";
+    if (sendBtn) {
+      sendBtn.disabled = true;
+      sendBtn.style.opacity = ".45";
+      sendBtn.style.cursor = "not-allowed";
+    }
 
     // ===== Route guard: if image is attached, always ANALYZE (never generate) =====
     const hasImageAttachment = Array.isArray(rawAttachments) && rawAttachments.some((a) => {
@@ -5027,6 +5037,12 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
 
           if (e === "start") {
             updateMessage(m.id, "");
+
+            // Ask上の「解析中...」を開始（GPT準拠）
+            try { setStreamingLabelMode("analyzing"); } catch {}
+            try { startStreamProgressPill(); } catch {}
+            try { setStreaming(true); } catch {}
+
             renderChat();
             return;
           }
@@ -5055,9 +5071,11 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
 
             updateMessage(m.id, full);
 
-            // ★ 完了を先に確定（丸マーク＝streaming状態を必ず消す）
+            // 先に終了（残留ゼロ）
             try { window.__AUREA_STREAMING_MID__ = ""; } catch {}
             try { clearAiRunIndicator(); } catch {}
+            finishStreamProgressPill();
+            finishStreamProgressPill();
             setStreaming(false);
 
             unlockAndClearAttachments();
@@ -5070,7 +5088,7 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
             const msg = String(data || "").trim() || "stream_failed";
             updateMessage(m.id, msg);
 
-            // ★ 終了を先に確定（残留ゼロ）
+            // 先に終了（残留ゼロ）
             try { window.__AUREA_STREAMING_MID__ = ""; } catch {}
             try { clearAiRunIndicator(); } catch {}
             setStreaming(false);
