@@ -2143,6 +2143,50 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
     let el = document.getElementById("aureaStreamProgressPill");
     if (el) return el;
 
+    // shimmer style (one-time)
+    if (!document.getElementById("aureaStreamProgressFx")) {
+      const st = document.createElement("style");
+      st.id = "aureaStreamProgressFx";
+      st.textContent = `
+        @keyframes aureaShimmerSweep {
+          0%   { transform: translateX(-120%); opacity: 0; }
+          12%  { opacity: 1; }
+          100% { transform: translateX(140%); opacity: 0; }
+        }
+
+        #aureaStreamProgressPill .aurea-streamtxt{
+          position:relative;
+          display:inline-block;
+          white-space:nowrap;
+          overflow:hidden;
+          text-overflow:ellipsis;
+          max-width:300px;
+          letter-spacing:-.1px;
+          opacity:.86;
+        }
+
+        #aureaStreamProgressPill .aurea-streamtxt::after{
+          content:"";
+          position:absolute;
+          top:50%;
+          left:-120%;
+          width:88px;
+          height:2px;
+          transform:translateY(-50%);
+          background:linear-gradient(90deg,
+            rgba(255,255,255,0) 0%,
+            rgba(159,180,255,.92) 40%,
+            rgba(255,255,255,0) 100%
+          );
+          filter: blur(.25px);
+          animation:aureaShimmerSweep 1.05s linear infinite;
+          opacity:.95;
+          pointer-events:none;
+        }
+      `.trim();
+      document.head.appendChild(st);
+    }
+
     el = document.createElement("div");
     el.id = "aureaStreamProgressPill";
     el.style.cssText = `
@@ -2152,7 +2196,6 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
 
       display:none;
       align-items:center;
-      gap:10px;
       padding:6px 10px;
       border-radius:999px;
       border:1px solid rgba(255,255,255,.12);
@@ -2163,16 +2206,12 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
       font-size:12px;
       font-family: -apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Hiragino Sans','Noto Sans JP',sans-serif;
       pointer-events:none;
-      max-width:320px;
+      max-width:340px;
       z-index:2;
     `;
 
     el.innerHTML = `
-      <div data-title style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">解析中</div>
-      <div data-pct style="font-variant-numeric:tabular-nums;opacity:.85;min-width:42px;text-align:right;">0%</div>
-      <div style="width:120px;height:6px;border-radius:999px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.10);overflow:hidden;">
-        <div data-bar style="width:0%;height:100%;border-radius:999px;background:rgba(255,255,255,.65);"></div>
-      </div>
+      <div data-title class="aurea-streamtxt">解析中...</div>
     `;
 
     // Ask左上に固定（Askが無い場合のみ body に退避）
@@ -2190,8 +2229,6 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
   const startStreamProgressPill = () => {
     const el = ensureStreamProgressPill();
     const titleEl = el.querySelector("[data-title]");
-    const pctEl = el.querySelector("[data-pct]");
-    const barEl = el.querySelector("[data-bar]");
 
     const isEn = ((state.settings?.language || "ja") === "en");
     const mode = String(window.__AUREA_STREAMING_LABEL_MODE__ || "analyzing");
@@ -2199,42 +2236,23 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
     if (titleEl) {
       titleEl.textContent =
         (mode === "generating")
-          ? (isEn ? "Generating" : "回答文作成中")
-          : (isEn ? "Analyzing" : "解析中");
+          ? (isEn ? "Generating..." : "回答文作成中...")
+          : (isEn ? "Analyzing..." : "解析中...");
     }
-
-    streamProgressP = 0;
-    if (pctEl) pctEl.textContent = "0%";
-    if (barEl) barEl.style.width = "0%";
 
     el.style.display = "flex";
 
+    // 旧％タイマーは不要
     try { clearInterval(streamProgressTick); } catch {}
-    streamProgressTick = setInterval(() => {
-      // 0→90までゆっくり上げる（完了は finish で100）
-      streamProgressP = Math.min(90, streamProgressP + (streamProgressP < 60 ? 6 : 2));
-      if (pctEl) pctEl.textContent = `${streamProgressP}%`;
-      if (barEl) barEl.style.width = `${streamProgressP}%`;
-
-      if (streamProgressP >= 90) {
-        try { clearInterval(streamProgressTick); } catch {}
-        streamProgressTick = null;
-      }
-    }, 220);
+    streamProgressTick = null;
+    streamProgressP = 0;
   };
 
   const finishStreamProgressPill = () => {
     const el = document.getElementById("aureaStreamProgressPill");
     if (!el) return;
 
-    const pctEl = el.querySelector("[data-pct]");
-    const barEl = el.querySelector("[data-bar]");
-    if (pctEl) pctEl.textContent = "100%";
-    if (barEl) barEl.style.width = "100%";
-
-    setTimeout(() => {
-      el.style.display = "none";
-    }, 450);
+    el.style.display = "none";
 
     try { clearInterval(streamProgressTick); } catch {}
     streamProgressTick = null;
