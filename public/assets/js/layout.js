@@ -4603,6 +4603,9 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
   const setStreaming = (on) => {
     if (stopBtn) stopBtn.style.display = on ? "" : "none";
 
+    // 解析中だけの見た目制御フラグ（赤丸の丸UIを消すため）
+    try { document.body.classList.toggle("aurea-streaming", !!on); } catch {}
+
     // streaming中は送信ボタンを無効化（表示は維持）
     if (sendBtn) {
       const hasText = (askInput?.value || "").trim().length > 0;
