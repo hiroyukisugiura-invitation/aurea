@@ -18,6 +18,27 @@
   try { document.documentElement.setAttribute("data-aurea-layout-build", AUREA_LAYOUT_BUILD); } catch {}
   try { console.info("[AUREA] layout.js loaded:", AUREA_LAYOUT_BUILD); } catch {}
 
+  // ===== AUREA: hide askbar pending indicator while streaming (ChatGPT-like) =====
+  // 解析中（body.aurea-streaming）の間だけ、Askバー左の半透明丸（疑似要素/装飾）を消す
+  (() => {
+    if (document.getElementById("aureaHideAskPendingFx")) return;
+    const st = document.createElement("style");
+    st.id = "aureaHideAskPendingFx";
+    st.textContent = `
+      body.aurea-streaming .ask::before,
+      body.aurea-streaming .ask::after,
+      body.aurea-streaming .ask-row::before,
+      body.aurea-streaming .ask-row::after,
+      body.aurea-streaming .ask-wrap::before,
+      body.aurea-streaming .ask-wrap::after{
+        display:none !important;
+        content:none !important;
+        opacity:0 !important;
+      }
+    `;
+    document.head.appendChild(st);
+  })();
+
   /* ================= helpers ================= */
 
   const $ = (sel, root = document) => root.querySelector(sel);
@@ -3907,26 +3928,27 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
           `;
           actions.appendChild(act);
 
-          const showReportsIcon = false;
+        const showReportsIcon =
+          (state.settings?.showAiReports === true)
+          && !!String(m?.meta?.reportsRaw || "").trim();
 
-          if (showReportsIcon) {
-            const rep = document.createElement("div");
-            rep.className = "act";
-            rep.setAttribute("role", "button");
-            rep.setAttribute("tabindex", "0");
-            rep.dataset.action = "open-reports";
-            rep.dataset.mid = m.id;
-            rep.innerHTML = `
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M7 3h8l3 3v15a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3z"></path>
-                <path d="M15 3v5a3 3 0 0 0 3 3h3"></path>
-                <path d="M8 13h8"></path>
-                <path d="M8 17h8"></path>
-              </svg>
-            `;
-            actions.appendChild(rep);
-          }
-
+        if (showReportsIcon) {
+          const rep = document.createElement("div");
+          rep.className = "act";
+          rep.setAttribute("role", "button");
+          rep.setAttribute("tabindex", "0");
+          rep.dataset.action = "open-reports";
+          rep.dataset.mid = m.id;
+          rep.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M7 3h8l3 3v15a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3z"></path>
+              <path d="M15 3v5a3 3 0 0 0 3 3h3"></path>
+              <path d="M8 13h8"></path>
+              <path d="M8 17h8"></path>
+            </svg>
+          `;
+          actions.appendChild(rep);
+        }
           wrap.appendChild(actions);
         }
       }
