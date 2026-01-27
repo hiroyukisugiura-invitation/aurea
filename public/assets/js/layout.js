@@ -3470,6 +3470,41 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
               return `<div style="flex:0 0 auto;">${thumb}</div>`;
             }).join("");
 
+            // Assistant: attachments (persisted in meta) — enable preview
+if (msg?.role === "assistant") {
+  const atts = Array.isArray(msg?.meta?.attachments) ? msg.meta.attachments : [];
+  if (atts.length) {
+    const items = atts.slice(0, 8).map((a, i) => {
+      const name = String(a?.name || "file").trim();
+      const mime = String(a?.mime || "");
+      const route = String(a?.route || "file");
+      const isImg = (route === "image") || (String(a?.kind || "") === "image");
+
+      const thumb = (isImg && a?.dataUrl && String(a.dataUrl).startsWith("data:"))
+        ? `<img src="${escHtml(String(a.dataUrl))}" alt="" style="width:150px;height:96px;border-radius:14px;object-fit:cover;" />`
+        : `<div style="width:150px;height:96px;border-radius:14px;display:flex;align-items:center;justify-content:center;opacity:.85;">📄</div>`;
+
+      return `
+        <button
+          type="button"
+          class="aurea-assistant-attach"
+          data-mid="${escHtml(msg.id)}"
+          data-idx="${i}"
+          style="border:0;background:transparent;padding:0;cursor:pointer;"
+        >
+          ${thumb}
+        </button>
+      `;
+    }).join("");
+
+    return `
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        ${items}
+      </div>
+    `;
+  }
+}
+
             const textHtml = raw0.trim()
               ? `<div style="margin-top:10px;line-height:1.7;">${escHtml(raw0).replace(/\n/g, "<br>")}</div>`
               : "";
@@ -5869,25 +5904,29 @@ linkLogout?.addEventListener("click", async (e) => {
       updateSendButtonVisibility();
     });
 
-    askInput.addEventListener("keydown", (e) => {
-      const mode = localStorage.getItem("aurea_send_mode") || "cmdEnter";
-      const isEnter = (e.key === "Enter");
+askInput.addEventListener("keydown", (e) => {
+  const mode = localStorage.getItem("aurea_send_mode") || "cmdEnter";
+  const isEnter = (e.key === "Enter");
+  const hasAttachments = pendingAttachments.length > 0;
+  const hasText = askInput.value.trim().length > 0;
 
-      if (mode === "cmdEnter") {
-        if (isEnter && (e.metaKey || e.ctrlKey)) {
-          e.preventDefault();
-          send();
-        }
-        return;
-      }
+  if (mode === "cmdEnter") {
+    if (isEnter && (e.metaKey || e.ctrlKey)) {
+      if (!hasText && !hasAttachments) return;
+      e.preventDefault();
+      send();
+    }
+    return;
+  }
 
-      if (mode === "enter") {
-        if (isEnter && !e.shiftKey) {
-          e.preventDefault();
-          send();
-        }
-      }
-    });
+  if (mode === "enter") {
+    if (isEnter && !e.shiftKey) {
+      if (!hasText && !hasAttachments) return;
+      e.preventDefault();
+      send();
+    }
+  }
+});
   }
 
   sendBtn?.addEventListener("click", (e) => { e.preventDefault(); send(); });
@@ -5978,6 +6017,19 @@ linkLogout?.addEventListener("click", async (e) => {
   });
 
   /* ================= delegate clicks ================= */
+  // Assistant attachment preview
+const btn = e.target.closest(".aurea-assistant-attach");
+if (btn) {
+  e.preventDefault();
+  const mid = String(btn.getAttribute("data-mid") || "");
+  const idx = Number(btn.getAttribute("data-idx"));
+  const th = getThreadByIdInScope(getActiveThreadId());
+  const msg = th?.messages?.find(m => m.id === mid);
+  const att = msg?.meta?.attachments?.[idx];
+  if (att) openAttachModal(att);
+  return;
+}
+
   document.addEventListener("click", async (e) => {
     const t = e.target;
 

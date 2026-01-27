@@ -2703,3 +2703,10 @@ body.view-project:not(.has-chat) .scroll-down-btn{
 #legalOverlay #legalModalBody li{
   margin: 2px 0;
 }
+
+    /* 解析中は assistant 行の左に出る丸UI（actions周りの疑似要素）を消す */
+    .aurea-streaming .msg.assistant .actions::before,
+    .aurea-streaming .msg.assistant .actions::after{
+      display:none !important;
+      content:none !important;
+    }
