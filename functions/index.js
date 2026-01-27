@@ -1356,7 +1356,131 @@ const callOpenAIText = async ({ system, user, userParts, model }) => {
   }
 };
 
+const callOpenAITextStream = async ({ system, user, userParts, model, onDelta }) => {
+  const key = getOpenAIKey();
+  if (!key) return null;
+
+  const m = String(model || "gpt-4o").trim() || "gpt-4o";
+  const sysText = String(system || "").trim();
+  const userText = String(user || "").trim();
+
+  const parts =
+    Array.isArray(userParts) && userParts.length
+      ? userParts
+      : [{ type: "input_text", text: userText }];
+
+  const payload = {
+    model: m,
+    stream: true,
+    text: { format: { type: "text" } },
+    input: [
+      { role: "system", content: [{ type: "input_text", text: sysText }] },
+      { role: "user", content: parts }
+    ]
+  };
+
+  const controller = new AbortController();
+  const t = setTimeout(() => {
+    try { controller.abort(); } catch {}
+  }, 25000);
+
+  try {
+    const r = await fetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${key}`
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
+
+    if (!r || !r.ok || !r.body) {
+      const j = await r?.json().catch(() => null);
+      const errMsg =
+        (j && j.error && (j.error.message || j.error.code))
+          ? String(j.error.message || j.error.code)
+          : `http_${r ? r.status : "no_response"}`;
+      dbg("OpenAI Responses API stream failed:", errMsg, j);
+      return null;
+    }
+
+    const reader = r.body.getReader();
+    const dec = new TextDecoder("utf-8");
+    let buf = "";
+    let full = "";
+
+    const pushDelta = (d) => {
+      const s = String(d || "");
+      if (!s) return;
+      full += s;
+      try { if (typeof onDelta === "function") onDelta(s); } catch {}
+    };
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+
+      buf += dec.decode(value, { stream: true });
+
+      // OpenAI SSE: "data: {...}\n\n"
+      while (true) {
+        const idx = buf.indexOf("\n\n");
+        if (idx < 0) break;
+
+        const chunk = buf.slice(0, idx);
+        buf = buf.slice(idx + 2);
+
+        const lines = chunk.split("\n");
+        for (const ln of lines) {
+          const line = String(ln || "").trim();
+          if (!line) continue;
+          if (!line.startsWith("data:")) continue;
+
+          const data = line.slice(5).trim();
+          if (!data) continue;
+
+          if (data === "[DONE]") {
+            return full.trim() ? full : null;
+          }
+
+          let obj = null;
+          try { obj = JSON.parse(data); } catch { obj = null; }
+          if (!obj || typeof obj !== "object") continue;
+
+          const type = String(obj.type || "").trim();
+
+          // Primary: output_text delta
+          if (type.includes("output_text") && type.endsWith(".delta") && typeof obj.delta === "string") {
+            pushDelta(obj.delta);
+            continue;
+          }
+
+          // Fallbacks (variant payloads)
+          if (typeof obj.delta === "string" && type.includes("delta")) {
+            pushDelta(obj.delta);
+            continue;
+          }
+          if (typeof obj.text === "string" && type.includes("output_text")) {
+            pushDelta(obj.text);
+            continue;
+          }
+        }
+      }
+    }
+
+    return full.trim() ? full : null;
+
+  } catch (e) {
+    dbg("callOpenAITextStream failed", e);
+    return null;
+  } finally {
+    clearTimeout(t);
+  }
+};
+
 const callOpenAIEmbedding = async ({ input, model }) => {
+
   const key = getOpenAIKey();
   if (!key) return null;
 
@@ -1700,6 +1824,287 @@ app.post("/api/chat", async (req, res) => {
   } catch (e) {
     const msg = String(e && e.message ? e.message : e || "");
     res.status(500).json({ ok: false, reason: "chat_failed", msg });
+    return;
+  }
+});
+
+app.post("/api/chat/stream", async (req, res) => {
+  try {
+    // /api/chat/stream は /chat/stream に統一
+    req.url = "/chat/stream";
+    app.handle(req, res);
+    return;
+  } catch (e) {
+    const msg = String(e && e.message ? e.message : e || "");
+    res.status(500).json({ ok: false, reason: "chat_stream_failed", msg });
+    return;
+  }
+});
+
+app.post("/chat/stream", async (req, res) => {
+  // SSE headers
+  res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+  res.setHeader("Cache-Control", "no-cache, no-transform");
+  res.setHeader("Connection", "keep-alive");
+
+  // nginx/proxy buffering off (best-effort)
+  res.setHeader("X-Accel-Buffering", "no");
+
+  const sendEvent = (event, data) => {
+    try {
+      res.write(`event: ${event}\n`);
+      res.write(`data: ${String(data ?? "")}\n\n`);
+    } catch {}
+  };
+
+  try {
+    const prompt = String(req.body?.prompt || "").trim();
+    const attachments = Array.isArray(req.body?.attachments) ? req.body.attachments : [];
+    const context = req.body?.context || {};
+
+    if (!prompt && (!attachments || attachments.length === 0)) {
+      sendEvent("error", "empty_input");
+      res.end();
+      return;
+    }
+
+    // GPT互換ストリーム（いまは GPT_COMPAT_MODE の時だけ streaming を有効化）
+    if (!GPT_COMPAT_MODE) {
+      // 互換モード以外は単発で返す（UIは後工程）
+      sendEvent("error", "stream_not_enabled");
+      res.end();
+      return;
+    }
+
+    // build user parts (multimodal) — /chat と同等の最小構成（画像/PDF/TXT/CSV）
+    const hasImageAttachment = attachments.some((a) => {
+      const type = String(a?.type || "").trim();
+      const route = String(a?.route || "").trim();
+      const mime = String(a?.mime || "").trim();
+      const name = String(a?.name || "").trim().toLowerCase();
+      if (type === "image") return true;
+      if (route === "image") return true;
+      if (mime && mime.startsWith("image/")) return true;
+      if (/\.(png|jpg|jpeg|webp|gif|bmp|svg)$/i.test(name)) return true;
+      return false;
+    });
+
+    const isImplicitAttachmentOnly = (!prompt && attachments.length > 0);
+
+    const promptForModel = isImplicitAttachmentOnly
+      ? (
+          hasImageAttachment
+            ? "この画像（スクショ）を分析して。必ず次の順で出力：1) 画像内の文字を可能な限り正確に抽出（無ければ「抽出できる文字はありません」） 2) 画像から確実に言える事実のみ列挙（推測禁止） 3) 次の手順を番号付きで提示。"
+            : "添付ファイルが送られました。内容を最小限で把握し、目的確認の質問を1つだけしてください。"
+        )
+      : prompt;
+
+    const userParts = [{ type: "input_text", text: promptForModel }];
+
+    const parseCsvLine = (line) => {
+      const s = String(line || "");
+      const out = [];
+      let cur = "";
+      let inQ = false;
+
+      for (let i = 0; i < s.length; i++) {
+        const ch = s[i];
+        if (ch === '"') {
+          if (inQ && s[i + 1] === '"') {
+            cur += '"';
+            i++;
+          } else {
+            inQ = !inQ;
+          }
+          continue;
+        }
+        if (ch === "," && !inQ) {
+          out.push(cur);
+          cur = "";
+          continue;
+        }
+        cur += ch;
+      }
+      out.push(cur);
+      return out;
+    };
+
+    for (const a of attachments) {
+      const type = String(a?.type || "").trim();
+      const route = String(a?.route || "").trim();
+      const fallback = String(a?.fallback || "").trim();
+      const mime = String(a?.mime || "").trim();
+      const data = String(a?.data || "").trim();
+      const name = String(a?.name || "file").trim();
+      const size = Number(a?.size || 0) || 0;
+
+      const lower = name.toLowerCase();
+      const isPdf = (route === "pdf") || (mime === "application/pdf") || lower.endsWith(".pdf");
+      const isCsv = (mime === "text/csv") || lower.endsWith(".csv");
+      const isTextLike =
+        route === "text" ||
+        mime.startsWith("text/") ||
+        mime === "text/csv" ||
+        mime === "text/html" ||
+        lower.endsWith(".txt") ||
+        lower.endsWith(".md") ||
+        lower.endsWith(".csv") ||
+        lower.endsWith(".html") ||
+        lower.endsWith(".htm");
+
+      if ((type === "file" || type === "pdf") && isPdf && data) {
+        const fid = await uploadOpenAIFile({
+          base64: data,
+          filename: name || "file.pdf",
+          mime: mime || "application/pdf"
+        });
+        if (fid) {
+          userParts.push({ type: "input_file", file_id: fid });
+        } else {
+          userParts.push({
+            type: "input_text",
+            text: `Attached PDF: ${name}${mime ? ` (${mime})` : ""}${size ? ` ${size} bytes` : ""}\nNote: upload failed.`
+          });
+        }
+        continue;
+      }
+
+      if (type === "file" && isTextLike && data) {
+        let decoded = "";
+        try {
+          decoded = Buffer.from(String(data), "base64").toString("utf8");
+        } catch {
+          decoded = "";
+        }
+
+        if (decoded) {
+          const MAX_CHARS = 120000;
+          let truncated = false;
+          if (decoded.length > MAX_CHARS) {
+            decoded = decoded.slice(0, MAX_CHARS);
+            truncated = true;
+          }
+
+          if (isCsv) {
+            const raw = decoded.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+            const lines = raw.split("\n").filter(l => l.trim().length > 0);
+
+            const headerLine = lines[0] || "";
+            const header = parseCsvLine(headerLine).map(x => String(x || "").trim());
+            const totalRows = Math.max(0, lines.length - 1);
+
+            const sampleMax = 20;
+            const sampleLines = lines.slice(1, 1 + sampleMax);
+            const sampleRows = sampleLines.map(parseCsvLine);
+
+            const safe = (v) => String(v ?? "").replace(/\|/g, "\\|").replace(/\n/g, " ").trim();
+
+            const cols = header.length ? header : ["(no header)"];
+            const colCount = cols.length;
+
+            const md = [];
+            md.push(`| ${cols.map(safe).join(" | ")} |`);
+            md.push(`| ${cols.map(() => "---").join(" | ")} |`);
+
+            for (const r of sampleRows) {
+              const row = [];
+              for (let i = 0; i < colCount; i++) row.push(safe(r[i] ?? ""));
+              md.push(`| ${row.join(" | ")} |`);
+            }
+
+            userParts.push({
+              type: "input_text",
+              text:
+                `Attached CSV file: ${name}${mime ? ` (${mime})` : ""}\n` +
+                `Columns: ${colCount}${header.length ? ` (${cols.slice(0, 20).join(", ")}${cols.length > 20 ? ", ..." : ""})` : ""}\n` +
+                `Rows: ${totalRows}\n` +
+                `${truncated ? `Note: content was truncated.\n` : ""}\n` +
+                `Sample (first ${Math.min(sampleMax, totalRows)} rows):\n` +
+                `${md.join("\n")}`
+            });
+          } else {
+            userParts.push({
+              type: "input_text",
+              text: `Attached text file: ${name}${mime ? ` (${mime})` : ""}\n\n${decoded}${truncated ? `\n\n[truncated]` : ""}`
+            });
+          }
+        } else {
+          userParts.push({
+            type: "input_text",
+            text: `Attached text file: ${name}${mime ? ` (${mime})` : ""}${size ? ` ${size} bytes` : ""}\nNote: decode failed.`
+          });
+        }
+        continue;
+      }
+
+      if ((type === "image" || route === "image") && data) {
+        const ext = lower.split(".").pop();
+        const inferred =
+          mime && mime.startsWith("image/")
+            ? mime
+            : (ext === "jpg" || ext === "jpeg") ? "image/jpeg"
+            : (ext === "webp") ? "image/webp"
+            : "image/png";
+
+        const url = `data:${inferred};base64,${data}`;
+        userParts.push({ type: "input_image", image_url: url });
+        continue;
+      }
+
+      if (type === "file" || type === "image" || type === "pdf") {
+        const reason = fallback ? `\nReason: ${fallback}` : (!data ? `\nReason: no_data` : "");
+        userParts.push({
+          type: "input_text",
+          text: `Attached file: ${name}${mime ? ` (${mime})` : ""}${size ? ` ${size} bytes` : ""}${reason}`
+        });
+      }
+    }
+
+    // GPT互換 system（固定）
+    const gptSystem = `
+You are ChatGPT.
+
+Follow these rules strictly:
+
+- Answer the user’s request directly and concisely.
+- Do not mention internal reasoning, analysis steps, system messages, or policies.
+- Do not reference other models, tools, or AI systems.
+- If information is insufficient, ask a brief clarifying question.
+- If an error occurs, respond with a short, neutral error message.
+- When files or images are provided, analyze them and respond based only on their content.
+- Do not add unnecessary explanations, disclaimers, or metadata.
+- Match the depth and style of ChatGPT’s default responses.
+
+Produce only the final answer intended for the user.
+`.trim();
+
+    sendEvent("start", "ok");
+
+    const full = await callOpenAITextStream({
+      system: gptSystem,
+      user: prompt,
+      userParts,
+      model: "gpt-4o",
+      onDelta: (d) => {
+        // client SSE
+        sendEvent("delta", d);
+      }
+    });
+
+    if (!full) {
+      sendEvent("error", "empty_output");
+      res.end();
+      return;
+    }
+
+    sendEvent("done", full);
+    res.end();
+    return;
+
+  } catch (e) {
+    const msg = String(e && e.message ? e.message : e || "");
+    sendEvent("error", msg || "stream_failed");
+    res.end();
     return;
   }
 });
