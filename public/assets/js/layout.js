@@ -3880,48 +3880,55 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
         // ここで continue すると actions が付かず、見た目の残留が起きるため無効化
         void isStreamingMsg;
 
-        const actions = document.createElement("div");
-        actions.className = "actions";
-        actions.style.display = "flex";
-        actions.style.flexDirection = "column";
-        actions.style.gap = "8px";
-        actions.style.alignItems = "center";
+        // GPT同等：解析中（streaming中）は actions（コピー等）を表示しない
+        const streamingOn = (() => {
+          try { return document.body.classList.contains("aurea-streaming"); } catch { return false; }
+        })();
 
-        const act = document.createElement("div");
-        act.className = "act";
-        act.setAttribute("role", "button");
-        act.setAttribute("tabindex", "0");
-        act.dataset.action = "copy-message";
-        act.dataset.mid = m.id;
-        act.innerHTML = `
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="9" y="9" width="13" height="13" rx="2"></rect>
-            <rect x="2" y="2" width="13" height="13" rx="2"></rect>
-          </svg>
-        `;
-        actions.appendChild(act);
+        if (!streamingOn) {
+          const actions = document.createElement("div");
+          actions.className = "actions";
+          actions.style.display = "flex";
+          actions.style.flexDirection = "column";
+          actions.style.gap = "8px";
+          actions.style.alignItems = "center";
 
-        const showReportsIcon = false;
-
-        if (showReportsIcon) {
-          const rep = document.createElement("div");
-          rep.className = "act";
-          rep.setAttribute("role", "button");
-          rep.setAttribute("tabindex", "0");
-          rep.dataset.action = "open-reports";
-          rep.dataset.mid = m.id;
-          rep.innerHTML = `
+          const act = document.createElement("div");
+          act.className = "act";
+          act.setAttribute("role", "button");
+          act.setAttribute("tabindex", "0");
+          act.dataset.action = "copy-message";
+          act.dataset.mid = m.id;
+          act.innerHTML = `
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M7 3h8l3 3v15a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3z"></path>
-              <path d="M15 3v5a3 3 0 0 0 3 3h3"></path>
-              <path d="M8 13h8"></path>
-              <path d="M8 17h8"></path>
+              <rect x="9" y="9" width="13" height="13" rx="2"></rect>
+              <rect x="2" y="2" width="13" height="13" rx="2"></rect>
             </svg>
           `;
-          actions.appendChild(rep);
-        }
+          actions.appendChild(act);
 
-        wrap.appendChild(actions);
+          const showReportsIcon = false;
+
+          if (showReportsIcon) {
+            const rep = document.createElement("div");
+            rep.className = "act";
+            rep.setAttribute("role", "button");
+            rep.setAttribute("tabindex", "0");
+            rep.dataset.action = "open-reports";
+            rep.dataset.mid = m.id;
+            rep.innerHTML = `
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M7 3h8l3 3v15a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3z"></path>
+                <path d="M15 3v5a3 3 0 0 0 3 3h3"></path>
+                <path d="M8 13h8"></path>
+                <path d="M8 17h8"></path>
+              </svg>
+            `;
+            actions.appendChild(rep);
+          }
+
+          wrap.appendChild(actions);
+        }
       }
 
       chatRoot.appendChild(wrap);
