@@ -3873,11 +3873,9 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
           try { existed.remove(); } catch {}
         }
 
-        // streaming中でも通常描画（左の丸が出る原因になるため）
-        if (isStreamingMsg) {
-          chatRoot.appendChild(wrap);
-          continue;
-        }
+        // GPT互換：行単位のstreaming表示は使わない（Ask上shimmerに一本化）
+        // ここで continue すると actions が付かず、見た目の残留が起きるため無効化
+        void isStreamingMsg;
 
         const actions = document.createElement("div");
         actions.className = "actions";
@@ -5028,22 +5026,23 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
 
           const e = String(ev || "").trim();
 
-          if (e === "start") {
-            updateMessage(m.id, "");
+if (e === "start") {
+  updateMessage(m.id, "");
 
-            // 行単位streaming状態は使わない（丸残留の根を潰す）
-            try { window.__AUREA_STREAMING_MID__ = ""; } catch {}
+  // 行単位streaming状態は使わない（丸残留の根を潰す）
+  try { window.__AUREA_STREAMING_MID__ = ""; } catch {}
 
-            // Ask上shimmerのみで表現
-            try { setStreamingLabelMode("analyzing"); } catch {}
-            try { startStreamProgressPill(); } catch {}
+  // Ask上shimmerのみで表現（DOM差し替え直後でも確実に生成）
+  try { setStreamingLabelMode("analyzing"); } catch {}
+  try { ensureStreamProgressPill(); } catch {}
+  try { startStreamProgressPill(); } catch {}
 
-            // setStreaming(true/false) はボタン制御寄せ（表示はshimmerが担当）
-            try { setStreaming(true); } catch {}
+  // setStreaming(true/false) はボタン制御寄せ
+  try { setStreaming(true); } catch {}
 
-            renderChat();
-            return;
-          }
+  renderChat();
+  return;
+}
 
           if (e === "delta") {
             const d = String(data || "");
@@ -5072,7 +5071,6 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
             // 先に終了（残留ゼロ）
             try { window.__AUREA_STREAMING_MID__ = ""; } catch {}
             try { clearAiRunIndicator(); } catch {}
-            finishStreamProgressPill();
             finishStreamProgressPill();
             setStreaming(false);
 
