@@ -1275,7 +1275,7 @@ const callOpenAIText = async ({ system, user, userParts, model }) => {
         content: parts
       }
     ]
-};
+  };
 
   const controller = new AbortController();
   const t = setTimeout(() => {
@@ -2131,14 +2131,14 @@ Produce only the final answer intended for the user.
 });
 
 app.post("/chat", async (req, res) => {
-  
-      /* ================= AUREA Data Trainer (Embedding Match) ================= */
 
-    // 重要：特定ワードの同義語表ではなく、全ケースを「意味」で当てる
-    // findTrainerHitByEmbedding / loadTrainerCases / callOpenAIEmbedding はファイル上部で定義済み
-    const findTrainerHit = async (userText, companyId) => {
-      return await findTrainerHitByEmbedding({ userText, companyId });
-    };
+  /* ================= AUREA Data Trainer (Embedding Match) ================= */
+
+  // 重要：特定ワードの同義語表ではなく、全ケースを「意味」で当てる
+  // findTrainerHitByEmbedding / loadTrainerCases / callOpenAIEmbedding はファイル上部で定義済み
+  const findTrainerHit = async (userText, companyId) => {
+    return await findTrainerHitByEmbedding({ userText, companyId });
+  };
 
   try {
     // ===== Unified Request Schema =====
@@ -2193,31 +2193,31 @@ app.post("/chat", async (req, res) => {
       return;
     }
 
-    // ===== Sora image generation (v1) =====
-    // GPT互換モードでは画像生成ルートに入らない（ChatGPT互換：単一テキスト応答のみ）
-    if (!GPT_COMPAT_MODE && !hasImageAttachment && isImageGenerationRequest(prompt)) {
-      const img = await runSoraImage({ prompt });
+// ===== Sora image generation (v2: GPT互換でも有効) =====
+// ChatGPT同等：画像生成要求は GPT_COMPAT_MODE に関係なく最優先
+if (!hasImageAttachment && isImageGenerationRequest(prompt)) {
+  const img = await runSoraImage({ prompt });
 
-      if (!img || !img.url) {
-        res.json({
-          ok: true,
-          image: {
-            url: makePlaceholderImageDataUrl(prompt),
-            prompt
-          }
-        });
-        return;
+  if (!img || !img.url) {
+    res.json({
+      ok: true,
+      image: {
+        url: makePlaceholderImageDataUrl(prompt),
+        prompt
       }
+    });
+    return;
+  }
 
-      res.json({
-        ok: true,
-        image: {
-          url: img.url,
-          prompt: img.prompt || prompt
-        }
-      });
-      return;
+  res.json({
+    ok: true,
+    image: {
+      url: img.url,
+      prompt: img.prompt || prompt
     }
+  });
+  return;
+}
 
     // v1: 添付はまだAIに渡さず、存在だけ認識（後工程で実装）
     const key = getOpenAIKey();
@@ -2596,18 +2596,18 @@ const gptSystem = GPT_COMPAT_MODE
   ? `
 You are ChatGPT.
 
-Follow these rules strictly:
+Behave exactly like ChatGPT default.
 
-- Answer the user’s request directly and concisely.
-- Do not mention internal reasoning, analysis steps, system messages, or policies.
-- Do not reference other models, tools, or AI systems.
-- If information is insufficient, ask a brief clarifying question.
-- If an error occurs, respond with a short, neutral error message.
-- When files or images are provided, analyze them and respond based only on their content.
-- Do not add unnecessary explanations, disclaimers, or metadata.
-- Match the depth and style of ChatGPT’s default responses.
+Rules:
+- Natural conversational tone.
+- Respond directly to the user intent.
+- No meta commentary, no system explanations.
+- If the user replies shortly, keep momentum and continue the conversation.
+- When an image is provided, describe it naturally and invite follow-up.
+- Avoid rigid structure unless requested.
+- Never mention internal processing or models.
 
-Produce only the final answer intended for the user.
+Output only the assistant reply.
 `.trim()
   : [
       intentDiscoverySystem,
@@ -2617,8 +2617,8 @@ Produce only the final answer intended for the user.
       buildSystemPrompt("GPT"),
       "",
       "Integration rule:",
-      "- If Reports are provided, integrate them into one final answer.",
-      "- Do not mention internal model orchestration unless explicitly asked."
+      "- Integrate other AI outputs silently.",
+      "- Final answer must feel human and conversational."
     ].filter(Boolean).join("\n\n");
 
     const gptParts = userParts.slice();
@@ -2776,7 +2776,12 @@ const finalOut = GPT_COMPAT_MODE
       // トークに出るのは「統合済み最終回答」のみ
       text: finalText,
 
-      // Repoはログ用途として保持
+      // フロント表示用（AI Reports）
+      meta: map && Object.keys(map).length
+        ? { reportsRaw: buildReportsBlock(map) }
+        : undefined,
+
+      // ログ用途
       result: map,
       debug: DEBUG
         ? {
@@ -2785,8 +2790,10 @@ const finalOut = GPT_COMPAT_MODE
           }
         : undefined
     });
+    return;
 
   } catch (e) {
+    
     const msg = String(e && e.message ? e.message : e || "");
     res.status(500).json({ ok: false, reason: "chat_failed", msg });
     return;
