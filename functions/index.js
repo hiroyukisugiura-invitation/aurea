@@ -2052,8 +2052,8 @@ app.post("/chat/stream", async (req, res) => {
       }
     }
 
-    // GPT互換 system（固定）
-    const gptSystem = `
+    // GPT互換 system（人物が写っていても「拒否」ではなく「特定はしない＋描写はする」へ）
+    const gptCompatBase = `
 You are ChatGPT.
 
 Follow these rules strictly:
@@ -2069,6 +2069,25 @@ Follow these rules strictly:
 
 Produce only the final answer intended for the user.
 `.trim();
+
+    const gptCompatVisionHelpful = [
+      "Vision (helpful-first):",
+      "- Never identify a person or guess their name/identity.",
+      "- Do NOT refuse the whole request just because a person is in the image.",
+      "- You may describe visible details (appearance, clothing, pose, expression, lighting, composition) in a non-identifying way.",
+      "- If the user asks for identification, say you can't identify, then continue with a helpful description.",
+      "- Avoid sensitive attribute guesses (race/religion/etc.).",
+      "",
+      "Prefer a natural answer (not a rigid report):",
+      "- 2–5 lines description",
+      "- 3–8 bullets of visible facts",
+      "- (optional) 2–5 grounded observations/suggestions",
+      "- Ask ONE short question only if needed"
+    ].join("\n");
+
+    const gptSystem = hasImageAttachment
+      ? `${gptCompatBase}\n\n${gptCompatVisionHelpful}`.trim()
+      : gptCompatBase;
 
     sendEvent("start", "ok");
 
@@ -2618,9 +2637,7 @@ Produce only the final answer intended for the user.
       ? `${basePrompt}\n\n---\n\n以下は他AIの分析結果です。これらを統合して、ユーザー向けの最終回答を作成してください。\n\n${reportsForIntegration}`
       : basePrompt;
 
-const finalOut = GPT_COMPAT_MODE
-  ? await callOpenAIText({
-      system: `
+const gptCompatBase = `
 You are ChatGPT.
 
 Follow these rules strictly:
@@ -2635,7 +2652,30 @@ Follow these rules strictly:
 - Match the depth and style of ChatGPT’s default responses.
 
 Produce only the final answer intended for the user.
-`.trim(),
+`.trim();
+
+const gptCompatVisionHelpful = [
+  "Vision (helpful-first):",
+  "- Never identify a person or guess their name/identity.",
+  "- Do NOT refuse the whole request just because a person is in the image.",
+  "- You may describe visible details (appearance, clothing, pose, expression, lighting, composition) in a non-identifying way.",
+  "- If the user asks for identification, say you can't identify, then continue with a helpful description.",
+  "- Avoid sensitive attribute guesses (race/religion/etc.).",
+  "",
+  "Prefer a natural answer (not a rigid report):",
+  "- 2–5 lines description",
+  "- 3–8 bullets of visible facts",
+  "- (optional) 2–5 grounded observations/suggestions",
+  "- Ask ONE short question only if needed"
+].join("\n");
+
+const gptCompatSystem = hasImageAttachment
+  ? `${gptCompatBase}\n\n${gptCompatVisionHelpful}`.trim()
+  : gptCompatBase;
+
+const finalOut = GPT_COMPAT_MODE
+  ? await callOpenAIText({
+      system: gptCompatSystem,
       user: prompt,
       userParts,
       model: "gpt-4o"
