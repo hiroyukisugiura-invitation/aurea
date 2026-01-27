@@ -6484,38 +6484,17 @@ if (btn) {
   };
 
   const showAuthGate = () => {
-    // authGate UI は使わない：未ログインは login.html に一本化
     try {
-      const p = new URLSearchParams(window.location.search);
-      const inv = String(p.get("invite") || "").trim();
-
-      const url = new URL("/login.html", window.location.origin);
-      if (inv) {
-        url.searchParams.set("mode", "company");
-        url.searchParams.set("invite", inv);
-      } else {
-        url.searchParams.set("mode", "personal");
-      }
-
-      window.location.replace(url.toString());
-    } catch {
-      window.location.replace("/login.html?mode=personal");
-    }
+      if (appRoot) appRoot.setAttribute("aria-hidden", "true");
+      document.body.classList.add("data-auth-required");
+    } catch {}
   };
 
     const hideAuthGate = () => {
     try {
-      if (authGate) {
-        authGate.style.display = "none";
-        authGate.setAttribute("aria-hidden", "true");
-      }
-      if (appRoot) {
-        appRoot.removeAttribute("aria-hidden");
-      }
+      if (appRoot) appRoot.removeAttribute("aria-hidden");
       document.body.classList.remove("data-auth-required");
-    } catch (e) {
-      dbg("hideAuthGate failed", e);
-    }
+    } catch {}
   };
 
     const startGoogleLogin = (mode) => {
@@ -6703,6 +6682,16 @@ if (authResult === "ok") {
 
   btnAuthCompany?.addEventListener("click", (e) => {
     e.preventDefault();
+
+      // ===== auth startup guard =====
+  (() => {
+    const st = getAuthState();
+    if (!st || !st.loggedIn) {
+      showAuthGate();
+      return;
+    }
+    hideAuthGate();
+  })();
 
     // Company は invite 必須（無ければ遷移させない）
     const inv = getInvite();
