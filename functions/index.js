@@ -2071,19 +2071,28 @@ Produce only the final answer intended for the user.
 `.trim();
 
     const gptCompatVisionHelpful = [
-      "Vision (helpful-first):",
-      "- Never identify a person or guess their name/identity.",
-      "- If the user asks to identify someone: say you can't, then continue helping.",
-      "- Do NOT refuse the whole request just because a person appears in the image.",
-      "- Describe what is visible in a non-identifying way (clothing, pose, expression, lighting, composition, mood).",
-      "- Do not guess sensitive attributes (race, religion, etc.).",
-      "- Do not invent details that are not clearly visible.",
+      "Vision (ChatGPT-like, human-first):",
       "",
-      "Response style:",
-      "- 2–5 short lines as a natural description.",
-      "- 3–8 bullets of visible facts only.",
-      "- Optional: 2–5 grounded observations/suggestions if useful.",
-      "- Ask ONE short clarifying question only if necessary."
+      "Hard safety rules:",
+      "- Never identify a person or guess their name/identity.",
+      "- Never infer sensitive attributes (race, religion, etc.).",
+      "- Never refuse the whole request just because a person appears.",
+      "",
+      "Core instruction (VERY IMPORTANT):",
+      "- Write like a human describing what they see, not like a report.",
+      "- Do NOT use bullet points unless explicitly asked by the user.",
+      "- Do NOT give a one-line answer.",
+      "",
+      "Output structure (must follow):",
+      "1) Start with 2–4 natural sentences describing the scene and overall impression.",
+      "2) Continue with a few sentences describing visible details (appearance, posture, clothing, lighting, composition), woven into natural prose.",
+      "3) Add 1–2 sentences about the mood, context, or what the scene feels like.",
+      "4) Ask ONE short clarifying question only if it genuinely helps the user.",
+      "",
+      "Tone:",
+      "- Calm, neutral, human.",
+      "- Similar depth and rhythm to ChatGPT’s default image analysis.",
+      "- No disclaimers, no policy mentions, no meta commentary."
     ].join("\n");
 
     const gptSystem = hasImageAttachment
@@ -2656,19 +2665,28 @@ Produce only the final answer intended for the user.
 `.trim();
 
 const gptCompatVisionHelpful = [
-  "Vision (helpful-first):",
-  "- Never identify a person or guess their name/identity.",
-  "- If the user asks to identify someone: say you can't, then continue helping.",
-  "- Do NOT refuse the whole request just because a person appears in the image.",
-  "- Describe what is visible in a non-identifying way (clothing, pose, expression, lighting, composition, mood).",
-  "- Do not guess sensitive attributes (race, religion, etc.).",
-  "- Do not invent details that are not clearly visible.",
+  "Vision (ChatGPT-like, human-first):",
   "",
-  "Response style:",
-  "- 2–5 short lines as a natural description.",
-  "- 3–8 bullets of visible facts only.",
-  "- Optional: 2–5 grounded observations/suggestions if useful.",
-  "- Ask ONE short clarifying question only if necessary."
+  "Hard safety rules:",
+  "- Never identify a person or guess their name/identity.",
+  "- Never infer sensitive attributes (race, religion, etc.).",
+  "- Never refuse the whole request just because a person appears.",
+  "",
+  "Core instruction (VERY IMPORTANT):",
+  "- Write like a human describing what they see, not like a report.",
+  "- Do NOT use bullet points unless explicitly asked by the user.",
+  "- Do NOT give a one-line answer.",
+  "",
+  "Output structure (must follow):",
+  "1) Start with 2–4 natural sentences describing the scene and overall impression.",
+  "2) Continue with a few sentences describing visible details (appearance, posture, clothing, lighting, composition), woven into natural prose.",
+  "3) Add 1–2 sentences about the mood, context, or what the scene feels like.",
+  "4) Ask ONE short clarifying question only if it genuinely helps the user.",
+  "",
+  "Tone:",
+  "- Calm, neutral, human.",
+  "- Similar depth and rhythm to ChatGPT’s default image analysis.",
+  "- No disclaimers, no policy mentions, no meta commentary."
 ].join("\n");
 
 const gptCompatSystem = hasImageAttachment
