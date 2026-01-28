@@ -5039,29 +5039,36 @@ if (msg?.role === "assistant") {
         const url = String(j?.image?.url || "").trim();
         const p = String(j?.image?.prompt || userText || "").trim();
 
-        if (r.ok && j && j.ok && url) {
-          // save to images library
-          try {
-            addImageToLibrary({
-              prompt: p,
-              src: url,
-              from: { threadId: getActiveThreadId(), context: state.context }
-            });
-          } catch {}
+if (r.ok && j && j.ok && url) {
+  // save to images library
+  try {
+    addImageToLibrary({
+      prompt: p,
+      src: url,
+      from: { threadId: getActiveThreadId(), context: state.context }
+    });
+  } catch {}
 
-          // render as special image message
-          const imgMsg = `AUREA_IMAGE\n${url}\n${p}`;
-          updateMessage(m.id, imgMsg);
+  // render as special image message
+  const imgMsg = `AUREA_IMAGE\n${url}\n${p}`;
+  updateMessage(m.id, imgMsg);
 
-          // 完了ステータスを保存（リロード時の誤再稼働防止）
-          try { setMessageMeta(m.id, { status: "done", ai: "Sora" }); } catch {}
+  // ★ Repo 用ログを必ず保存（Sora 単体実行でも Repo を空にしない）
+  const reportText = `Sora:\nImage generated from prompt:\n${p}`;
+  try {
+    setMessageMeta(m.id, {
+      status: "done",
+      ai: "Sora",
+      reportsRaw: reportText
+    });
+  } catch {}
 
-          renderChat();
-          setStreaming(false);
-          unlockAndClearAttachments();
-          renderSidebar();
-          return;
-        }
+  renderChat();
+  setStreaming(false);
+  unlockAndClearAttachments();
+  renderSidebar();
+  return;
+}
 
       } catch {}
 
