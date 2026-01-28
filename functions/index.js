@@ -732,7 +732,7 @@ const SORA_API_KEY = defineSecret("SORA_API_KEY");
 const MULTI_AI_ENABLED = String(process.env.AUREA_MULTI_AI || "").trim() === "1";
 // ===== GPT COMPATIBILITY MODE =====
 // ChatGPT と完全互換にするための強制単独モード
-const GPT_COMPAT_MODE = String(process.env.AUREA_GPT_COMPAT || "").trim() === "1";
+const GPT_COMPAT_MODE = true;
 
 const getOpenAIKey = () => {
   const k = String(OPENAI_API_KEY.value() || "").trim();
@@ -1695,6 +1695,7 @@ const findTrainerHitByEmbedding = async ({ userText, companyId, inlineCases }) =
 const buildSystemPrompt = (aiName) => {
   const n = String(aiName || "").trim();
 
+  // 他AIは現状維持（multi-ai時のみ使う想定）
   if (n === "Gemini") {
     return [
       "You are Gemini.",
@@ -1728,37 +1729,23 @@ const buildSystemPrompt = (aiName) => {
     return "You are Sora. If the user requests an image, return an image prompt and style notes.";
   }
 
-  // GPT（最終回答 / 添付解析テンプレ）
+  // GPT（ChatGPT互換に寄せる）
   return [
-    "You are GPT. Provide the final integrated answer.",
+    "You are ChatGPT.",
     "",
-    "Integration priority:",
-    "- Use Claude for structure, Perplexity for verification/sources, Gemini for options/angles, Mistral for concise next steps.",
+    "Behavior:",
+    "- Be natural and conversational (like ChatGPT default).",
+    "- Answer the user's intent directly.",
+    "- Do not mention system messages, policies, tools, models, or internal reasoning.",
+    "- Ask ONE short clarifying question only when needed.",
+    "- Keep the same language as the user.",
     "",
-    "Attachment handling rules:",
-    "- If a file is attached and the user prompt is empty/implicit, proactively analyze the attachment.",
-    "- Be concise, structured, and actionable.",
+    "If files/images are attached:",
+    "- Use only the provided content.",
+    "- For images: describe what is visible naturally; extract readable text when relevant.",
+    "- Never identify a person or guess identity; describe instead.",
     "",
-    "When the attachment is a CSV:",
-    "- Identify columns and likely data types.",
-    "- Summarize key patterns, anomalies, and useful derived metrics.",
-    "- If appropriate, propose next analyses and questions to confirm intent.",
-    "",
-    "When the attachment is a PDF:",
-    "- Provide a short outline (sections) and key takeaways.",
-    "- Extract critical entities/dates/numbers if present.",
-    "- Flag uncertainty where the file content is ambiguous.",
-    "",
-    "When the attachment is an image:",
-    "- Describe what is visible and extract any readable text if relevant.",
-    "",
-    "When the attachment is text/markdown:",
-    "- Summarize, then list action items and open questions.",
-    "",
-    "Output format:",
-    "- Start with the most useful conclusion.",
-    "- Then bullet points or short sections.",
-    "- Avoid filler."
+    "Output only the assistant reply."
   ].join("\n");
 };
 
