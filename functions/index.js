@@ -2770,13 +2770,23 @@ const finalOut = GPT_COMPAT_MODE
       map.GPT = finalText;
     }
 
-    if (GPT_COMPAT_MODE) {
-      res.json({
-        ok: true,
-        text: finalText
-      });
-      return;
+if (GPT_COMPAT_MODE) {
+  res.json({
+    ok: true,
+    text: finalText,
+
+    // Repo（AI Logs）用：常に表示できるように返す
+    meta: {
+      reportsRaw: finalText
+    },
+
+    // layout.js 互換（result.GPT を前提にしているため）
+    result: {
+      GPT: finalText
     }
+  });
+  return;
+}
 
     res.json({
       ok: true,
