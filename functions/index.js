@@ -2090,7 +2090,8 @@ Produce only the final answer intended for the user.
       "- Calm, neutral, human.",
       "- Similar depth and rhythm to ChatGPT’s default image analysis.",
       "- No disclaimers, no policy mentions, no meta commentary."
-    ].join(\"\\n\");
+      ].join("\n");
+
 
     const gptSystem = hasImageAttachment
       ? `${gptCompatBase}\n\n${gptCompatVisionHelpful}`.trim()
@@ -2700,7 +2701,7 @@ const gptCompatVisionHelpful = [
   "- Thoughtful, calm, human.",
   "- Natural rhythm similar to ChatGPT’s default image responses.",
   "- No disclaimers, no policy mentions, no meta explanations."
-].join(\"\\n\");
+].join("\n");
 
 const gptCompatSystem = hasImageAttachment
   ? `${gptCompatBase}\n\n${gptCompatVisionHelpful}`.trim()
