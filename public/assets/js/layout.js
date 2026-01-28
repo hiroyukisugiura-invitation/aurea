@@ -2176,36 +2176,36 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
         }
 
         #aureaStreamProgressPill .aurea-streamtxt{
-          position:relative;
-          display:inline-block;
-          white-space:nowrap;
-          overflow:hidden;
-          text-overflow:ellipsis;
-          max-width:300px;
-          letter-spacing:-.1px;
-          opacity:.92;
+          position:relative !important;
+          display:inline-block !important;
+          white-space:nowrap !important;
+          overflow:hidden !important;
+          text-overflow:ellipsis !important;
+          max-width:300px !important;
+          letter-spacing:-.1px !important;
+          opacity:.92 !important;
           text-shadow:
             0 0 10px rgba(159,180,255,.22),
-            0 0 22px rgba(159,180,255,.14);
+            0 0 22px rgba(159,180,255,.14) !important;
         }
 
         #aureaStreamProgressPill .aurea-streamtxt::after{
-          content:"";
-          position:absolute;
-          top:50%;
-          left:-120%;
-          width:92px;
-          height:2px;
-          transform:translateY(-50%);
+          content:"" !important;
+          position:absolute !important;
+          top:50% !important;
+          left:-120% !important;
+          width:92px !important;
+          height:2px !important;
+          transform:translateY(-50%) !important;
           background:linear-gradient(90deg,
             rgba(255,255,255,0) 0%,
             rgba(159,180,255,.92) 40%,
             rgba(255,255,255,0) 100%
-          );
-          filter: blur(.25px);
-          animation:aureaShimmerSweep 1.05s linear infinite;
-          opacity:.95;
-          pointer-events:none;
+          ) !important;
+          filter: blur(.25px) !important;
+          animation:aureaShimmerSweep 1.05s linear infinite !important;
+          opacity:.95 !important;
+          pointer-events:none !important;
         }
       `.trim();
       document.head.appendChild(st);
@@ -3916,7 +3916,7 @@ if (msg?.role === "assistant") {
           const media = document.createElement("div");
           media.className = "msg-media";
           media.innerHTML = (() => {
-            const items = atts.slice(0, 12).map((a) => {
+            const items = atts.slice(0, 12).map((a, i) => {
               const name = String(a?.name || "file").trim();
               const mime = String(a?.mime || "");
               const route = String(a?.route || "file");
@@ -3929,7 +3929,14 @@ if (msg?.role === "assistant") {
 
               if (isImg && src && src.startsWith("data:")) {
                 return `
-                  <button type="button" class="msg-media__item" data-action="open-user-attach" data-mid="${escHtml(m.id)}" style="border:0;background:transparent;padding:0;cursor:pointer;">
+                  <button
+                    type="button"
+                    class="msg-media__item"
+                    data-action="open-user-attach"
+                    data-mid="${escHtml(m.id)}"
+                    data-idx="${i}"
+                    style="border:0;background:transparent;padding:0;cursor:pointer;"
+                  >
                     <img class="msg-media__img" src="${escHtml(src)}" alt="" />
                   </button>
                 `.trim();
@@ -3938,7 +3945,14 @@ if (msg?.role === "assistant") {
               // non-image fallback (frameless tile)
               const label = isPdf ? "PDF" : (isText ? "TXT" : "FILE");
               return `
-                <button type="button" class="msg-media__item msg-media__file" data-action="open-user-attach" data-mid="${escHtml(m.id)}" style="border:0;background:transparent;padding:0;cursor:pointer;">
+                <button
+                  type="button"
+                  class="msg-media__item msg-media__file"
+                  data-action="open-user-attach"
+                  data-mid="${escHtml(m.id)}"
+                  data-idx="${i}"
+                  style="border:0;background:transparent;padding:0;cursor:pointer;"
+                >
                   <span class="msg-media__filebox">${escHtml(label)}</span>
                 </button>
               `.trim();
@@ -4882,9 +4896,11 @@ if (msg?.role === "assistant") {
 
     streamAbort = false;
     multiAiAbort = false;
-    // GPT互換：Ask上の「解析中...」だけ開始（行左の丸などは出さない）
+
+    // GPT互換：解析開始時点で streaming を確実にON（UI残留/未反映の根を潰す）
     try { setStreamingLabelMode("analyzing"); } catch {}
-    try { startStreamProgressPill(); } catch {}
+    try { setStreaming(true); } catch {}
+
     if (stopBtn) stopBtn.style.display = "";
     if (sendBtn) {
       sendBtn.disabled = true;
@@ -6135,6 +6151,21 @@ askInput.addEventListener("keydown", (e) => {
       const th = getThreadByIdInScope(getActiveThreadId());
       const msg = th?.messages?.find(m => m.id === mid);
       const att = msg?.meta?.attachments?.[idx];
+      if (att) openAttachModal(att);
+      return;
+    }
+        // User attachment preview (frameless msg-media)
+    const ubtn = t.closest("[data-action='open-user-attach']");
+    if (ubtn) {
+      e.preventDefault();
+
+      const mid = String(ubtn.getAttribute("data-mid") || "");
+      const idx = Number(ubtn.getAttribute("data-idx"));
+
+      const th = getThreadByIdInScope(getActiveThreadId());
+      const msg = th?.messages?.find(m => m.id === mid);
+      const att = msg?.meta?.attachments?.[idx];
+
       if (att) openAttachModal(att);
       return;
     }
