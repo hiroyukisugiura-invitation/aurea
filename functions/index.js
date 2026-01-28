@@ -2683,7 +2683,7 @@ const gptCompatVisionHelpful = [
   "- Thoughtful, calm, human.",
   "- Natural rhythm similar to ChatGPT’s default image responses.",
   "- No disclaimers, no policy mentions, no meta explanations."
-].join(\"\\n\");
+].join("\n");
 
 const gptCompatSystem = hasImageAttachment
   ? `${gptCompatBase}\n\n${gptCompatVisionHelpful}`.trim()
