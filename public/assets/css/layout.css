@@ -2710,3 +2710,18 @@ body.view-project:not(.has-chat) .scroll-down-btn{
       display:none !important;
       content:none !important;
     }
+
+    /* ===== AUREA GPT-compat fixes (UI hard guards) ===== */
+
+/* 解析中は assistant の actions を強制非表示（丸枠/コピー/Repoの残留を潰す） */
+body.aurea-streaming .msg.assistant .actions{
+  display:none !important;
+}
+
+/* user側：添付がある場合は bubble の枠/背景を消す */
+.msg.user .bubble.bubble-user-attach{
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+  padding:0 !important;
+}

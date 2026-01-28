@@ -3274,6 +3274,16 @@ btnOpenAiStackPopup?.addEventListener("click", (e) => {
       const bubble = document.createElement("div");
       bubble.className = "bubble";
 
+      // user側：添付がある場合はbubble枠を消す（CSS側で無枠化）
+      try {
+        const hasUserAtt =
+          (m && m.role === "user")
+          && (m.meta && Array.isArray(m.meta.attachments))
+          && (m.meta.attachments.length > 0);
+
+        if (hasUserAtt) bubble.classList.add("bubble-user-attach");
+      } catch {}
+
       const renderReportsAsDetails = (raw) => {
         const s0 = String(raw || "");
 
@@ -3944,7 +3954,7 @@ if (msg?.role === "assistant") {
         // ここで continue すると actions が付かず、見た目の残留が起きるため無効化
         void isStreamingMsg;
 
-        // GPT同等：解析中（streaming中）は actions（コピー等）を表示しない
+        // GPT同等：解析中（streaming中）は actions（コピー/Repo）を表示しない
         const streamingOn = (() => {
           try { return document.body.classList.contains("aurea-streaming"); } catch { return false; }
         })();
@@ -3957,6 +3967,7 @@ if (msg?.role === "assistant") {
           actions.style.gap = "8px";
           actions.style.alignItems = "center";
 
+          // copy
           const act = document.createElement("div");
           act.className = "act";
           act.setAttribute("role", "button");
@@ -3971,27 +3982,36 @@ if (msg?.role === "assistant") {
           `;
           actions.appendChild(act);
 
-        const showReportsIcon =
-          (state.settings?.showAiReports === true)
-          && !!String(m?.meta?.reportsRaw || "").trim();
+          // AI Reports：設定ONなら常に表示（reportsRawが空なら disabled 扱い）
+          const showReportsIcon = (state.settings?.showAiReports === true);
 
-        if (showReportsIcon) {
-          const rep = document.createElement("div");
-          rep.className = "act";
-          rep.setAttribute("role", "button");
-          rep.setAttribute("tabindex", "0");
-          rep.dataset.action = "open-reports";
-          rep.dataset.mid = m.id;
-          rep.innerHTML = `
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M7 3h8l3 3v15a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3z"></path>
-              <path d="M15 3v5a3 3 0 0 0 3 3h3"></path>
-              <path d="M8 13h8"></path>
-              <path d="M8 17h8"></path>
-            </svg>
-          `;
-          actions.appendChild(rep);
-        }
+          if (showReportsIcon) {
+            const hasReports = !!String(m?.meta?.reportsRaw || "").trim();
+
+            const rep = document.createElement("div");
+            rep.className = "act";
+            rep.setAttribute("role", "button");
+            rep.setAttribute("tabindex", hasReports ? "0" : "-1");
+            rep.dataset.action = "open-reports";
+            rep.dataset.mid = m.id;
+
+            if (!hasReports) {
+              rep.dataset.disabled = "1";
+              rep.style.opacity = ".45";
+              rep.style.cursor = "not-allowed";
+            }
+
+            rep.innerHTML = `
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M7 3h8l3 3v15a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3z"></path>
+                <path d="M15 3v5a3 3 0 0 0 3 3h3"></path>
+                <path d="M8 13h8"></path>
+                <path d="M8 17h8"></path>
+              </svg>
+            `;
+            actions.appendChild(rep);
+          }
+
           wrap.appendChild(actions);
         }
       }
@@ -6337,6 +6357,9 @@ askInput.addEventListener("keydown", (e) => {
     const repBtn = t.closest(".act[data-action='open-reports']");
     if (repBtn) {
       e.preventDefault();
+
+      // disabled時は開かない
+      if (repBtn.dataset.disabled === "1") return;
 
       const mid = repBtn.dataset.mid;
       const th = getThreadByIdInScope(getActiveThreadId());
