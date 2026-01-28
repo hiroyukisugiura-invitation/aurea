@@ -6358,14 +6358,13 @@ askInput.addEventListener("keydown", (e) => {
     if (repBtn) {
       e.preventDefault();
 
-      // disabled時は開かない
-      if (repBtn.dataset.disabled === "1") return;
-
       const mid = repBtn.dataset.mid;
       const th = getThreadByIdInScope(getActiveThreadId());
       const msg = th?.messages?.find(m => m.id === mid);
 
       const raw = String(msg?.meta?.reportsRaw || "").trim();
+
+      // reports が空でもモーダルは開く（「何も起こらない」を防ぐ）
       openAiReportsModal(mid, raw);
       return;
     }
