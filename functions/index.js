@@ -2180,31 +2180,31 @@ app.post("/chat", async (req, res) => {
       return;
     }
 
-// ===== Sora image generation (v2: GPT互換でも有効) =====
-// ChatGPT同等：画像生成要求は GPT_COMPAT_MODE に関係なく最優先
-if (!hasImageAttachment && isImageGenerationRequest(prompt)) {
-  const img = await runSoraImage({ prompt });
+    // ===== Sora image generation (v2) =====
+    // 画像生成要求は GPT_COMPAT_MODE に関係なく最優先（画像添付時は解析なので除外）
+    if (!hasImageAttachment && isImageGenerationRequest(prompt)) {
+      const img = await runSoraImage({ prompt });
 
-  if (!img || !img.url) {
-    res.json({
-      ok: true,
-      image: {
-        url: makePlaceholderImageDataUrl(prompt),
-        prompt
+      if (!img || !img.url) {
+        res.json({
+          ok: true,
+          image: {
+            url: makePlaceholderImageDataUrl(prompt),
+            prompt
+          }
+        });
+        return;
       }
-    });
-    return;
-  }
 
-  res.json({
-    ok: true,
-    image: {
-      url: img.url,
-      prompt: img.prompt || prompt
+      res.json({
+        ok: true,
+        image: {
+          url: img.url,
+          prompt: img.prompt || prompt
+        }
+      });
+      return;
     }
-  });
-  return;
-}
 
     // v1: 添付はまだAIに渡さず、存在だけ認識（後工程で実装）
     const key = getOpenAIKey();
@@ -2763,12 +2763,12 @@ const finalOut = GPT_COMPAT_MODE
       // トークに出るのは「統合済み最終回答」のみ
       text: finalText,
 
-      // フロント表示用（AI Reports）
-      meta: map && Object.keys(map).length
+      // Repo表示用（フロントが保存できるように返す）
+      meta: map && Object.keys(map || {}).length
         ? { reportsRaw: buildReportsBlock(map) }
         : undefined,
 
-      // ログ用途
+      // Repoはログ用途として保持
       result: map,
       debug: DEBUG
         ? {
@@ -2777,7 +2777,6 @@ const finalOut = GPT_COMPAT_MODE
           }
         : undefined
     });
-    return;
 
   } catch (e) {
     
