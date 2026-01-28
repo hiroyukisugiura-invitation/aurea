@@ -2768,3 +2768,53 @@ body.aurea-streaming .msg .assistant-icon{
   pointer-events:none;
 }
 
+/* ===== GPT-like frameless media in chat ===== */
+
+.msg-media{
+  display:flex;
+  justify-content:flex-end;       /* user側は右寄せ */
+  width:100%;
+}
+
+.msg.assistant + .msg-media,
+.msg.assistant .msg-media{
+  justify-content:flex-start;     /* assistant側は左寄せ（将来用） */
+}
+
+.msg-media__grid{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  align-items:flex-start;
+  max-width:min(520px, 100%);
+}
+
+/* frameless image */
+.msg-media__img{
+  width:320px;
+  max-width:calc(100vw - 120px);
+  height:auto;
+  display:block;
+  border:0 !important;
+  outline:0 !important;
+  box-shadow:none !important;
+  background:transparent !important;
+  border-radius:14px;            /* GPTも角丸はある */
+}
+
+/* frameless file tile */
+.msg-media__filebox{
+  width:140px;
+  height:92px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:0 !important;
+  box-shadow:none !important;
+  background:rgba(255,255,255,.04);
+  border-radius:14px;
+  color:rgba(255,255,255,.86);
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.06em;
+}

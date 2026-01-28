@@ -3905,10 +3905,66 @@ if (msg?.role === "assistant") {
           </div>
         `;
       } else {
-        bubble.innerHTML = renderMessageHtml(m);
+        // ===== GPT-like: attachments are rendered OUTSIDE the bubble (frameless) =====
+        const atts = Array.isArray(m?.meta?.attachments) ? m.meta.attachments : [];
+
+        const hasAtts = (atts.length > 0);
+        const hasText = String(m?.content || "").trim().length > 0;
+
+        if (hasAtts) {
+          // media area (no bubble border)
+          const media = document.createElement("div");
+          media.className = "msg-media";
+          media.innerHTML = (() => {
+            const items = atts.slice(0, 12).map((a) => {
+              const name = String(a?.name || "file").trim();
+              const mime = String(a?.mime || "");
+              const route = String(a?.route || "file");
+              const isImg = (route === "image") || (String(a?.kind || "") === "image");
+              const isPdf = (route === "pdf") || (mime === "application/pdf") || name.toLowerCase().endsWith(".pdf");
+              const isText = (route === "text");
+
+              // prefer image dataUrl when available
+              const src = String(a?.dataUrl || "").trim();
+
+              if (isImg && src && src.startsWith("data:")) {
+                return `
+                  <button type="button" class="msg-media__item" data-action="open-user-attach" data-mid="${escHtml(m.id)}" style="border:0;background:transparent;padding:0;cursor:pointer;">
+                    <img class="msg-media__img" src="${escHtml(src)}" alt="" />
+                  </button>
+                `.trim();
+              }
+
+              // non-image fallback (frameless tile)
+              const label = isPdf ? "PDF" : (isText ? "TXT" : "FILE");
+              return `
+                <button type="button" class="msg-media__item msg-media__file" data-action="open-user-attach" data-mid="${escHtml(m.id)}" style="border:0;background:transparent;padding:0;cursor:pointer;">
+                  <span class="msg-media__filebox">${escHtml(label)}</span>
+                </button>
+              `.trim();
+            }).join("");
+
+            return `<div class="msg-media__grid">${items}</div>`;
+          })();
+
+          // place media before bubble (GPT-like)
+          wrap.appendChild(media);
+        }
+
+        // bubble: text only (hide bubble when no text)
+        if (hasText) {
+          bubble.innerHTML = escHtml(String(m?.content || "")).replace(/\n/g, "<br>");
+          wrap.appendChild(bubble);
+        } else {
+          // no text -> do not render bubble at all
+          try { bubble.remove(); } catch {}
+        }
       }
 
-      wrap.appendChild(bubble);
+      // if bubble still exists (non-attachment path), append normally
+      if (bubble && bubble.parentElement !== wrap) {
+        wrap.appendChild(bubble);
+      }
 
       // user: edit icon (GPT-like)
       if (m.role === "user" && !isEditingThis) {
