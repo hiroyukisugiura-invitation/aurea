@@ -2204,29 +2204,33 @@ app.post("/chat", async (req, res) => {
 
     // ===== Sora image generation (v2) =====
     // 画像生成要求は GPT_COMPAT_MODE に関係なく最優先（画像添付時は解析なので除外）
-    if (!hasImageAttachment && isImageGenerationRequest(prompt)) {
-      const img = await runSoraImage({ prompt });
+if (!hasImageAttachment && isImageGenerationRequest(prompt)) {
+  const img = await runSoraImage({ prompt });
 
-      if (!img || !img.url) {
-        res.json({
-          ok: true,
-          image: {
-            url: makePlaceholderImageDataUrl(prompt),
-            prompt
-          }
-        });
-        return;
-      }
+  const text =
+    img && img.url
+      ? `以下は「${prompt}」という指示に基づいて生成されたイメージです。`
+      : `画像生成に失敗したため、代替イメージを表示しています。`;
 
-      res.json({
-        ok: true,
-        image: {
-          url: img.url,
-          prompt: img.prompt || prompt
-        }
-      });
-      return;
+  res.json({
+    ok: true,
+
+    image: {
+      url: img?.url || makePlaceholderImageDataUrl(prompt),
+      prompt: img?.prompt || prompt
+    },
+
+    // ★ Repo / GPT 互換
+    text,
+    meta: {
+      reportsRaw: text
+    },
+    result: {
+      GPT: text
     }
+  });
+  return;
+}
 
     // v1: 添付はまだAIに渡さず、存在だけ認識（後工程で実装）
     const key = getOpenAIKey();
