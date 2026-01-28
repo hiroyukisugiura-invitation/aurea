@@ -1222,25 +1222,46 @@ const runSoraImage = async ({ prompt }) => {
         model: "gpt-image-1",
         prompt: enhancedPrompt,
         n: 1,
-        size: "1024x1024"
+        size: "1024x1024",
+        response_format: "b64_json"
       })
     });
 
     const j = await r.json().catch(() => null);
 
+    // 1) b64_json (preferred)
     const b64 =
-      (j && Array.isArray(j.data) && j.data[0] && j.data[0].b64_json)
-        ? String(j.data[0].b64_json)
+      (j && Array.isArray(j.data) && j.data[0] && typeof j.data[0].b64_json === "string")
+        ? String(j.data[0].b64_json || "").trim()
         : "";
 
-    if (!r.ok || !b64) return null;
+    if (r.ok && b64) {
+      return { url: `data:image/png;base64,${b64}`, prompt: p0 };
+    }
 
-    return {
-      url: `data:image/png;base64,${b64}`,
-      prompt: p0
-    };
+    // 2) url fallback (some variants return url)
+    const url =
+      (j && Array.isArray(j.data) && j.data[0] && typeof j.data[0].url === "string")
+        ? String(j.data[0].url || "").trim()
+        : "";
+
+    if (r.ok && url) {
+      return { url, prompt: p0 };
+    }
+
+    // 3) debug log (only when AUREA_DEBUG=1)
+    try {
+      const errMsg =
+        (j && j.error && (j.error.message || j.error.code))
+          ? String(j.error.message || j.error.code)
+          : `http_${r.status}`;
+      dbg("runSoraImage failed:", errMsg, j);
+    } catch {}
+
+    return null;
+
   } catch (e) {
-    dbg("runSoraImage failed", e);
+    dbg("runSoraImage exception:", e);
     return null;
   }
 };
