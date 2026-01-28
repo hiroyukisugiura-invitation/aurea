@@ -31,7 +31,7 @@ body{
 }
 
 body.theme-light{
-  /* 目に優しいホワイト（白飛び抑制） */
+  /* 逶ｮ縺ｫ蜆ｪ縺励＞繝帙Ρ繧､繝茨ｼ育區鬟帙�謚大宛�� */
   --bg:#f2f3f5;
   --panel:#ffffff;
   --panel2:#f6f7f8;
@@ -153,7 +153,7 @@ body.theme-light .ask-note{
   position:sticky;
   top:0;
 
-  overflow:hidden; /* ★ sidebar自体はスクロールさせない */
+  overflow:hidden; /* 笘� sidebar閾ｪ菴薙�繧ｹ繧ｯ繝ｭ繝ｼ繝ｫ縺輔○縺ｪ縺� */
 }
 
 .sb-top{
@@ -162,7 +162,7 @@ body.theme-light .ask-note{
   gap:8px;
   padding:4px 6px 0;
 
-  overflow:auto;       /* ★ ここだけスクロール */
+  overflow:auto;       /* 笘� 縺薙％縺�縺代せ繧ｯ繝ｭ繝ｼ繝ｫ */
   min-height:0;
   flex:1 1 auto;
 }
@@ -276,7 +276,7 @@ details > summary::-webkit-details-marker{ display:none; }
   display:flex;
   align-items:center;
   gap:6px;
-  padding:2px 6px;   /* 詰める */
+  padding:2px 6px;   /* 隧ｰ繧√ｋ */
   border-radius:12px;
 }
 
@@ -287,7 +287,7 @@ details > summary::-webkit-details-marker{ display:none; }
   display:flex;
   align-items:center;
   gap:8px;
-  padding:5px 10px;  /* 詰める */
+  padding:5px 10px;  /* 隧ｰ繧√ｋ */
   border-radius:12px;
   color:rgba(255,255,255,.92);
   text-decoration:none;
@@ -312,7 +312,7 @@ details > summary::-webkit-details-marker{ display:none; }
 .pj-thread .d{ display:none; }
 
 .sb-chat{
-  padding:6px 10px; /* 詰める */
+  padding:6px 10px; /* 隧ｰ繧√ｋ */
   border-radius:12px;
   background:transparent;
   border:1px solid transparent;
@@ -320,9 +320,9 @@ details > summary::-webkit-details-marker{ display:none; }
   text-decoration:none;
   display:flex;
   flex-direction:column;
-  gap:3px; /* 詰める */
+  gap:3px; /* 隧ｰ繧√ｋ */
 }
-.sb-chat .ic{ display:none; } /* チャット履歴のアイコンを削除 */
+.sb-chat .ic{ display:none; } /* 繝√Ε繝�ヨ螻･豁ｴ縺ｮ繧｢繧､繧ｳ繝ｳ繧貞炎髯､ */
 .sb-chat:hover{ background:var(--soft); }
 .sb-chat .t{ font-size:13px; line-height:1.25; }
 
@@ -331,15 +331,15 @@ details > summary::-webkit-details-marker{ display:none; }
   position:relative;
   display:flex;
   align-items:center;
-  gap:6px;           /* 詰める */
-  padding:4px 6px;   /* 詰める */
+  gap:6px;           /* 隧ｰ繧√ｋ */
+  padding:4px 6px;   /* 隧ｰ繧√ｋ */
   border-radius:12px;
 }
 
 .sb-link{
   flex:1;
   min-width:0;
-  padding:6px 8px 6px 30px; /* PJは左アイコン分を確保 */
+  padding:6px 8px 6px 30px; /* PJ縺ｯ蟾ｦ繧｢繧､繧ｳ繝ｳ蛻�ｒ遒ｺ菫� */
   border-radius:10px;
   color:var(--text);
   text-decoration:none;
@@ -369,14 +369,14 @@ details > summary::-webkit-details-marker{ display:none; }
   content:"";
 }
 
-/* Project rows: GPT同様のフォルダ（fa-folder） */
+/* Project rows: GPT蜷梧ｧ倥�繝輔か繝ｫ繝��fa-folder�� */
 .sb-row[data-kind="project"] .sb-link::before{
   content:"\f07b";
 }
 
-/* Chat history rows: アイコン非表示（表示不要） */
+/* Chat history rows: 繧｢繧､繧ｳ繝ｳ髱櫁｡ｨ遉ｺ�郁｡ｨ遉ｺ荳崎ｦ�ｼ� */
 .sb-row[data-kind="thread"] .sb-link{
-  padding:6px 8px; /* アイコン分を削る */
+  padding:6px 8px; /* 繧｢繧､繧ｳ繝ｳ蛻�ｒ蜑翫ｋ */
 }
 .sb-row[data-kind="thread"] .sb-link::before{
   content:"";
@@ -445,7 +445,7 @@ details > summary::-webkit-details-marker{ display:none; }
   margin-top:auto;
   padding:6px;
 
-  flex:0 0 auto;     /* ★ 縮まない */
+  flex:0 0 auto;     /* 笘� 邵ｮ縺ｾ縺ｪ縺� */
   position:sticky;
   bottom:8px;
   z-index:5;
@@ -519,7 +519,7 @@ details > summary::-webkit-details-marker{ display:none; }
   height:100%;
   display:flex;
   flex-direction:column;
-  background:var(--panel2); /* ← 左カラムと地色を揃えて“余白”に見える帯を消す */
+  background:var(--panel2); /* 竊� 蟾ｦ繧ｫ繝ｩ繝�縺ｨ蝨ｰ濶ｲ繧呈純縺医※窶應ｽ咏區窶昴↓隕九∴繧句ｸｯ繧呈ｶ医☆ */
   overflow:hidden;
 }
 
@@ -532,7 +532,7 @@ details > summary::-webkit-details-marker{ display:none; }
   gap:10px;
 }
 
-/* PJトップでも右上固定 */
+/* PJ繝医ャ繝励〒繧ょ承荳雁崋螳� */
 body.view-project .topbar{
   justify-content:flex-end !important;
 }
@@ -553,7 +553,7 @@ body.view-project .topbar{
   flex:1;
   min-height:0;
   padding:0 0 220px;
-  padding-left:0;          /* 左余白を常にゼロ固定 */
+  padding-left:0;          /* 蟾ｦ菴咏區繧貞ｸｸ縺ｫ繧ｼ繝ｭ蝗ｺ螳� */
   overflow-y:auto;
   overflow-x:hidden;
 }
@@ -561,7 +561,7 @@ body.view-project .topbar{
 /* Brand rail */
 .brand-rail{
   position:absolute;
-  left:0;                 /* 左寄せに固定 */
+  left:0;                 /* 蟾ｦ蟇�○縺ｫ蝗ｺ螳� */
   top:80px;
   width:56px;
   opacity:.95;
@@ -596,8 +596,8 @@ body.view-project .brand-rail{
 .ai-run-indicator{
   position:absolute;
   left:0;
-  top:140px;     /* ← 上へ移動（スクショ2基準） */
-  width:56px;    /* brand-rail 内 */
+  top:140px;     /* 竊� 荳翫∈遘ｻ蜍包ｼ医せ繧ｯ繧ｷ繝ｧ2蝓ｺ貅厄ｼ� */
+  width:56px;    /* brand-rail 蜀� */
 
   padding:0;
   background:transparent;
@@ -614,7 +614,7 @@ body.view-project .brand-rail{
   transform:translateY(0);
 }
 
-/* 「解析中」「回答生成中」(必要なら表示) */
+/* 縲瑚ｧ｣譫蝉ｸｭ縲阪悟屓遲皮函謌蝉ｸｭ縲�(蠢�ｦ√↑繧芽｡ｨ遉ｺ) */
 .ai-run-indicator .ai-run__line{
   font-size:11px;
   line-height:1.25;
@@ -640,7 +640,7 @@ body.view-project .brand-rail{
   overflow:hidden;
 }
 
-/* AI名：文字自体が流星（左→右に発光が流れる） */
+/* AI蜷搾ｼ壽枚蟄苓�菴薙′豬∵弌�亥ｷｦ竊貞承縺ｫ逋ｺ蜈峨′豬√ｌ繧具ｼ� */
 .ai-run-indicator .ai-run__ai-txt{
   display:inline-block;
 
@@ -663,7 +663,7 @@ body.view-project .brand-rail{
 }
 
 .ai-run-indicator .ai-run__ai--more{
-  display:none !important;   /* ← 完全に非表示 */
+  display:none !important;   /* 竊� 螳悟�縺ｫ髱櫁｡ｨ遉ｺ */
 }
 
 @keyframes aiTextMeteor{
@@ -716,7 +716,7 @@ body.theme-light .ai-run-indicator .ai-run__ai--more{
 }
 .msg.user{ justify-content:flex-end; }
 
-/* assistant の左「丸」(疑似要素) を常時消す */
+/* assistant 縺ｮ蟾ｦ縲御ｸｸ縲�(逍台ｼｼ隕∫ｴ�) 繧貞ｸｸ譎よｶ医☆ */
 .msg.assistant::before{
   display:none !important;
   content:none !important;
@@ -732,7 +732,7 @@ body.theme-light .ai-run-indicator .ai-run__ai--more{
   font-size:14px;
   white-space:pre-wrap;
 
-  /* 長いURL/連続文字の横はみ出し防止 */
+  /* 髟ｷ縺ФRL/騾｣邯壽枚蟄励�讓ｪ縺ｯ縺ｿ蜃ｺ縺鈴亟豁｢ */
   overflow-wrap:anywhere;
   word-break:break-word;
 }
@@ -768,7 +768,7 @@ body.theme-light .ai-run-indicator .ai-run__ai--more{
   pointer-events:none;
 }
 
-/* Ask下の背景（GPT同様：下部は履歴を“見せない”） */
+/* Ask荳九�閭梧勹��GPT蜷梧ｧ假ｼ壻ｸ矩Κ縺ｯ螻･豁ｴ繧停懆ｦ九○縺ｪ縺�晢ｼ� */
 .ask-wrap::before{
   content:"";
   position:absolute;
@@ -786,7 +786,7 @@ body.theme-light .ai-run-indicator .ai-run__ai--more{
   z-index:-1;
 }
 
-/* light theme: 黒い帯にならないように差し替え */
+/* light theme: 鮟偵＞蟶ｯ縺ｫ縺ｪ繧峨↑縺�ｈ縺�↓蟾ｮ縺玲崛縺� */
 body.theme-light .ask-wrap::before{
   background:linear-gradient(
     to top,
@@ -796,12 +796,12 @@ body.theme-light .ask-wrap::before{
   );
 }
 
-/* PJトップではこのグラデが見出し（PJ名）を覆うので無効化 */
+/* PJ繝医ャ繝励〒縺ｯ縺薙�繧ｰ繝ｩ繝�′隕句�縺暦ｼ�PJ蜷搾ｼ峨ｒ隕�≧縺ｮ縺ｧ辟｡蜉ｹ蛹� */
 body.view-project:not(.has-chat) .ask-wrap::before{
   display:none;
 }
 
-/* 画像ビューでは Ask を消す（一覧のみ） */
+/* 逕ｻ蜒上ン繝･繝ｼ縺ｧ縺ｯ Ask 繧呈ｶ医☆�井ｸ隕ｧ縺ｮ縺ｿ�� */
 body.view-images .ask-wrap{
   display:none;
 }
@@ -815,7 +815,7 @@ body.view-images .board{
   border:1px solid rgba(255,255,255,.10);
   border-radius:22px;
 
-  /* デフォルトは細長（以前の仕様） */
+  /* 繝�ヵ繧ｩ繝ｫ繝医�邏ｰ髟ｷ�井ｻ･蜑阪�莉墓ｧ假ｼ� */
   display:flex;
   align-items:flex-end;
   gap:10px;
@@ -828,14 +828,14 @@ body.view-images .board{
   pointer-events:auto;
 }
 
-/* 添付がある時だけ Ask を縦積みにする（[添付]→[コメント]→[+送信]） */
+/* 豺ｻ莉倥′縺ゅｋ譎ゅ□縺� Ask 繧堤ｸｦ遨阪∩縺ｫ縺吶ｋ��[豺ｻ莉肋竊端繧ｳ繝｡繝ｳ繝�]竊端+騾∽ｿ｡]�� */
 .ask[data-attach="1"]{
   flex-direction:column;
   align-items:stretch;
   gap:8px;
 }
 
-/* Ask 内の “入力＋ボタン行” */
+/* Ask 蜀�� 窶懷�蜉幢ｼ九�繧ｿ繝ｳ陦娯� */
 .ask-row{
   display:flex;
   align-items:flex-end;
@@ -848,7 +848,7 @@ body.view-images .board{
 .ask .right{
   margin-left:auto;
 
-  /* Askバー右側の縦ライン（区切り）を強制的に消す */
+  /* Ask繝舌�蜿ｳ蛛ｴ縺ｮ邵ｦ繝ｩ繧､繝ｳ�亥玄蛻�ｊ�峨ｒ蠑ｷ蛻ｶ逧�↓豸医☆ */
   border-left:0 !important;
   box-shadow:none !important;
 }
@@ -857,7 +857,7 @@ body.view-images .board{
   content:none !important;
 }
 
-/* 右側に縦ライン用DOMがある場合も消す（class名差異吸収） */
+/* 蜿ｳ蛛ｴ縺ｫ邵ｦ繝ｩ繧､繝ｳ逕ｨDOM縺後≠繧句�ｴ蜷医ｂ豸医☆��class蜷榊ｷｮ逡ｰ蜷ｸ蜿趣ｼ� */
 .ask .vline,
 .ask .right .vline,
 .ask .right .divider,
@@ -878,7 +878,7 @@ body.view-images .board{
   padding:6px 2px;
   max-height:240px;
 
-  /* 右の縦線（スクロールバー/インジケータ）を出さない */
+  /* 蜿ｳ縺ｮ邵ｦ邱夲ｼ医せ繧ｯ繝ｭ繝ｼ繝ｫ繝舌�/繧､繝ｳ繧ｸ繧ｱ繝ｼ繧ｿ�峨ｒ蜃ｺ縺輔↑縺� */
   overflow-y:auto;
   scrollbar-width:none;          /* Firefox */
 }
@@ -924,7 +924,7 @@ body.view-images .board{
   .ask-note{ white-space:nowrap; }
 }
 
-/* PJトップでは注意文を出さない（GPT同等） */
+/* PJ繝医ャ繝励〒縺ｯ豕ｨ諢乗枚繧貞�縺輔↑縺�ｼ�GPT蜷檎ｭ会ｼ� */
 body.view-project:not(.has-chat) .ask-note{
   display:none;
 }
@@ -1010,7 +1010,7 @@ body.project-open .project-modal{ display:flex; }
 .project-card .picon:hover{ background:var(--soft); border-color:rgba(255,255,255,.06); }
 .project-card .picon svg{ width:18px;height:18px;opacity:.92; }
 
-/* 右上のギア（先頭のpicon）を消す。×（閉じる）は残す */
+/* 蜿ｳ荳翫�繧ｮ繧｢�亥�鬆ｭ縺ｮpicon�峨ｒ豸医☆縲づ暦ｼ磯哩縺倥ｋ�峨�谿九☆ */
 .project-card .phd .picon:first-of-type{
   display:none;
 }
@@ -1052,7 +1052,7 @@ body.project-open .project-modal{ display:flex; }
   padding:18px 0 0;
 }
 
-/* Project view は中央寄せを使わない（GPT準拠） */
+/* Project view 縺ｯ荳ｭ螟ｮ蟇�○繧剃ｽｿ繧上↑縺�ｼ�GPT貅匁侠�� */
 body.view-project .view{
   width:100%;
   max-width:none;
@@ -1069,11 +1069,11 @@ body.view-project .view{
   height:100%;
   display:flex;
   flex-direction:column;
-  align-items:stretch; /* 全体は中央寄せしない */
+  align-items:stretch; /* 蜈ｨ菴薙�荳ｭ螟ｮ蟇�○縺励↑縺� */
 }
 
 .pj-home-head{
-  margin:10px auto 14px; /* 左右に余白 */
+  margin:10px auto 14px; /* 蟾ｦ蜿ｳ縺ｫ菴咏區 */
   width:100%;
   max-width:760px;
 }
@@ -1082,10 +1082,10 @@ body.view-project .view{
   display:flex;
   align-items:center;
   gap:10px;
-  font-size:22px;               /* 少し小さめでGPT寄せ */
+  font-size:22px;               /* 蟆代＠蟆上＆繧√〒GPT蟇�○ */
   font-weight:700;
   letter-spacing:.01em;
-  color:rgba(255,255,255,.98);  /* 視認性を上げる（PJ名が確実に見える） */
+  color:rgba(255,255,255,.98);  /* 隕冶ｪ肴ｧ繧剃ｸ翫￡繧具ｼ�PJ蜷阪′遒ｺ螳溘↓隕九∴繧具ｼ� */
 }
 
 .pj-home-ic{
@@ -1190,7 +1190,7 @@ body.theme-light .pj-home-askbar input::placeholder{
 /* project view: remove extra gap next to sidebar */
 body.view-project .board{
   padding-left:0;
-  overflow:hidden;        /* PJトップでは全体スクロール禁止 */
+  overflow:hidden;        /* PJ繝医ャ繝励〒縺ｯ蜈ｨ菴薙せ繧ｯ繝ｭ繝ｼ繝ｫ遖∵ｭ｢ */
 }
 
 .pj-home-list{
@@ -1204,7 +1204,7 @@ body.view-project .board{
   margin-left:auto;
   margin-right:auto;
 
-  overflow-y:auto;      /* 履歴だけスクロール */
+  overflow-y:auto;      /* 螻･豁ｴ縺�縺代せ繧ｯ繝ｭ繝ｼ繝ｫ */
   min-height:0;
   max-height:calc(100vh - 260px);
 }
@@ -1214,7 +1214,7 @@ body.view-project .board{
   align-items:center;
   justify-content:space-between;
   gap:14px;
-  padding:14px 0;               /* 左右の余白を無くして線揃え */
+  padding:14px 0;               /* 蟾ｦ蜿ｳ縺ｮ菴咏區繧堤┌縺上＠縺ｦ邱壽純縺� */
   border-bottom:1px solid var(--line);
   cursor:pointer;
 }
@@ -1295,7 +1295,7 @@ body.view-search .view{
   max-width:760px;
   margin-left:auto;
   margin-right:auto;
-  padding-left:0;        /* 左ズレ防止 */
+  padding-left:0;        /* 蟾ｦ繧ｺ繝ｬ髦ｲ豁｢ */
 }
 
 .view-search .search-head{
@@ -1488,10 +1488,10 @@ body.theme-light .images-empty{
   max-width:100%;
 }
 
-/* ロック状態：クラウド保存（Free時） */
+/* 繝ｭ繝�け迥ｶ諷具ｼ壹け繝ｩ繧ｦ繝我ｿ晏ｭ假ｼ�Free譎ゑｼ� */
 .settings-modal .panel-data .data-storage-wrap[data-locked="1"] .select{
   opacity:.55;
-  cursor:pointer; /* クリックは可能（JSでガード） */
+  cursor:pointer; /* 繧ｯ繝ｪ繝�け縺ｯ蜿ｯ閭ｽ��JS縺ｧ繧ｬ繝ｼ繝会ｼ� */
   background:
     linear-gradient(
       to right,
@@ -1501,7 +1501,7 @@ body.theme-light .images-empty{
     var(--card);
 }
 
-/* 🔒 Pro バッジ */
+/* 白 Pro 繝舌ャ繧ｸ */
 .settings-modal .panel-data .data-storage-badge{
   position:absolute;
   right:10px;
@@ -1515,19 +1515,19 @@ body.theme-light .images-empty{
   color:var(--muted);
   font-size:11px;
   line-height:18px;
-  display:none; /* JSで Free の時だけ表示 */
+  display:none; /* JS縺ｧ Free 縺ｮ譎ゅ□縺題｡ｨ遉ｺ */
   pointer-events:none;
   white-space:nowrap;
 }
 
 /* ===== Data storage toggle (Cloud / Local) ===== */
-/* index.html 側は storage-toggle / storage-opt を使っているため、ここで定義して被りを解消 */
+/* index.html 蛛ｴ縺ｯ storage-toggle / storage-opt 繧剃ｽｿ縺｣縺ｦ縺�ｋ縺溘ａ縲√％縺薙〒螳夂ｾｩ縺励※陲ｫ繧翫ｒ隗｣豸� */
 .settings-modal .panel-data .storage-toggle{
   display:inline-flex;
   align-items:center;
   justify-content:flex-end;
-  gap:6px;                         /* ピル分離 */
-  border:0;                        /* 枠を消す */
+  gap:6px;                         /* 繝斐Ν蛻�屬 */
+  border:0;                        /* 譫�繧呈ｶ医☆ */
   border-radius:0;
   overflow:visible;
   background:transparent;
@@ -1538,7 +1538,7 @@ body.theme-light .images-empty{
 .settings-modal .panel-data .storage-opt{
   height:34px;
   padding:0 14px;
-  border-radius:999px;             /* 削除ボタンと同じ丸み */
+  border-radius:999px;             /* 蜑企勁繝懊ち繝ｳ縺ｨ蜷後§荳ｸ縺ｿ */
   border:1px solid var(--line);
   background:transparent;
   color:var(--text);
@@ -1556,11 +1556,11 @@ body.theme-light .images-empty{
 }
 
 .settings-modal .panel-data .storage-opt:hover{
-  background:rgba(0,0,0,.05);      /* .btn.danger:hover と同系 */
+  background:rgba(0,0,0,.05);      /* .btn.danger:hover 縺ｨ蜷檎ｳｻ */
 }
 
 .settings-modal .panel-data .storage-opt.is-active{
-  background:var(--dangerBg);      /* 削除ボタン寄せ */
+  background:var(--dangerBg);      /* 蜑企勁繝懊ち繝ｳ蟇�○ */
   border-color:var(--dangerBd);
   color:var(--text);
   opacity:1;
@@ -1601,10 +1601,10 @@ body.theme-light .settings-modal .panel-data .storage-opt.is-active{
   --soft:rgba(255,255,255,.06);
   --shadow:0 18px 50px rgba(0,0,0,.55);
 
-  --modalBg:#1a1b1e;         /* ← 黒寄りグレー */
+  --modalBg:#1a1b1e;         /* 竊� 鮟貞ｯ�ｊ繧ｰ繝ｬ繝ｼ */
   --modalBorder:rgba(255,255,255,.10);
 
-  --card:#222326;            /* 内部カードも暗く */
+  --card:#222326;            /* 蜀�Κ繧ｫ繝ｼ繝峨ｂ證励￥ */
   --cardBorder:rgba(255,255,255,.10);
 
   --dangerBg:rgba(255,80,80,.12);
@@ -1624,7 +1624,7 @@ body.theme-light .settings-modal .panel-data .storage-opt.is-active{
   pointer-events:none !important;
 }
 
-/* index側の×（右上固定） */
+/* index蛛ｴ縺ｮﾃ暦ｼ亥承荳雁崋螳夲ｼ� */
 .settings-close{
   position:fixed;
   top:26px;
@@ -1645,7 +1645,7 @@ body.theme-light .settings-modal .panel-data .storage-opt.is-active{
   background:rgba(255,255,255,.10);
 }
 
-/* ===== settings.html body部分（スコープ） ===== */
+/* ===== settings.html body驛ｨ蛻�ｼ医せ繧ｳ繝ｼ繝暦ｼ� ===== */
 
 /* Tabs (CSS-only) */
 .settings-modal .tab-input{
@@ -1657,14 +1657,14 @@ body.theme-light .settings-modal .panel-data .storage-opt.is-active{
   pointer-events:none;
 }
 
-/* Overlay + Modal（settings 専用） */
+/* Overlay + Modal��settings 蟆ら畑�� */
 .settings-modal > .overlay{
   width:100%;
   height:100%;
   display:flex;
   align-items:center;
   justify-content:center;
-  padding:0; /* Legal Popup 含め、左右余白を作らない */
+  padding:0; /* Legal Popup 蜷ｫ繧√∝ｷｦ蜿ｳ菴咏區繧剃ｽ懊ｉ縺ｪ縺� */
 
   background:rgba(0,0,0,.22);
   backdrop-filter: blur(10px);
@@ -1691,7 +1691,7 @@ body.theme-light .settings-modal .panel-data .storage-opt.is-active{
   position:relative;
 }
 
-/* settings.html内の close（modal内の×） */
+/* settings.html蜀�� close��modal蜀��ﾃ暦ｼ� */
 .settings-modal .close{
   position:absolute;
   top:10px;
@@ -1830,7 +1830,7 @@ body.theme-light .settings-modal .panel-data .storage-opt.is-active{
   justify-content:flex-start;
 }
 
-/* Sections (あなたの現行settingsは「線で見せる」版) */
+/* Sections (縺ゅ↑縺溘�迴ｾ陦茎ettings縺ｯ縲檎ｷ壹〒隕九○繧九咲沿) */
 .settings-modal .section{
   border:0;
   background:transparent;
@@ -1860,25 +1860,25 @@ body.theme-light .settings-modal .panel-data .storage-opt.is-active{
 .settings-modal .row{
   display:flex;
   align-items:center;
-  justify-content:space-between; /* ←左右分離を復旧 */
+  justify-content:space-between; /* 竊仙ｷｦ蜿ｳ蛻�屬繧貞ｾｩ譌ｧ */
   gap:12px;
   padding:10px 0;
   border-top:1px solid var(--line);
 }
 
-/* デスクトップ：ピル（select/btn）は文字サイズに追従（伸び禁止） */
+/* 繝�せ繧ｯ繝医ャ繝暦ｼ壹ヴ繝ｫ��select/btn�峨�譁�ｭ励し繧､繧ｺ縺ｫ霑ｽ蠕難ｼ井ｼｸ縺ｳ遖∵ｭ｢�� */
 .settings-modal .row > .select,
 .settings-modal .row > .btn{
   flex:0 0 auto;
-  width:fit-content;          /* ←文字幅に追従 */
-  inline-size:fit-content;    /* ←同上 */
+  width:fit-content;          /* 竊先枚蟄怜ｹ�↓霑ｽ蠕� */
+  inline-size:fit-content;    /* 竊仙酔荳� */
   max-width:100%;
   min-width:0;
 }
 
 @media (max-width: 520px){
   .settings-modal{
-    align-items:flex-start; /* 中央固定解除 */
+    align-items:flex-start; /* 荳ｭ螟ｮ蝗ｺ螳夊ｧ｣髯､ */
   }
 
   .settings-modal .row{
@@ -1897,7 +1897,7 @@ body.theme-light .settings-modal .panel-data .storage-opt.is-active{
     width:100%;
   }
 
-  /* ピルは文字サイズに追従（伸び禁止） */
+  /* 繝斐Ν縺ｯ譁�ｭ励し繧､繧ｺ縺ｫ霑ｽ蠕難ｼ井ｼｸ縺ｳ遖∵ｭ｢�� */
   .settings-modal .row > .select,
   .settings-modal .row > .btn{
     width:auto;
@@ -1905,7 +1905,7 @@ body.theme-light .settings-modal .panel-data .storage-opt.is-active{
     align-self:flex-start;
   }
 
-  /* ボタンは折り返しOK（幅は増やさず高さで吸収） */
+  /* 繝懊ち繝ｳ縺ｯ謚倥ｊ霑斐＠OK�亥ｹ��蠅励ｄ縺輔★鬮倥＆縺ｧ蜷ｸ蜿趣ｼ� */
   .settings-modal .btn{
     white-space:normal;
     height:auto;
@@ -2007,8 +2007,8 @@ body.theme-light .settings-modal .panel-data .storage-opt.is-active{
   outline:0;
   cursor:pointer;
 
-  text-align:center;         /* ← 文字を中央へ */
-  text-align-last:center;    /* ← 主要ブラウザで確実に中央へ */
+  text-align:center;         /* 竊� 譁�ｭ励ｒ荳ｭ螟ｮ縺ｸ */
+  text-align-last:center;    /* 竊� 荳ｻ隕√ヶ繝ｩ繧ｦ繧ｶ縺ｧ遒ｺ螳溘↓荳ｭ螟ｮ縺ｸ */
 
   max-width:100%;
   min-width:0;
@@ -2017,7 +2017,7 @@ body.theme-light .settings-modal .panel-data .storage-opt.is-active{
   white-space:nowrap;
 }
 
-/* 送信方法：三角アイコン撤去後は文字幅に追従（右余白を作らない） */
+/* 騾∽ｿ｡譁ｹ豕包ｼ壻ｸ芽ｧ偵い繧､繧ｳ繝ｳ謦､蜴ｻ蠕後�譁�ｭ怜ｹ�↓霑ｽ蠕難ｼ亥承菴咏區繧剃ｽ懊ｉ縺ｪ縺�ｼ� */
 .settings-modal #settingsSendMode{
   min-width:0;
 }
@@ -2105,7 +2105,7 @@ body.theme-light .settings-modal .panel-data .storage-opt.is-active{
 
 @media (max-width: 920px){
 
-  /* ===== モーダル全体 ===== */
+  /* ===== 繝｢繝ｼ繝繝ｫ蜈ｨ菴� ===== */
   .settings-modal{
     padding:0;
   }
@@ -2118,14 +2118,14 @@ body.theme-light .settings-modal .panel-data .storage-opt.is-active{
 
 .settings-modal > .overlay > .modal{
   width:min(560px, calc(100% - 24px));
-  height:760px;                 /* 固定 */
-  max-height:760px;             /* 固定 */
+  height:760px;                 /* 蝗ｺ螳� */
+  max-height:760px;             /* 蝗ｺ螳� */
   grid-template-columns: 1fr;
-  grid-template-rows: auto 1fr; /* ヘッダー固定 + 本文 */
+  grid-template-rows: auto 1fr; /* 繝倥ャ繝繝ｼ蝗ｺ螳� + 譛ｬ譁� */
   border-radius:22px;
 }
 
-  /* ===== 上部アイコンナビ ===== */
+  /* ===== 荳企Κ繧｢繧､繧ｳ繝ｳ繝翫ン ===== */
   .settings-modal .nav{
     border:0;
     background:transparent;
@@ -2141,7 +2141,7 @@ body.theme-light .settings-modal .panel-data .storage-opt.is-active{
     justify-content:center;
     align-items:center;
     gap:14px;
-    padding:10px 56px 10px 16px; /* 右上×の逃げ */
+    padding:10px 56px 10px 16px; /* 蜿ｳ荳甘励�騾�￡ */
     min-height:56px;
     border-bottom:1px solid var(--line);
   }
@@ -2159,7 +2159,7 @@ body.theme-light .settings-modal .panel-data .storage-opt.is-active{
   }
 
   .settings-modal .nav-txt{
-    display:none; /* 縮小時はアイコンのみ */
+    display:none; /* 邵ｮ蟆乗凾縺ｯ繧｢繧､繧ｳ繝ｳ縺ｮ縺ｿ */
   }
 
   .settings-modal .nav-item:hover{
@@ -2190,7 +2190,7 @@ body.theme-light .settings-modal .panel-data .storage-opt.is-active{
     opacity:1;
   }
 
-  /* ===== 本文 ===== */
+  /* ===== 譛ｬ譁� ===== */
   .settings-modal .content{
     min-height:0;
     height:100%;
@@ -2203,7 +2203,7 @@ body.theme-light .settings-modal .panel-data .storage-opt.is-active{
 
   .settings-modal .content-bd{
     padding:16px;
-    overflow:visible;              /* デフォルトはスクロールしない */
+    overflow:visible;              /* 繝�ヵ繧ｩ繝ｫ繝医�繧ｹ繧ｯ繝ｭ繝ｼ繝ｫ縺励↑縺� */
     display:flex;
     flex-direction:column;
     gap:18px;
@@ -2211,7 +2211,7 @@ body.theme-light .settings-modal .panel-data .storage-opt.is-active{
     flex:0 0 auto;
   }
 
-  /* Appsタブだけ：本文をスクロール領域にする */
+  /* Apps繧ｿ繝悶□縺托ｼ壽悽譁�ｒ繧ｹ繧ｯ繝ｭ繝ｼ繝ｫ鬆伜沺縺ｫ縺吶ｋ */
   .settings-modal #tab-apps:checked ~ .overlay .modal .content .panel-apps{
     height:100%;
     min-height:0;
@@ -2260,7 +2260,7 @@ body.theme-light .settings-modal .panel-data .storage-opt.is-active{
 }
 
 /* ===============================
-   Regulations tabs (規約・規定)
+   Regulations tabs (隕冗ｴ��隕丞ｮ�)
 =============================== */
 .settings-modal .reg-wrap{
   border:0;
@@ -2268,8 +2268,8 @@ body.theme-light .settings-modal .panel-data .storage-opt.is-active{
   padding:0;
 }
 
-/* 規約・規定：見出しの太さは他の見出しと同じ基準に揃える */
-.settings-modal .panel-account .section[aria-label="規約・規定"] .reg-head{
+/* 隕冗ｴ��隕丞ｮ夲ｼ夊ｦ句�縺励�螟ｪ縺輔�莉悶�隕句�縺励→蜷後§蝓ｺ貅悶↓謠�∴繧� */
+.settings-modal .panel-account .section[aria-label="隕冗ｴ��隕丞ｮ�"] .reg-head{
   font-size:13px;
   font-weight:400;
   color:var(--text);
@@ -2280,7 +2280,7 @@ body.theme-light .settings-modal .panel-data .storage-opt.is-active{
   opacity:.86;
 }
 
-.settings-modal .panel-account .section[aria-label="規約・規定"] .reg-tabs{
+.settings-modal .panel-account .section[aria-label="隕冗ｴ��隕丞ｮ�"] .reg-tabs{
   display:flex;
   align-items:center;
   gap:14px;
@@ -2289,7 +2289,7 @@ body.theme-light .settings-modal .panel-data .storage-opt.is-active{
   margin:0;
 }
 
-.settings-modal .panel-account .section[aria-label="規約・規定"] .reg-tab{
+.settings-modal .panel-account .section[aria-label="隕冗ｴ��隕丞ｮ�"] .reg-tab{
   -webkit-appearance:none;
   appearance:none;
   background:transparent;
@@ -2307,20 +2307,20 @@ body.theme-light .settings-modal .panel-data .storage-opt.is-active{
   line-height:1.45;
 }
 
-.settings-modal .panel-account .section[aria-label="規約・規定"] .reg-tab:hover{
+.settings-modal .panel-account .section[aria-label="隕冗ｴ��隕丞ｮ�"] .reg-tab:hover{
   color:var(--text);
   opacity:.78;
 }
 
-.settings-modal .panel-account .section[aria-label="規約・規定"] .reg-tab[aria-selected="true"]{
+.settings-modal .panel-account .section[aria-label="隕冗ｴ��隕丞ｮ�"] .reg-tab[aria-selected="true"]{
   color:var(--text);
   opacity:.82;
 }
-.settings-modal .panel-account .section[aria-label="規約・規定"] .reg-tab[aria-selected="true"]::after{
+.settings-modal .panel-account .section[aria-label="隕冗ｴ��隕丞ｮ�"] .reg-tab[aria-selected="true"]::after{
   content:none;
 }
 
-/* 本文 */
+/* 譛ｬ譁� */
 .settings-modal .reg-body{
   margin-top:12px;
 }
@@ -2349,15 +2349,15 @@ body.theme-light .settings-modal .panel-data .storage-opt.is-active{
 }
 
 /* ===============================
-   Legal Popup (規約・規定)
+   Legal Popup (隕冗ｴ��隕丞ｮ�)
 =============================== */
 .settings-modal #legalOverlay{
   position: fixed;
   inset: 0;
-  display: none; /* JSで flex にする */
+  display: none; /* JS縺ｧ flex 縺ｫ縺吶ｋ */
   align-items: center;
   justify-content: center;
-  padding: 18px 0; /* 左右余白を完全に削除 */
+  padding: 18px 0; /* 蟾ｦ蜿ｳ菴咏區繧貞ｮ悟�縺ｫ蜑企勁 */
   background: rgba(0,0,0,.45);
   z-index: 10040;
 
@@ -2371,7 +2371,7 @@ body.theme-light .settings-modal .panel-data .storage-opt.is-active{
 }
 
 .settings-modal #legalOverlay .modal{
-  /* 文字量に合わせて枠を自動調整（固定min-widthを撤去） */
+  /* 譁�ｭ鈴㍼縺ｫ蜷医ｏ縺帙※譫�繧定�蜍戊ｪｿ謨ｴ�亥崋螳嗄in-width繧呈彫蜴ｻ�� */
   width:fit-content;
   max-width:min(760px, calc(100% - 24px));
   min-width:0;
@@ -2384,7 +2384,7 @@ body.theme-light .settings-modal .panel-data .storage-opt.is-active{
   font-family:var(--font);
   position: relative;
 
-  /* 余白を削る */
+  /* 菴咏區繧貞炎繧� */
   padding-top: 0;
 
   /* animation */
@@ -2392,7 +2392,7 @@ body.theme-light .settings-modal .panel-data .storage-opt.is-active{
   transition: transform .18s ease;
 }
 
-/* モバイル：横幅は画面にフィット */
+/* 繝｢繝舌う繝ｫ�壽ｨｪ蟷��逕ｻ髱｢縺ｫ繝輔ぅ繝�ヨ */
 @media (max-width: 560px){
   .settings-modal #legalOverlay .modal{
     width:calc(100% - 24px);
@@ -2404,7 +2404,7 @@ body.theme-light .settings-modal .panel-data .storage-opt.is-active{
   transform: translateY(0) scale(1);
 }
 
-/* Legal popup content spacing（上下余白を詰める） */
+/* Legal popup content spacing�井ｸ贋ｸ倶ｽ咏區繧定ｩｰ繧√ｋ�� */
 .settings-modal #legalOverlay .modal .hd{
   padding:10px 12px;
 }
@@ -2432,7 +2432,7 @@ body.theme-light .settings-modal .panel-data .storage-opt.is-active{
 .settings-modal #aiStackOverlay{
   position: fixed;
   inset: 0;
-  display: none; /* JSで flex にする */
+  display: none; /* JS縺ｧ flex 縺ｫ縺吶ｋ */
   align-items: center;
   justify-content: center;
   padding: 18px;
@@ -2447,7 +2447,7 @@ body.theme-light .settings-modal .panel-data .storage-opt.is-active{
   border:1px solid var(--modalBorder);
   border-radius:18px;
   box-shadow:var(--shadow);
-  font-family:var(--font); /* フォントを全体と完全一致 */
+  font-family:var(--font); /* 繝輔か繝ｳ繝医ｒ蜈ｨ菴薙→螳悟�荳閾ｴ */
   position: relative;
 }
 
@@ -2465,14 +2465,14 @@ body.theme-light .settings-modal .panel-data .storage-opt.is-active{
 
 .settings-modal #aiStackOverlay .table__row{
   display:grid;
-  grid-template-columns: 160px 140px 1fr; /* AI / Ver, / 稼働条件 */
+  grid-template-columns: 160px 140px 1fr; /* AI / Ver, / 遞ｼ蜒肴擅莉ｶ */
   gap:0;
   padding:8px 0;
 }
 
 @media (max-width: 520px){
   .settings-modal #aiStackOverlay .table__row{
-    grid-template-columns: 110px 92px 1fr; /* AI / Ver, / 稼働条件 */
+    grid-template-columns: 110px 92px 1fr; /* AI / Ver, / 遞ｼ蜒肴擅莉ｶ */
   }
 }
 
@@ -2490,7 +2490,7 @@ body.theme-light .settings-modal .panel-data .storage-opt.is-active{
   font-size:13px;
   line-height:1.4;
   color:var(--text);
-  font-family:var(--font); /* セル単位でも固定 */
+  font-family:var(--font); /* 繧ｻ繝ｫ蜊倅ｽ阪〒繧ょ崋螳� */
   min-width:0;
 }
 
@@ -2509,11 +2509,11 @@ body.theme-light .settings-modal .panel-data .storage-opt.is-active{
   white-space:nowrap;
 }
 
-/* Condition column（折り返し可：英語でも見切れない） */
+/* Condition column�域釜繧願ｿ斐＠蜿ｯ�夊恭隱槭〒繧りｦ句�繧後↑縺�ｼ� */
 .settings-modal #aiStackOverlay .table__body .table__row .table__cell:nth-child(3){
   color:var(--muted);
   white-space:normal;
-  overflow:hidden;          /* はみ出し防止 */
+  overflow:hidden;          /* 縺ｯ縺ｿ蜃ｺ縺鈴亟豁｢ */
   text-overflow:clip;
   word-break:break-word;
 }
@@ -2576,7 +2576,7 @@ body.theme-light .settings-modal .panel-data .storage-opt.is-active{
   }
 }
 
-/* PJトップでは非表示（GPT同等） */
+/* PJ繝医ャ繝励〒縺ｯ髱櫁｡ｨ遉ｺ��GPT蜷檎ｭ会ｼ� */
 body.view-project:not(.has-chat) .scroll-down-btn{
   display:none;
 }
@@ -2621,7 +2621,7 @@ body.view-project:not(.has-chat) .scroll-down-btn{
   background:rgba(20,21,22,.6);
   border:1px solid rgba(255,255,255,.12);
 
-  /* 余白（黒帯）を消して“線”を出さない */
+  /* 菴咏區�磯ｻ貞ｸｯ�峨ｒ豸医＠縺ｦ窶懃ｷ壺昴ｒ蜃ｺ縺輔↑縺� */
   aspect-ratio: 1 / 1;
 }
 
@@ -2630,7 +2630,7 @@ body.view-project:not(.has-chat) .scroll-down-btn{
   height:100%;
   max-height:none;
 
-  /* contain をやめて、枠いっぱいに表示（黒帯が出ない） */
+  /* contain 繧偵ｄ繧√※縲∵棧縺�▲縺ｱ縺�↓陦ｨ遉ｺ�磯ｻ貞ｸｯ縺悟�縺ｪ縺�ｼ� */
   object-fit:cover;
 
   display:block;
@@ -2648,7 +2648,7 @@ body.view-project:not(.has-chat) .scroll-down-btn{
    no CSS override needed here
 ===== */
 
-/* ===== FORCE REMOVE useless image-card inner shadow (解析中に見える謎の表示) ===== */
+/* ===== FORCE REMOVE useless image-card inner shadow (隗｣譫蝉ｸｭ縺ｫ隕九∴繧玖ｬ弱�陦ｨ遉ｺ) ===== */
 .ai-image-card::before,
 .ai-image-card::after {
   display: none !important;
@@ -2680,21 +2680,21 @@ body.view-project:not(.has-chat) .scroll-down-btn{
   color: rgba(255,255,255,.85);
 }
 
-/* タイトル */
+/* 繧ｿ繧､繝医Ν */
 #legalOverlay #legalModalTitle{
   font-size: 14px;
   font-weight: 700;
   color: rgba(255,255,255,.92);
 }
 
-/* もし本文側にp/liが混ざっても統一 */
+/* 繧ゅ＠譛ｬ譁��縺ｫp/li縺梧ｷｷ縺悶▲縺ｦ繧らｵｱ荳 */
 #legalOverlay #legalModalBody p,
 #legalOverlay #legalModalBody li{
   font-size: 13px;
   line-height: 1.65;
 }
 
-/* 箇条書きの詰め */
+/* 邂�擅譖ｸ縺阪�隧ｰ繧� */
 #legalOverlay #legalModalBody ul{
   margin: 6px 0 10px;
   padding-left: 16px;
@@ -2704,83 +2704,21 @@ body.view-project:not(.has-chat) .scroll-down-btn{
   margin: 2px 0;
 }
 
-    /* 解析中は assistant 行の左に出る丸UI（actions周りの疑似要素）を消す */
+    /* 隗｣譫蝉ｸｭ縺ｯ assistant 陦後�蟾ｦ縺ｫ蜃ｺ繧倶ｸｸUI��actions蜻ｨ繧翫�逍台ｼｼ隕∫ｴ��峨ｒ豸医☆ */
     .aurea-streaming .msg.assistant .actions::before,
     .aurea-streaming .msg.assistant .actions::after{
       display:none !important;
       content:none !important;
     }
 
-    /* ===== AUREA GPT-compat fixes (UI hard guards) ===== */
-
-/* 解析中は assistant の actions を強制非表示（丸枠/コピー/Repoの残留を潰す） */
-body.aurea-streaming .msg.assistant .actions{
-  display:none !important;
-}
-
-/* ===== streaming中は全messageの左UI/操作UIを強制非表示（GPT互換） ===== */
-body.aurea-streaming .actions,
-body.aurea-streaming .act{
-  display:none !important;
-}
-
-/* 左の丸っぽいDOMが実体だった場合も潰す（class差分吸収） */
-body.aurea-streaming .msg .avatar,
-body.aurea-streaming .msg .dot,
-body.aurea-streaming .msg .circle,
-body.aurea-streaming .msg .msg-icon,
-body.aurea-streaming .msg .assistant-icon{
-  display:none !important;
-}
-
-/* ===== Ask左上「解析中…」テキストの光スイープ（常設） ===== */
-@keyframes aureaShimmerSweepFixed{
-  0%   { transform: translateX(-120%); opacity: 0; }
-  12%  { opacity: 1; }
-  100% { transform: translateX(140%); opacity: 0; }
-}
-
-#aureaStreamProgressPill .aurea-streamtxt{
-  position:relative !important;
-  display:inline-block !important;
-  overflow:hidden !important;
-  text-shadow:
-    0 0 10px rgba(159,180,255,.22),
-    0 0 22px rgba(159,180,255,.14);
-}
-
-#aureaStreamProgressPill .aurea-streamtxt::after{
-  content:"";
-  position:absolute;
-  top:50%;
-  left:-120%;
-  width:92px;
-  height:2px;
-  transform:translateY(-50%);
-  background:linear-gradient(90deg,
-    rgba(255,255,255,0) 0%,
-    rgba(159,180,255,.92) 40%,
-    rgba(255,255,255,0) 100%
-  );
-  filter: blur(.25px);
-  animation:aureaShimmerSweepFixed 1.05s linear infinite;
-  opacity:.95;
-  pointer-events:none;
-}
 
 /* ===== GPT-like frameless media in chat ===== */
-
 .msg-media{
-  display:flex;
-  justify-content:flex-end;       /* user側は右寄せ */
   width:100%;
+  display:flex;
+  justify-content:flex-end;
+  margin:6px 0 2px;
 }
-
-.msg.assistant + .msg-media,
-.msg.assistant .msg-media{
-  justify-content:flex-start;     /* assistant側は左寄せ（将来用） */
-}
-
 .msg-media__grid{
   display:flex;
   gap:12px;
@@ -2788,8 +2726,12 @@ body.aurea-streaming .msg .assistant-icon{
   align-items:flex-start;
   max-width:min(520px, 100%);
 }
-
-/* frameless image */
+.msg-media__item{
+  border:0;
+  background:transparent;
+  padding:0;
+  cursor:pointer;
+}
 .msg-media__img{
   width:320px;
   max-width:calc(100vw - 120px);
@@ -2799,10 +2741,8 @@ body.aurea-streaming .msg .assistant-icon{
   outline:0 !important;
   box-shadow:none !important;
   background:transparent !important;
-  border-radius:14px;            /* GPTも角丸はある */
+  border-radius:14px;
 }
-
-/* frameless file tile */
 .msg-media__filebox{
   width:140px;
   height:92px;
@@ -2817,4 +2757,66 @@ body.aurea-streaming .msg .assistant-icon{
   font-size:12px;
   font-weight:700;
   letter-spacing:.06em;
+}
+/* assistant side (future) */
+.msg.assistant .msg-media{ justify-content:flex-start; }
+
+/* streaming: hide actions/icons inside rows */
+body.aurea-streaming .actions,
+body.aurea-streaming .act{
+  display:none !important;
+}
+
+
+@keyframes aureaShimmerSweepFixed{
+  0%{ transform: translateX(-120%); opacity:0; }
+  12%{ opacity:1; }
+  100%{ transform: translateX(140%); opacity:0; }
+}
+#aureaStreamProgressPill .aurea-streamtxt{
+  position:relative;
+  display:inline-block;
+  overflow:hidden;
+  text-shadow: 0 0 10px rgba(159,180,255,.22), 0 0 22px rgba(159,180,255,.14);
+}
+#aureaStreamProgressPill .aurea-streamtxt::after{
+  content:"";
+  position:absolute;
+  top:50%;
+  left:-120%;
+  width:92px;
+  height:2px;
+  transform:translateY(-50%);
+  background:linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(159,180,255,.92) 40%, rgba(255,255,255,0) 100%);
+  filter: blur(.25px);
+  animation:aureaShimmerSweepFixed 1.05s linear infinite;
+  opacity:.95;
+  pointer-events:none;
+}
+/* ===== hard guards (streaming) ===== */
+body.aurea-streaming .actions,
+body.aurea-streaming .act{
+  display:none !important;
+}
+
+/* ===== frameless media (chat) ===== */
+.msg-media{
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+}
+
+.msg-media__img{
+  border:0 !important;
+  outline:0 !important;
+  box-shadow:none !important;
+  background:transparent !important;
+}
+
+/* user: bubble内に余計な枠が残った場合の最終保険 */
+.msg.user .bubble.bubble-user-attach{
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+  padding:0 !important;
 }
