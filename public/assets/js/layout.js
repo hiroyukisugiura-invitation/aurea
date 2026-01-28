@@ -3970,9 +3970,24 @@ if (msg?.role === "assistant") {
           wrap.appendChild(media);
         }
 
-        // bubble: text only (hide bubble when no text)
+        // bubble: assistantの特殊メッセージは renderMessageHtml で描画（AUREA_IMAGE 等）
         if (hasText) {
-          bubble.innerHTML = escHtml(String(m?.content || "")).replace(/\n/g, "<br>");
+          const raw = String(m?.content || "");
+
+          const isAssistant = (m && m.role === "assistant");
+          const isAureaImage =
+            isAssistant && (
+              raw.startsWith("AUREA_IMAGE\n") ||
+              raw.startsWith("AUREA_IMAGE_PENDING\n") ||
+              raw.startsWith("AI Stack\n")
+            );
+
+          if (isAureaImage) {
+            bubble.innerHTML = renderMessageHtml(m);
+          } else {
+            bubble.innerHTML = escHtml(raw).replace(/\n/g, "<br>");
+          }
+
           wrap.appendChild(bubble);
         } else {
           // no text -> do not render bubble at all
@@ -4057,8 +4072,8 @@ if (msg?.role === "assistant") {
           `;
           actions.appendChild(act);
 
-          // AI Reports：設定ONなら常に表示（reportsRawが空なら disabled 扱い）
-          const showReportsIcon = (state.settings?.showAiReports === true);
+          // Repo は常時表示（GPT互換：中身が無い場合もクリック可能）
+          const showReportsIcon = true;
 
           if (showReportsIcon) {
             const hasReports = !!String(m?.meta?.reportsRaw || "").trim();
