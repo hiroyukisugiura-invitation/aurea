@@ -3912,6 +3912,11 @@ if (msg?.role === "assistant") {
         const hasText = String(m?.content || "").trim().length > 0;
 
         if (hasAtts) {
+          // userの添付は「縦積み」にする（画像の下にコメント）
+          if (m && m.role === "user") {
+            wrap.classList.add("msg-stack");
+          }
+
           // media area (no bubble border)
           const media = document.createElement("div");
           media.className = "msg-media";
@@ -3961,7 +3966,7 @@ if (msg?.role === "assistant") {
             return `<div class="msg-media__grid">${items}</div>`;
           })();
 
-          // place media before bubble (GPT-like)
+          // place media before bubble
           wrap.appendChild(media);
         }
 

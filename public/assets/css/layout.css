@@ -2820,3 +2820,14 @@ body.aurea-streaming .act{
   box-shadow:none !important;
   padding:0 !important;
 }
+
+/* user attachment: stack (image above, comment below) */
+.msg.user.msg-stack{
+  flex-direction:column !important;
+  align-items:flex-end !important;
+}
+
+.msg.user.msg-stack .msg-media{
+  justify-content:flex-end !important;
+  width:auto !important;
+}
