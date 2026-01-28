@@ -4076,20 +4076,12 @@ if (msg?.role === "assistant") {
           const showReportsIcon = true;
 
           if (showReportsIcon) {
-            const hasReports = !!String(m?.meta?.reportsRaw || "").trim();
-
             const rep = document.createElement("div");
             rep.className = "act";
             rep.setAttribute("role", "button");
-            rep.setAttribute("tabindex", hasReports ? "0" : "-1");
+            rep.setAttribute("tabindex", "0");
             rep.dataset.action = "open-reports";
             rep.dataset.mid = m.id;
-
-            if (!hasReports) {
-              rep.dataset.disabled = "1";
-              rep.style.opacity = ".45";
-              rep.style.cursor = "not-allowed";
-            }
 
             rep.innerHTML = `
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -6068,6 +6060,27 @@ askInput.addEventListener("keydown", (e) => {
     }
   }
 });
+
+/* ===== GLOBAL ⌘+Enter fallback (after image drop) ===== */
+/* Ask にフォーカスが無くても、送信条件を満たせば送信する（GPT同等） */
+document.addEventListener("keydown", (e) => {
+  const mode = (state?.settings?.sendMode || localStorage.getItem("aurea_send_mode") || "cmdEnter");
+  if (mode !== "cmdEnter") return;
+
+  if (e.key !== "Enter") return;
+  if (!(e.metaKey || e.ctrlKey)) return;
+
+  // 既に Ask 内で処理されている場合は二重送信防止
+  if (e.defaultPrevented) return;
+
+  const hasAttachments = pendingAttachments.length > 0;
+  const hasText = askInput && askInput.value && askInput.value.trim().length > 0;
+
+  if (!hasText && !hasAttachments) return;
+
+  e.preventDefault();
+  send();
+}, true);
   }
 
   sendBtn?.addEventListener("click", (e) => { e.preventDefault(); send(); });

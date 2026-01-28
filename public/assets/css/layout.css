@@ -2821,7 +2821,25 @@ body.aurea-streaming .act{
   padding:0 !important;
 }
 
-/* user attachment: stack (image above, comment below) */
+/* user attachment: stack (image above, comment below)
+   - prefer automatic stacking when a user message contains media
+   - keep .msg-stack as a fallback/override
+*/
+.msg.user:has(.msg-media){
+  flex-direction:column !important;
+  align-items:flex-end !important;
+}
+
+.msg.user:has(.msg-media) .msg-media{
+  justify-content:flex-end !important;
+  width:auto !important;
+}
+
+.msg.user:has(.msg-media) .bubble{
+  width:100%;
+}
+
+/* fallback (existing behavior) */
 .msg.user.msg-stack{
   flex-direction:column !important;
   align-items:flex-end !important;
@@ -2830,4 +2848,8 @@ body.aurea-streaming .act{
 .msg.user.msg-stack .msg-media{
   justify-content:flex-end !important;
   width:auto !important;
+}
+
+.msg.user.msg-stack .bubble{
+  width:100%;
 }
